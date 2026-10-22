@@ -83,3 +83,14 @@ store with migrations).
 | Settings additions beyond §6.7: link allowlist editor, notification history, test notification, Reset settings. | Allowlist backs SPEC §5 `openExternal` ("user-editable allowlist"); history backs §6.1 ("history is kept"); test notification lets the user check OS permission. |
 | "Clear all data" = clear credentials + notification history + reset settings; **logs are kept**. | So problems can still be reported after a wipe. |
 | Settings → Services / Repos sections are not in P0. | Their data models arrive with P1 (repos) and P2–P4 (services, Test connection). |
+
+## P1-A — Git core (2026-10-22)
+
+| Decision | Why |
+| --- | --- |
+| `GitRunner` refuses destructive commands **before spawning git**, after skipping global options (`-c`, `-C`, …) and rejecting command-line `alias.*` overrides: force push (any `--force*` incl. abbreviations like `--forc`, `-f` in short-flag groups, `+refspec`), `push --mirror/--prune`, remote delete (`-d`, `--delete`, `:ref`), `reset --hard/--merge/--keep`, `clean`, `restore`, `checkout -- <paths>`, `checkout/switch --force`, `checkout -B`/`switch -C`, `branch -d/-D/-f`, `stash drop/clear`. Error kind `unsafe`. | BUILD-PROMPTS P1 Done: never `push --force` / `reset --hard`. A guard at the single exec point holds even if an action has a bug. `push origin :` (matching refspec) is blocked too, deliberately. |
+| Git runs with `LC_ALL=C`, `GIT_TERMINAL_PROMPT=0`, empty `GIT_ASKPASS`/`SSH_ASKPASS`, `GIT_EDITOR=true`, and always `-c color.ui=false -c core.quotePath=false`. SSH `BatchMode` is **not** forced (it would override the user's `core.sshCommand`); a GUI-launched app has no TTY to prompt on anyway. | English output so failures can be classified; a missing credential fails fast instead of hanging on an invisible prompt. Credential helpers (osxkeychain, Git Credential Manager) still run. |
+| Extra error kinds beyond the six in BUILD-PROMPTS: `timeout`, `unsafe`, `failed` (unclassified). | Every failure maps to a kind, so the UI can always explain it. |
+| Protected patterns: `*` matches **within one path segment** (`release/*` blocks `release/1.4`, not `release/1.4/hotfix`); `**` spans segments; matching is **case-insensitive**. | Glob convention; case-insensitive because refs on default macOS/Windows file systems are, so `MAIN` must not slip past `main`. |
+| Branch-name collisions get `-2`, `-3`, … on the slug, shortening the slug so it stays ≤ 50 characters. | SPEC 6.2 slug limit. |
+| Integration tests (`tests/integration/`, real git + temp repos) run inside `npm test`, with an empty global git config, no system config, and `GIT_CEILING_DIRECTORIES` at the temp dir. | One command for CI; results don't depend on the developer's git setup. |

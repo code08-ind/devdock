@@ -14,8 +14,8 @@ Contract docs: `docs/SPEC.md`, `docs/UI-THEMES.md`, `docs/BUILD-PROMPTS.md` (pha
 
 | Field        | Value                                                         |
 | ------------ | ------------------------------------------------------------- |
-| Phase        | P0 — Scaffold, security baseline, shell, settings, secrets, demo |
-| Next step    | Push P0-D, read the first CI run (macOS + Windows), record it in `P0.22`/`P0.D2`; then **stop for user review of Phase 0** |
+| Phase        | P1 — Repos and git actions (Phase 0 closed: all Done criteria met) |
+| Next step    | Sub-phase **P1-B** — settings schema for repos, then repo registry (`P1.03`) |
 | Blockers     | None                                                          |
 | Last updated | 2026-10-22                                                    |
 
@@ -70,8 +70,8 @@ Steps:
 - [x] `P0.18` Contrast unit test (all themes, per UI-THEMES.md) — `tests/unit/contrast.test.ts`, 22 tests; Slate muted adjusted
 - [x] `P0.19` Unit tests: redaction, `openExternal` guard, settings migrations, secrets file bytes — `logger`, `security`, `settings`, `secrets` test files (+ patch-schema regression)
 - [x] `P0.20` e2e (Playwright `_electron`): security (no `require`/`process`, CSP blocks inline remote script, external nav blocked), each nav item, theme persists, palette via IPC test hook — `tests/e2e/{security,app,screenshots}.spec.ts`, 12 tests
-- [~] `P0.21` Packaging config: dmg arm64 + x64, NSIS per-user, portable — arm64 dmg built and launched here (packaged app runs from app.asar, CSP meta present, tray icons in Resources/tray); x64 dmg blocked locally by a download timeout; Windows targets only in CI
-- [~] `P0.22` GitHub Actions workflow (macOS + Windows matrix: lint, test, e2e, dist) — `.github/workflows/ci.yml` written; not yet run on GitHub
+- [x] `P0.21` Packaging config: dmg arm64 + x64, NSIS per-user, portable — CI run 39820085066 built `DevDock-0.1.0-arm64.dmg`, `DevDock-0.1.0-x64.dmg`, `DevDock-Setup-0.1.0.exe` (NSIS, perMachine=false), `DevDock-Portable-0.1.0.exe`; arm64 dmg also built + launched locally
+- [x] `P0.22` GitHub Actions workflow (macOS + Windows matrix: lint, test, e2e, dist) — run #1 (39819333526): macOS green, Windows e2e failed 1 test (EBUSY reading locked Chromium cache) → fixed in 94cd7dc; run #2 (39820085066): **both green**, 11 e2e passed + 1 skipped on each OS
 - [x] `P0.23` `docs/DECISIONS.md` (deps + version pins + demo-mode approach) — dependency tables, P0-B/C/D decisions
 - [x] `P0.24` Run lint / test / e2e / dist and record real output here (2026-10-22, macOS arm64):
   - `npm run lint` → exit 0 (eslint, prettier, tsc for node/web/e2e projects)
@@ -108,8 +108,8 @@ Steps:
   Paper, High contrast, Slate. `code-review` (Standards + Spec) run; fixes applied. Scope was: `src/renderer/index.html` + `palette.html`, tokens/themes CSS, components,
   nav rail + empty states, Settings page, Cmd/Ctrl+K palette, renderer client that unwraps
   envelopes (`src/renderer/lib/devdock.ts`), contrast test (`P0.18`).
-- [~] **P0-D — Proof & ship** (2026-10-22): e2e, DECISIONS.md, workflow, screenshots done and verified;
-  `code-review` run, fixes applied. Open: x64 dmg + Windows packages + CI run (need push). Scope: e2e (`P0.20`), DECISIONS.md, GitHub Actions, `npm run dist`,
+- [x] **P0-D — Proof & ship** (done 2026-10-22): e2e, DECISIONS.md, workflow, screenshots; CI run #2
+  green on macOS + Windows with all four packages. `code-review` run, fixes applied. Scope: e2e (`P0.20`), DECISIONS.md, GitHub Actions, `npm run dist`,
   screenshots, tick Done criteria.
 
 ### Notes for P0-D
@@ -163,7 +163,7 @@ Steps:
 Done criteria:
 
 - [x] `P0.D1` `npm run dev` runs on macOS — Evidence: 2026-10-22, electron-vite dev server on :5173, app log `DevDock 0.1.0 started (demo mode: true)`, no blocked/error lines
-- [~] `P0.D2` `npm run dist` produces dmg here; Windows targets configured, CI result reported honestly — Evidence: arm64 dmg built and the packaged app launched (see `P0.24`); x64 dmg **not** built locally (network timeout); NSIS + portable configured, CI not yet run → pending first GitHub Actions run
+- [x] `P0.D2` `npm run dist` produces dmg here; Windows targets configured, CI result reported honestly — Evidence: arm64 dmg built here (x64 blocked locally by a download timeout, see `P0.24`); CI run #2 built both dmgs + NSIS + portable; run #1's Windows failure and its fix recorded in `P0.22`
 - [x] `P0.D3` Theme, font and density persist and apply live — Evidence: e2e "theme, font size and density apply live and persist across restarts" (Settings UI clicks → `data-theme=dark`, body 18px, compact; relaunch with same profile keeps all three). This test found the patch-schema bug (fixed, see DECISIONS.md).
 - [x] `P0.D4` Security tests pass — Evidence: `tests/e2e/security.spec.ts` 6/6 (no require/process/module; CSP blocks inline + remote script, asserted via `securitypolicyviolation` events; external navigation blocked, asserted by the main-process log line `blocked navigate: https://example.com/` and unchanged URL; window.open denied + logged, window count unchanged; openExternal rejects file:/javascript:/unlisted host; invalid payload → INVALID_PAYLOAD) + unit `security.test.ts`
 - [x] `P0.D5` Secret saved via Settings not readable as plaintext in `userData` (byte test) — Evidence: e2e "a secret saved in Settings is encrypted on disk": types the token in the Settings UI, asserts `secrets.bin` exists and is non-empty, then scans **every file under userData recursively** (incl. Chromium Local Storage/leveldb and logs) for the plain bytes; + unit `secrets.test.ts`
@@ -173,8 +173,8 @@ Done criteria:
 
 ## Phase 1 — Repos and git actions (SPEC 6.2)
 
-- [ ] `P1.01` Git `execFile` wrapper (cwd, timeout, output capture) + typed errors
-- [ ] `P1.02` Parsers: `status --porcelain=v2 --branch`, `rev-list --left-right --count`, `stash list`
+- [x] `P1.01` Git `execFile` wrapper (cwd, timeout, output capture) + typed errors — `src/main/services/git/{exec,errors}.ts`: `GitRunner` (arg arrays, LC_ALL=C, prompts off, streaming, command log, destructive-command guard), 9 error kinds
+- [x] `P1.02` Parsers: `status --porcelain=v2 --branch`, `rev-list --left-right --count`, `stash list` — `git/parse.ts` (+ `remote -v`); fixtures in `tests/unit/git-parse.test.ts`, real output in `tests/integration/git-runner.test.ts`
 - [ ] `P1.03` Repo registry: folder picker, validate, detect remotes + base branch, edit settings
 - [ ] `P1.04` Status polling (focus, 2 min, `.git/HEAD` watcher) in Repos + Today
 - [ ] `P1.05` Action framework: commands disclosure, streamed activity log, result toast
@@ -187,10 +187,30 @@ Done criteria:
 - [ ] `P1.12` Dev server manager: spawn, URL/port detect, log panel, Stop, tree kill (win `taskkill /T`, mac pgroup)
 - [ ] `P1.13` Baseline integration (`scripts/baseline.mjs`)
 
+### Sub-phases (pause points)
+
+- [x] **P1-A — Git core** (done 2026-10-22). Evidence: `npm run lint` exit 0; `npm test` → 13 files,
+  221 passed (new: `git-parse` + `git-branches` unit, `tests/integration/git-runner` 10 against
+  real temp repos — status/stash/rev-list parsing on real output, streaming, and each typed error
+  produced by real git: not-a-repo, git missing, dirty tree (merge would overwrite), conflict,
+  non-fast-forward push, auth (local HTTP 401 with prompts disabled, returns in < 10 s), timeout;
+  deleted repo folder, user colour config ignored; unsafe command refused without spawning).
+  `code-review` run; guard hardened (global options, aliases, abbreviated flags, mirror/prune,
+  path checkouts, restore, branch overwrite), fixes applied. Files: `src/main/services/git/{exec,errors,parse,branches}.ts`, `tests/fixtures/git-repos.ts`.
+- [ ] **P1-B — Repos & actions (main)**: settings schema for repos + git prefs, repo registry
+  (validate, remotes, base detection), status service, actions (fetch all, sync base, update my
+  branch + stash & continue + conflict/abort, sync fork, new branch, push with protected check,
+  open in VS Code/terminal/file manager), IPC channels, integration tests for every `P1.D1` case,
+  command-log grep (`P1.D4`).
+- [ ] **P1-C — Renderer**: Repos view, Today repo status, action UI (commands disclosure, streamed
+  activity log, result toast, conflict view), polling on focus / 2 min / `.git/HEAD` watcher,
+  screenshots of Update → conflict → Abort (`P1.D5`).
+- [ ] **P1-D — Dev server & baseline**: manager, port detection, log panel, tree kill, e2e (`P1.D3`).
+
 Done criteria:
 
 - [ ] `P1.D1` Integration tests with temp repos: non-ff refusal, dirty-tree + Stash round trip, merge conflict abort, rebase conflict abort, protected push rejected, sync-fork e2e — Evidence:
-- [ ] `P1.D2` Branch slug unit tests (unicode, punctuation, max length, collisions) — Evidence:
+- [x] `P1.D2` Branch slug unit tests (unicode, punctuation, max length, collisions) — Evidence: `tests/unit/git-branches.test.ts` (accents/CJK/emoji, punctuation, ≤50 at word boundary, over-long word, `-2/-3` case-insensitive collisions, valid ref names, protected patterns)
 - [ ] `P1.D3` Dev server e2e: start fixture, detect port, stop, port free — Evidence:
 - [ ] `P1.D4` Command-log grep test: no `push --force` / `reset --hard` — Evidence:
 - [ ] `P1.D5` Recording/screenshots: Update my branch → conflict → Abort — Evidence:
@@ -301,3 +321,4 @@ Done criteria:
 | 2026-10-22 | P0-B  | index.ts lifecycle/single-instance/close-to-tray, handlers.ts for every channel, tray, main + palette windows, real safeStorage/globalShortcut/Notification/net.fetch adapters, e2e hook, placeholder renderer pages. `npm run dev` boots; built-app smoke via Playwright passes; 76 unit tests green; lint clean. code-review run → fixed shortcut-conflict bypass via settings:update, stale tray after pause expiry, unhandled openExternal rejection. DECISIONS.md started. | P0-C: `P0.13` tokens + themes |
 | 2026-10-22 | P0-C  | Tokens/themes CSS (Slate muted fixed after contrast check), design-system components, nav rail + empty states, full Settings page (appearance, demo, general, notifications + history, credentials, links, import/export, danger zone incl. Clear all data), Cmd/Ctrl+K palette + palette window, contrast + palette unit tests (108 total). Verified in built app across 5 themes; code-review run and fixes applied (error Details in toasts, failed token save kept input, aria-keyshortcuts, confirmation on clear history, etc.). | P0-D: `P0.20` e2e |
 | 2026-10-22 | P0-D  | Playwright e2e (security 6, app 5, opt-in screenshots) — found and fixed a P0-A bug: settings patch schema filled defaults so each change reset sibling fields (regression tests added). Dependency/decision tables in DECISIONS.md, GitHub Actions matrix, Today screenshots. Test mode gated to unpackaged builds. arm64 dmg built + packaged app verified; x64 dmg blocked by local network timeout. code-review run, fixes applied (stronger secret/navigation/shortcut assertions, profile cleanup, opt-in screenshots). | Push, read CI, close Phase 0 → user review |
+| 2026-10-22 | P1-A  | User approved moving on. Git core: GitRunner (execFile, typed errors, command log, destructive-command guard), porcelain v2 / rev-list / stash / remote parsers, slug + template + collisions + protected patterns; temp-repo fixture; 69 unit + 10 integration tests. CI run #1: macOS all green (incl. dist); Windows failed 1 e2e (EBUSY on locked Chromium cache) → fixed, run #2 pending. | P1-B |
