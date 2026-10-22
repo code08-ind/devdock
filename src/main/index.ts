@@ -6,6 +6,7 @@ import { join } from 'node:path'
 import {
   app,
   BrowserWindow,
+  dialog,
   globalShortcut,
   net,
   Notification,
@@ -18,6 +19,10 @@ import type { EventPayload } from '@shared/ipc'
 import type { Settings } from '@shared/settings'
 import { demoHandlers } from './demo/handlers'
 import { createHandlers } from './handlers'
+import { GitActions } from './services/git/actions'
+import { GitRunner } from './services/git/exec'
+import { editorCommand, editorFallback, launchDetached, terminalCommand } from './services/open'
+import { RepoService } from './services/repos'
 import { registerIpc } from './ipc/registry'
 import { checkExternalUrl, installSecurity, isAppUrl } from './security'
 import { DemoHttpClient, RealHttpClient, SwitchingHttpClient } from './services/http'
@@ -161,6 +166,9 @@ function start(): void {
     new DemoHttpClient(demoHandlers()),
   )
 
+  const git = new GitRunner()
+  const repos = new RepoService(store, git)
+
   registerIpc(
     createHandlers({
       settings: store,
@@ -183,6 +191,37 @@ function start(): void {
       openPalette,
       closePalette: () => paletteWindow?.hide(),
       quit,
+      repos,
+      git,
+      actions: new GitActions(git),
+      pickFolder: async () => {
+        const opts = { title: 'Add a git repository', properties: ['openDirectory' as const] }
+        const result = mainWindow
+          ? await dialog.showOpenDialog(mainWindow, opts)
+          : await dialog.showOpenDialog(opts)
+        return result.canceled ? null : (result.filePaths[0] ?? null)
+      },
+      openRepo: async (repo, target) => {
+        if (target === 'files') {
+          const error = await shell.openPath(repo.path)
+          if (error) throw new Error(error)
+        } else if (target === 'terminal') {
+          await launchDetached(terminalCommand(repo.path, process.platform))
+        } else {
+          const cmd = editorCommand(store.get().git.editorPath, repo.path, process.platform)
+          const fallback = editorFallback(repo.path, process.platform)
+          // Finder-launched apps don't get the shell PATH where `code` usually lives.
+          await launchDetached(cmd).catch((err) => {
+            if (!fallback) throw err
+            return launchDetached(fallback)
+          })
+        }
+      },
+      emitOutput: (event) => {
+        // The window may close while git is still running.
+        if (mainWindow && !mainWindow.isDestroyed())
+          mainWindow.webContents.send('repos:output', event)
+      },
     }),
     isTrustedSender,
   )

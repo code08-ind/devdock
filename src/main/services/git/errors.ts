@@ -8,6 +8,8 @@ export const GIT_ERROR_KINDS = [
   'auth',
   'timeout',
   'unsafe',
+  /** DevDock refused before running git (wrong branch, missing remote, busy repo…). */
+  'precondition',
   'failed',
 ] as const
 export type GitErrorKind = (typeof GIT_ERROR_KINDS)[number]
@@ -35,6 +37,7 @@ const MESSAGES: Record<GitErrorKind, string> = {
   auth: 'Git could not authenticate with the remote. Check your git credential helper or SSH key.',
   timeout: 'Git took too long and was stopped.',
   unsafe: 'DevDock refused to run a destructive git command.',
+  precondition: 'DevDock did not start this action.',
   failed: 'Git reported an error.',
 }
 

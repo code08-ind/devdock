@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { isAllowedEditorPath, isValidBranchName } from './gitref'
 
 export const SETTINGS_VERSION = 1
 
@@ -17,6 +18,42 @@ export type Theme = (typeof THEMES)[number]
 export type FontSize = (typeof FONT_SIZES)[number]
 export type Density = (typeof DENSITIES)[number]
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number]
+
+export const UPDATE_STRATEGIES = ['merge', 'rebase'] as const
+export type UpdateStrategy = (typeof UPDATE_STRATEGIES)[number]
+
+/** SPEC 6.2 defaults. */
+export const DEFAULT_PROTECTED = ['main', 'master', 'develop', 'release/*'] as const
+export const DEFAULT_TEMPLATES = { feature: 'feature/{KEY}-{slug}', bugfix: 'bugfix/{KEY}-{slug}' }
+
+const template = z
+  .string()
+  .trim()
+  .min(1)
+  .max(100)
+  .refine((t) => t.includes('{slug}') || t.includes('{KEY}'), 'Use {KEY} and/or {slug}')
+
+/** Editable repo fields, without defaults (shared by the stored config and repo patches). */
+export const RepoFields = {
+  name: z.string().trim().min(1).max(100),
+  // Reaches git as an argument: must be a real branch name, never an option like --upload-pack.
+  baseBranch: z.string().trim().refine(isValidBranchName, 'Not a valid branch name'),
+  protectedPatterns: z.array(z.string().trim().min(1).max(200)),
+  branchTemplates: z.object({ feature: template, bugfix: template }),
+  devCommand: z.string().trim().max(500),
+}
+
+/** One registered local repo. Managed through the repos:* IPC channels, not settings:update. */
+export const RepoConfigSchema = z.object({
+  id: z.string().min(1),
+  path: z.string().min(1),
+  name: RepoFields.name,
+  baseBranch: RepoFields.baseBranch,
+  protectedPatterns: RepoFields.protectedPatterns.default(() => [...DEFAULT_PROTECTED]),
+  branchTemplates: RepoFields.branchTemplates.default(() => ({ ...DEFAULT_TEMPLATES })),
+  devCommand: RepoFields.devCommand.default('npm run dev'),
+})
+export type RepoConfig = z.infer<typeof RepoConfigSchema>
 
 const hhmm = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Use HH:MM (24h)')
 const host = z
@@ -84,6 +121,20 @@ export const SettingsSchema = z.object({
       briefLocation: z.enum(['repo', 'appData']).default('repo'),
     })
     .prefault({}),
+  git: z
+    .object({
+      /** "Update my branch" strategy (SPEC 6.2: the user's saved default). */
+      updateStrategy: z.enum(UPDATE_STRATEGIES).default('merge'),
+      /** VS Code binary (`code`, or a full path when it's not on PATH). */
+      editorPath: z
+        .string()
+        .trim()
+        .max(1000)
+        .refine(isAllowedEditorPath, 'Use the path to code, code-insiders, codium or cursor')
+        .default('code'),
+    })
+    .prefault({}),
+  repos: z.array(RepoConfigSchema).default([]),
 })
 
 export type Settings = z.infer<typeof SettingsSchema>
@@ -121,6 +172,7 @@ export const SettingsPatchSchema = z.object({
   polling: patchOf(SettingsSchema.shape.polling),
   links: patchOf(SettingsSchema.shape.links),
   features: patchOf(SettingsSchema.shape.features),
+  git: patchOf(SettingsSchema.shape.git),
 })
 
 export type SettingsPatch = z.infer<typeof SettingsPatchSchema>

@@ -63,19 +63,19 @@ export function makeRepos(opts: { upstream?: boolean; base?: string } = {}): Rep
   const seed = join(root, 'seed')
   git(root, 'init', '-q', seed)
   commit(seed, 'README.md', '# app\n', 'initial')
-  git(seed, 'branch', base)
+  if (base !== 'main') git(seed, 'branch', base)
 
   const origin = join(root, 'origin.git')
   let upstream: string | undefined
   if (opts.upstream) {
     upstream = join(root, 'upstream.git')
     git(root, 'init', '-q', '--bare', upstream)
-    git(seed, 'push', '-q', upstream, 'main', base)
+    git(seed, 'push', '-q', upstream, ...new Set(['main', base]))
     // origin is the user's fork of upstream.
     git(root, 'clone', '-q', '--bare', upstream, origin)
   } else {
     git(root, 'init', '-q', '--bare', origin)
-    git(seed, 'push', '-q', origin, 'main', base)
+    git(seed, 'push', '-q', origin, ...new Set(['main', base]))
   }
   // Point the bare origin's HEAD at base, like a team whose default branch is develop.
   git(origin, 'symbolic-ref', 'HEAD', `refs/heads/${base}`)

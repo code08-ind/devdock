@@ -29,6 +29,15 @@ export const INVOKE_CHANNELS = [
   'palette:open',
   'palette:close',
   'demo:ping',
+  'repos:list',
+  'repos:pickFolder',
+  'repos:add',
+  'repos:remove',
+  'repos:update',
+  'repos:status',
+  'repos:plan',
+  'repos:run',
+  'repos:open',
 ] as const
 
 /** Events pushed from main to renderer. */
@@ -37,6 +46,7 @@ export const EVENT_CHANNELS = [
   'notifications:changed',
   'nav:goto',
   'palette:shown',
+  'repos:output',
 ] as const
 
 export type InvokeChannel = (typeof INVOKE_CHANNELS)[number]

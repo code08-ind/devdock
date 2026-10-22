@@ -73,18 +73,9 @@ export function uniqueBranchName(
   }
 }
 
-/** Valid per `git check-ref-format --branch`, for names we generate or accept. */
-export function isValidBranchName(name: string): boolean {
-  if (!name || name.length > 200) return false
-  if (/^[-/.]/.test(name) || name.endsWith('/') || name.endsWith('.')) {
-    return false
-  }
-  if ([...name].some((c) => c.charCodeAt(0) <= 0x20 || c.charCodeAt(0) === 0x7f)) return false
-  if (/\.\.|@\{|\/\/|\/\.|\.lock(\/|$)|[~^:?*[\\]/.test(name)) return false
-  return name !== '@'
-}
+export { isValidBranchName } from '@shared/gitref'
 
-export const DEFAULT_PROTECTED = ['main', 'master', 'develop', 'release/*'] as const
+export { DEFAULT_PROTECTED } from '@shared/settings'
 
 function globToRegExp(glob: string): RegExp {
   const body = glob

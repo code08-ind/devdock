@@ -15,7 +15,7 @@ Contract docs: `docs/SPEC.md`, `docs/UI-THEMES.md`, `docs/BUILD-PROMPTS.md` (pha
 | Field        | Value                                                         |
 | ------------ | ------------------------------------------------------------- |
 | Phase        | P1 — Repos and git actions (Phase 0 closed: all Done criteria met) |
-| Next step    | Sub-phase **P1-B** — settings schema for repos, then repo registry (`P1.03`) |
+| Next step    | Sub-phase **P1-C** — renderer: Repos view, Today repo status, action UI (`P1.04`, `P1.05`) |
 | Blockers     | None                                                          |
 | Last updated | 2026-10-22                                                    |
 
@@ -175,15 +175,15 @@ Done criteria:
 
 - [x] `P1.01` Git `execFile` wrapper (cwd, timeout, output capture) + typed errors — `src/main/services/git/{exec,errors}.ts`: `GitRunner` (arg arrays, LC_ALL=C, prompts off, streaming, command log, destructive-command guard), 9 error kinds
 - [x] `P1.02` Parsers: `status --porcelain=v2 --branch`, `rev-list --left-right --count`, `stash list` — `git/parse.ts` (+ `remote -v`); fixtures in `tests/unit/git-parse.test.ts`, real output in `tests/integration/git-runner.test.ts`
-- [ ] `P1.03` Repo registry: folder picker, validate, detect remotes + base branch, edit settings
+- [x] `P1.03` Repo registry: folder picker, validate, detect remotes + base branch, edit settings — main/IPC: `RepoService` + `repos:pickFolder/add/update/remove/list`; settings UI is P1-C
 - [ ] `P1.04` Status polling (focus, 2 min, `.git/HEAD` watcher) in Repos + Today
 - [ ] `P1.05` Action framework: commands disclosure, streamed activity log, result toast
-- [ ] `P1.06` Fetch all + Sync base (ff without checkout when safe)
-- [ ] `P1.07` Update my branch (merge/rebase, Stash & continue, conflict view, Abort)
-- [ ] `P1.08` Sync fork (upstream; push confirmed; never force)
-- [ ] `P1.09` New branch from template + slug function
-- [ ] `P1.10` Push branch (protected patterns blocked in handler)
-- [ ] `P1.11` Open in VS Code / terminal / file manager
+- [x] `P1.06` Fetch all + Sync base (ff without checkout when safe) — main/IPC; UI is P1-C
+- [x] `P1.07` Update my branch (merge/rebase, Stash & continue, conflict view, Abort) — main/IPC (conflict outcome + abort); conflict view UI is P1-C
+- [x] `P1.08` Sync fork (upstream; push confirmed; never force) — main/IPC
+- [x] `P1.09` New branch from template + slug function
+- [x] `P1.10` Push branch (protected patterns blocked in handler)
+- [~] `P1.11` Open in VS Code / terminal / file manager — main/IPC + command unit tests; not yet clicked from UI (P1-C)
 - [ ] `P1.12` Dev server manager: spawn, URL/port detect, log panel, Stop, tree kill (win `taskkill /T`, mac pgroup)
 - [ ] `P1.13` Baseline integration (`scripts/baseline.mjs`)
 
@@ -197,7 +197,12 @@ Done criteria:
   deleted repo folder, user colour config ignored; unsafe command refused without spawning).
   `code-review` run; guard hardened (global options, aliases, abbreviated flags, mirror/prune,
   path checkouts, restore, branch overwrite), fixes applied. Files: `src/main/services/git/{exec,errors,parse,branches}.ts`, `tests/fixtures/git-repos.ts`.
-- [ ] **P1-B — Repos & actions (main)**: settings schema for repos + git prefs, repo registry
+- [x] **P1-B — Repos & actions (main)** (done 2026-10-22). Evidence: `npm run lint` exit 0; `npm test` →
+  16 files, 260 passed; `npm run e2e` → 11 passed, 1 skipped. `code-review` run; fixes: option injection
+  via base branch, editor path allow-list, Windows cmd.exe quoting (folder as cwd), stash restored after
+  non-conflict failures, pushBase needs upstream, per-repo lock, abort pops only DevDock's stash (by
+  commit id), plan/run share checks, closed-window events; mutation-checked protected push + stash
+  restore. **Note for P1-C:** pass `settings.git.updateStrategy` as the default strategy. Scope was: settings schema for repos + git prefs, repo registry
   (validate, remotes, base detection), status service, actions (fetch all, sync base, update my
   branch + stash & continue + conflict/abort, sync fork, new branch, push with protected check,
   open in VS Code/terminal/file manager), IPC channels, integration tests for every `P1.D1` case,
@@ -209,10 +214,10 @@ Done criteria:
 
 Done criteria:
 
-- [ ] `P1.D1` Integration tests with temp repos: non-ff refusal, dirty-tree + Stash round trip, merge conflict abort, rebase conflict abort, protected push rejected, sync-fork e2e — Evidence:
+- [x] `P1.D1` Integration tests with temp repos: non-ff refusal, dirty-tree + Stash round trip, merge conflict abort, rebase conflict abort, protected push rejected, sync-fork e2e — Evidence: `tests/integration/git-actions.test.ts` (25) + `repos-ipc.test.ts` (10): each case asserts the outcome **and** repo state (HEAD/refs unchanged, files restored, stash list empty, origin untouched, no push in the command log); protected push rejected through the IPC handler → `NOT_ALLOWED`
 - [x] `P1.D2` Branch slug unit tests (unicode, punctuation, max length, collisions) — Evidence: `tests/unit/git-branches.test.ts` (accents/CJK/emoji, punctuation, ≤50 at word boundary, over-long word, `-2/-3` case-insensitive collisions, valid ref names, protected patterns)
 - [ ] `P1.D3` Dev server e2e: start fixture, detect port, stop, port free — Evidence:
-- [ ] `P1.D4` Command-log grep test: no `push --force` / `reset --hard` — Evidence:
+- [x] `P1.D4` Command-log grep test: no `push --force` / `reset --hard` — Evidence: `afterAll` in `git-actions.test.ts` and `repos-ipc.test.ts` checks every logged command with `unsafeReason` + regex; the guard itself refuses them before spawning (unit-tested, incl. global options/aliases/abbreviations)
 - [ ] `P1.D5` Recording/screenshots: Update my branch → conflict → Abort — Evidence:
 
 ---
@@ -322,3 +327,4 @@ Done criteria:
 | 2026-10-22 | P0-C  | Tokens/themes CSS (Slate muted fixed after contrast check), design-system components, nav rail + empty states, full Settings page (appearance, demo, general, notifications + history, credentials, links, import/export, danger zone incl. Clear all data), Cmd/Ctrl+K palette + palette window, contrast + palette unit tests (108 total). Verified in built app across 5 themes; code-review run and fixes applied (error Details in toasts, failed token save kept input, aria-keyshortcuts, confirmation on clear history, etc.). | P0-D: `P0.20` e2e |
 | 2026-10-22 | P0-D  | Playwright e2e (security 6, app 5, opt-in screenshots) — found and fixed a P0-A bug: settings patch schema filled defaults so each change reset sibling fields (regression tests added). Dependency/decision tables in DECISIONS.md, GitHub Actions matrix, Today screenshots. Test mode gated to unpackaged builds. arm64 dmg built + packaged app verified; x64 dmg blocked by local network timeout. code-review run, fixes applied (stronger secret/navigation/shortcut assertions, profile cleanup, opt-in screenshots). | Push, read CI, close Phase 0 → user review |
 | 2026-10-22 | P1-A  | User approved moving on. Git core: GitRunner (execFile, typed errors, command log, destructive-command guard), porcelain v2 / rev-list / stash / remote parsers, slug + template + collisions + protected patterns; temp-repo fixture; 69 unit + 10 integration tests. CI run #1: macOS all green (incl. dist); Windows failed 1 e2e (EBUSY on locked Chromium cache) → fixed, run #2 pending. | P1-B |
+| 2026-10-22 | P1-B  | Settings `repos` + `git`; RepoService (add/validate/detect base, symlink-safe duplicates); repoStatus; GitActions (fetch all, sync base, update branch merge/rebase + stash & continue + conflict outcome + abort, sync fork + confirmed pushBase, new branch, push branch with protected block), shared plan/run checks, per-repo lock; repos:* IPC + git error codes; open in editor/terminal/files. 35 action/IPC integration tests on real repos; code-review fixes (injection, Windows quoting, stash safety). | P1-C |

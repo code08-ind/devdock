@@ -1,0 +1,97 @@
+import { mkdtempSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { vi, type Mock } from 'vitest'
+import type { HandlerDeps } from '../../src/main/handlers'
+import type { HandlerMap } from '../../src/main/ipc/registry'
+import type { GitRunner } from '../../src/main/services/git/exec'
+import type { RepoOutputEvent } from '../../src/shared/repos'
+
+/** HandlerDeps with the Electron adapters exposed as mocks, so tests can stub and inspect them. */
+export type TestDeps = HandlerDeps & {
+  openExternal: Mock<(url: string) => Promise<void>>
+  openPath: Mock<(path: string) => Promise<string>>
+  pickFolder: Mock<() => Promise<string | null>>
+  openRepo: Mock<HandlerDeps['openRepo']>
+  emitOutput: Mock<(e: RepoOutputEvent) => void>
+}
+
+export interface HandlerSetup {
+  deps: TestDeps
+  handlers: HandlerMap
+  output: RepoOutputEvent[]
+  git: GitRunner
+}
+
+/**
+ * Real services in a temp folder + fakes for Electron-only adapters. Import after
+ * `vi.mock('electron', …)` in the test file (it loads main-process modules dynamically).
+ */
+export async function handlerSetup(
+  opts: { encryption?: boolean; registerOk?: boolean } = {},
+): Promise<HandlerSetup> {
+  const { createHandlers } = await import('../../src/main/handlers')
+  const { SettingsStore } = await import('../../src/main/services/settings')
+  const { SecretStore } = await import('../../src/main/services/secrets')
+  const { NotificationService } = await import('../../src/main/services/notifications')
+  const { ShortcutService } = await import('../../src/main/services/shortcut')
+  const { DemoHttpClient } = await import('../../src/main/services/http')
+  const { demoHandlers } = await import('../../src/main/demo/handlers')
+  const { GitRunner } = await import('../../src/main/services/git/exec')
+  const { GitActions } = await import('../../src/main/services/git/actions')
+  const { RepoService } = await import('../../src/main/services/repos')
+
+  const dir = mkdtempSync(join(tmpdir(), 'devdock-handlers-'))
+  const settings = new SettingsStore(join(dir, 'settings.json'))
+  const secrets = new SecretStore(
+    join(dir, 'secrets.bin'),
+    {
+      isEncryptionAvailable: () => opts.encryption ?? true,
+      encryptString: (s) => Buffer.from(s).reverse(),
+      decryptString: (b) => Buffer.from(b).reverse().toString(),
+    },
+    'darwin',
+  )
+  const notifications = new NotificationService({
+    file: join(dir, 'notifications.json'),
+    getPrefs: () => settings.get().notifications,
+    native: { show: vi.fn() },
+    onClick: vi.fn(),
+  })
+  const shortcut = new ShortcutService(
+    { register: () => opts.registerOk ?? true, unregister: vi.fn(), isRegistered: () => false },
+    vi.fn(),
+    'darwin',
+  )
+  const git = new GitRunner()
+  const output: RepoOutputEvent[] = []
+  const deps: TestDeps = {
+    settings,
+    secrets,
+    notifications,
+    shortcut,
+    http: new DemoHttpClient(demoHandlers()),
+    logsDir: join(dir, 'logs'),
+    versions: () => ({
+      version: '0.0.0',
+      electron: '1',
+      chrome: '1',
+      node: '1',
+      platform: 'darwin',
+      arch: 'arm64',
+    }),
+    openExternal: vi.fn(async (_url: string) => undefined),
+    openPath: vi.fn(async (_path: string) => ''),
+    showView: vi.fn(),
+    openPalette: vi.fn(),
+    closePalette: vi.fn(),
+    quit: vi.fn(),
+    repos: new RepoService(settings, git),
+    git,
+    actions: new GitActions(git),
+    pickFolder: vi.fn(async () => null as string | null),
+    openRepo: vi.fn<HandlerDeps['openRepo']>(async () => undefined),
+    emitOutput: vi.fn((e: RepoOutputEvent) => void output.push(e)),
+  }
+  return { deps, handlers: createHandlers(deps), output, git }
+}

@@ -1,7 +1,21 @@
 import { z } from 'zod'
 import type { EventChannel, InvokeChannel } from './channels'
 import { VIEWS } from './channels'
-import { NOTIFICATION_TYPES, SettingsPatchSchema, SettingsSchema } from './settings'
+import {
+  ActionOutcomeSchema,
+  ActionRequestSchema,
+  OPEN_TARGETS,
+  PlannedCommandSchema,
+  RepoPatchSchema,
+  RepoStatusSchema,
+  type RepoOutputEvent,
+} from './repos'
+import {
+  NOTIFICATION_TYPES,
+  RepoConfigSchema,
+  SettingsPatchSchema,
+  SettingsSchema,
+} from './settings'
 
 const none = z.undefined()
 
@@ -88,6 +102,31 @@ export const contract = {
     req: none,
     res: z.object({ status: z.number(), body: z.string(), demo: z.boolean() }),
   },
+
+  'repos:list': { req: none, res: z.array(RepoConfigSchema) },
+  /** Native folder picker; null when cancelled. */
+  'repos:pickFolder': { req: none, res: z.string().nullable() },
+  'repos:add': { req: z.object({ path: z.string().min(1).max(4096) }), res: RepoConfigSchema },
+  'repos:remove': { req: z.object({ id: z.string() }), res: none },
+  'repos:update': {
+    req: z.object({ id: z.string(), patch: RepoPatchSchema }),
+    res: RepoConfigSchema,
+  },
+  'repos:status': { req: z.object({ id: z.string() }), res: RepoStatusSchema },
+  'repos:plan': {
+    req: z.object({ id: z.string(), request: ActionRequestSchema }),
+    res: z.array(PlannedCommandSchema),
+  },
+  'repos:run': {
+    req: z.object({
+      id: z.string(),
+      /** Chosen by the renderer; tags the streamed `repos:output` events. */
+      runId: z.string().min(1).max(100),
+      request: ActionRequestSchema,
+    }),
+    res: ActionOutcomeSchema,
+  },
+  'repos:open': { req: z.object({ id: z.string(), target: z.enum(OPEN_TARGETS) }), res: none },
 } satisfies Record<InvokeChannel, { req: z.ZodType; res: z.ZodType }>
 
 export type Contract = typeof contract
@@ -102,6 +141,16 @@ export const ERROR_CODES = [
   'SECRETS_UNAVAILABLE',
   'NOT_FOUND',
   'INTERNAL',
+  // Git failures (services/git/errors.ts kinds).
+  'GIT_MISSING',
+  'NOT_A_REPO',
+  'DIRTY_TREE',
+  'CONFLICT',
+  'NON_FAST_FORWARD',
+  'AUTH_FAILED',
+  'TIMEOUT',
+  'GIT_FAILED',
+  'PRECONDITION_FAILED',
 ] as const
 export type ErrorCode = (typeof ERROR_CODES)[number]
 
@@ -118,5 +167,6 @@ export interface EventPayloads {
   'notifications:changed': null
   'nav:goto': (typeof VIEWS)[number]
   'palette:shown': null
+  'repos:output': RepoOutputEvent
 }
 export type EventPayload<E extends EventChannel> = EventPayloads[E]

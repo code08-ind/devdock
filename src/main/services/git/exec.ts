@@ -174,6 +174,8 @@ export class GitRunner {
             LC_ALL: 'C',
             LANG: 'C',
             GIT_TERMINAL_PROMPT: '0',
+            // Read-only commands (status) must not take locks the user's own git might need.
+            GIT_OPTIONAL_LOCKS: '0',
             GIT_ASKPASS: '',
             SSH_ASKPASS: '',
             GIT_EDITOR: 'true',
