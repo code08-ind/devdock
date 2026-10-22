@@ -88,24 +88,39 @@ export const SettingsSchema = z.object({
 
 export type Settings = z.infer<typeof SettingsSchema>
 
+/**
+ * Optional, default-free copy of a settings section. `.partial()` alone is not enough: zod
+ * still applies inner `.default()`s, so `{ theme: 'dark' }` would parse to a full section and
+ * silently reset its other fields.
+ */
+function patchOf<T extends z.ZodRawShape>(section: z.ZodPrefault<z.ZodObject<T>>) {
+  const object = section.unwrap()
+  const shape = Object.fromEntries(
+    Object.entries(object.shape).map(([key, field]) => {
+      const bare = (field instanceof z.ZodDefault ? field.unwrap() : field) as z.ZodType
+      return [key, bare.optional()]
+    }),
+  )
+  // Same static type as `.partial()`; only the runtime defaults are gone.
+  return (z.object(shape) as unknown as ReturnType<typeof object.partial>).optional()
+}
+
+const notificationsShape = SettingsSchema.shape.notifications.unwrap().shape
+
 /** Deep-partial patch accepted by settings:update. Arrays and records are replaced whole. */
 export const SettingsPatchSchema = z.object({
-  appearance: SettingsSchema.shape.appearance.unwrap().partial().optional(),
+  appearance: patchOf(SettingsSchema.shape.appearance),
   notifications: z
     .object({
       types: z.partialRecord(z.enum(NOTIFICATION_TYPES), z.boolean()).optional(),
-      quietHours: SettingsSchema.shape.notifications
-        .unwrap()
-        .shape.quietHours.unwrap()
-        .partial()
-        .optional(),
+      quietHours: patchOf(notificationsShape.quietHours),
       sound: z.boolean().optional(),
     })
     .optional(),
-  general: SettingsSchema.shape.general.unwrap().partial().optional(),
-  polling: SettingsSchema.shape.polling.unwrap().partial().optional(),
-  links: SettingsSchema.shape.links.unwrap().partial().optional(),
-  features: SettingsSchema.shape.features.unwrap().partial().optional(),
+  general: patchOf(SettingsSchema.shape.general),
+  polling: patchOf(SettingsSchema.shape.polling),
+  links: patchOf(SettingsSchema.shape.links),
+  features: patchOf(SettingsSchema.shape.features),
 })
 
 export type SettingsPatch = z.infer<typeof SettingsPatchSchema>

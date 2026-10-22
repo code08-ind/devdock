@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    // e2e code runs in Node *and* (inside evaluate callbacks) in the renderer.
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "types": ["node"]
+  },
+  "include": ["tests/e2e/**/*", "src/renderer/env.d.ts", "src/shared/**/*"]
+}

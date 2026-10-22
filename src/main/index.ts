@@ -29,7 +29,8 @@ import { ShortcutService } from './services/shortcut'
 import { createTray, type TrayHandle } from './tray'
 import { createMainWindow, createPaletteWindow, DEV_RENDERER_URL, showPalette } from './windows'
 
-const E2E = process.env.DEVDOCK_E2E === '1'
+// Test-only switches. Ignored in packaged builds, so a shipped app can't be put in test mode.
+const E2E = !app.isPackaged && process.env.DEVDOCK_E2E === '1'
 // e2e runs each test against a throwaway profile. Only honoured in e2e mode.
 if (E2E && process.env.DEVDOCK_USER_DATA) app.setPath('userData', process.env.DEVDOCK_USER_DATA)
 

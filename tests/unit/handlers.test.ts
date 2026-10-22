@@ -129,6 +129,17 @@ describe('handlers', () => {
     expect(r).toMatchObject({ ok: false, error: { code: 'INTERNAL' } })
   })
 
+  it('settings:update changes only the fields sent (through payload validation)', async () => {
+    const { deps, handlers } = setup()
+    await dispatch('settings:update', { general: { closeToTray: false } }, handlers)
+    await dispatch('settings:update', { appearance: { theme: 'dark' } }, handlers)
+    await dispatch('settings:update', { appearance: { fontSize: 18 } }, handlers)
+    await dispatch('settings:update', { general: { demoMode: false } }, handlers)
+    const s = deps.settings.get()
+    expect(s.appearance).toMatchObject({ theme: 'dark', fontSize: 18 })
+    expect(s.general).toMatchObject({ closeToTray: false, demoMode: false })
+  })
+
   it('answers demo:ping from fixtures', async () => {
     const { handlers } = setup()
     expect(await dispatch('demo:ping', undefined, handlers)).toEqual({

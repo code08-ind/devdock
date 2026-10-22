@@ -15,7 +15,7 @@ Contract docs: `docs/SPEC.md`, `docs/UI-THEMES.md`, `docs/BUILD-PROMPTS.md` (pha
 | Field        | Value                                                         |
 | ------------ | ------------------------------------------------------------- |
 | Phase        | P0 — Scaffold, security baseline, shell, settings, secrets, demo |
-| Next step    | Sub-phase **P0-D** — start at `P0.20` (Playwright e2e)          |
+| Next step    | Push P0-D, read the first CI run (macOS + Windows), record it in `P0.22`/`P0.D2`; then **stop for user review of Phase 0** |
 | Blockers     | None                                                          |
 | Last updated | 2026-10-22                                                    |
 
@@ -68,13 +68,19 @@ Steps:
 - [x] `P0.16` Settings page (theme, font, density, demo mode, secrets, logs folder, notifications, shortcut)
 - [x] `P0.17` Cmd/Ctrl+K command palette component
 - [x] `P0.18` Contrast unit test (all themes, per UI-THEMES.md) — `tests/unit/contrast.test.ts`, 22 tests; Slate muted adjusted
-- [~] `P0.19` Unit tests: redaction, `openExternal` guard, settings migrations, secrets file bytes
-- [ ] `P0.20` e2e (Playwright `_electron`): security (no `require`/`process`, CSP blocks inline remote script, external nav blocked), each nav item, theme persists, palette via IPC test hook
-- [~] `P0.21` Packaging config: dmg arm64 + x64, NSIS per-user, portable
-- [ ] `P0.22` GitHub Actions workflow (macOS + Windows matrix: lint, test, e2e, dist)
-- [~] `P0.23` `docs/DECISIONS.md` (P0-B + P0-C decisions in; deps/pins still to add) (deps + version pins + demo-mode approach)
-- [ ] `P0.24` Run lint / test / e2e / dist and record real output here
-- [ ] `P0.25` Screenshots: Today in Light + Dark
+- [x] `P0.19` Unit tests: redaction, `openExternal` guard, settings migrations, secrets file bytes — `logger`, `security`, `settings`, `secrets` test files (+ patch-schema regression)
+- [x] `P0.20` e2e (Playwright `_electron`): security (no `require`/`process`, CSP blocks inline remote script, external nav blocked), each nav item, theme persists, palette via IPC test hook — `tests/e2e/{security,app,screenshots}.spec.ts`, 12 tests
+- [~] `P0.21` Packaging config: dmg arm64 + x64, NSIS per-user, portable — arm64 dmg built and launched here (packaged app runs from app.asar, CSP meta present, tray icons in Resources/tray); x64 dmg blocked locally by a download timeout; Windows targets only in CI
+- [~] `P0.22` GitHub Actions workflow (macOS + Windows matrix: lint, test, e2e, dist) — `.github/workflows/ci.yml` written; not yet run on GitHub
+- [x] `P0.23` `docs/DECISIONS.md` (deps + version pins + demo-mode approach) — dependency tables, P0-B/C/D decisions
+- [x] `P0.24` Run lint / test / e2e / dist and record real output here (2026-10-22, macOS arm64):
+  - `npm run lint` → exit 0 (eslint, prettier, tsc for node/web/e2e projects)
+  - `npm test` → 10 files, **111 passed**
+  - `npm run e2e` → **11 passed, 1 skipped** (opt-in screenshots); `--repeat-each=3` → 33 passed
+  - `npm run dist` → **exit 1**: `DevDock-0.1.0-arm64.dmg` (127 MB) built; x64 step failed with
+    `Timeout awaiting 'request' for 600000ms` after downloading the x64 Electron zip (retried twice,
+    same result). `electron-builder --mac dmg --arm64` alone → exit 0.
+- [x] `P0.25` Screenshots: Today in Light + Dark — `docs/screenshots/today-{light,dark}.png` (from `screenshots.spec.ts`)
 
 ### Sub-phases (pause points)
 
@@ -102,7 +108,8 @@ Steps:
   Paper, High contrast, Slate. `code-review` (Standards + Spec) run; fixes applied. Scope was: `src/renderer/index.html` + `palette.html`, tokens/themes CSS, components,
   nav rail + empty states, Settings page, Cmd/Ctrl+K palette, renderer client that unwraps
   envelopes (`src/renderer/lib/devdock.ts`), contrast test (`P0.18`).
-- [ ] **P0-D — Proof & ship**: e2e (`P0.20`), DECISIONS.md, GitHub Actions, `npm run dist`,
+- [~] **P0-D — Proof & ship** (2026-10-22): e2e, DECISIONS.md, workflow, screenshots done and verified;
+  `code-review` run, fixes applied. Open: x64 dmg + Windows packages + CI run (need push). Scope: e2e (`P0.20`), DECISIONS.md, GitHub Actions, `npm run dist`,
   screenshots, tick Done criteria.
 
 ### Notes for P0-D
@@ -156,11 +163,11 @@ Steps:
 Done criteria:
 
 - [x] `P0.D1` `npm run dev` runs on macOS — Evidence: 2026-10-22, electron-vite dev server on :5173, app log `DevDock 0.1.0 started (demo mode: true)`, no blocked/error lines
-- [ ] `P0.D2` `npm run dist` produces dmg here; Windows targets configured, CI result reported honestly — Evidence:
-- [ ] `P0.D3` Theme, font and density persist and apply live — Evidence:
-- [ ] `P0.D4` Security tests pass — Evidence:
-- [ ] `P0.D5` Secret saved via Settings not readable as plaintext in `userData` (byte test) — Evidence:
-- [ ] `P0.D6` e2e launches app, opens each nav item, switches theme, opens palette (state: shortcut or IPC hook) — Evidence:
+- [~] `P0.D2` `npm run dist` produces dmg here; Windows targets configured, CI result reported honestly — Evidence: arm64 dmg built and the packaged app launched (see `P0.24`); x64 dmg **not** built locally (network timeout); NSIS + portable configured, CI not yet run → pending first GitHub Actions run
+- [x] `P0.D3` Theme, font and density persist and apply live — Evidence: e2e "theme, font size and density apply live and persist across restarts" (Settings UI clicks → `data-theme=dark`, body 18px, compact; relaunch with same profile keeps all three). This test found the patch-schema bug (fixed, see DECISIONS.md).
+- [x] `P0.D4` Security tests pass — Evidence: `tests/e2e/security.spec.ts` 6/6 (no require/process/module; CSP blocks inline + remote script, asserted via `securitypolicyviolation` events; external navigation blocked, asserted by the main-process log line `blocked navigate: https://example.com/` and unchanged URL; window.open denied + logged, window count unchanged; openExternal rejects file:/javascript:/unlisted host; invalid payload → INVALID_PAYLOAD) + unit `security.test.ts`
+- [x] `P0.D5` Secret saved via Settings not readable as plaintext in `userData` (byte test) — Evidence: e2e "a secret saved in Settings is encrypted on disk": types the token in the Settings UI, asserts `secrets.bin` exists and is non-empty, then scans **every file under userData recursively** (incl. Chromium Local Storage/leveldb and logs) for the plain bytes; + unit `secrets.test.ts`
+- [x] `P0.D6` e2e launches app, opens each nav item, switches theme, opens palette (state: shortcut or IPC hook) — Evidence: `app.spec.ts`. In-window palette via a real Cmd/Ctrl+K keypress. Palette **window via the IPC test hook** (Playwright can't press OS global shortcuts); registration asserted `ok: true` locally (accelerator only on CI). `npx playwright test --repeat-each=3` → 33 passed, 3 skipped (opt-in screenshots).
 
 ---
 
@@ -293,3 +300,4 @@ Done criteria:
 | 2026-10-22 | P0-A  | Configs, shared IPC contract + settings schema, preload, security helpers, IPC registry, logger/settings/secrets/notifications/shortcut/http services, demo handlers, icons, 66 unit tests green, lint/typecheck clean. Paused at user request. | P0-B: `P0.04` `src/main/index.ts` |
 | 2026-10-22 | P0-B  | index.ts lifecycle/single-instance/close-to-tray, handlers.ts for every channel, tray, main + palette windows, real safeStorage/globalShortcut/Notification/net.fetch adapters, e2e hook, placeholder renderer pages. `npm run dev` boots; built-app smoke via Playwright passes; 76 unit tests green; lint clean. code-review run → fixed shortcut-conflict bypass via settings:update, stale tray after pause expiry, unhandled openExternal rejection. DECISIONS.md started. | P0-C: `P0.13` tokens + themes |
 | 2026-10-22 | P0-C  | Tokens/themes CSS (Slate muted fixed after contrast check), design-system components, nav rail + empty states, full Settings page (appearance, demo, general, notifications + history, credentials, links, import/export, danger zone incl. Clear all data), Cmd/Ctrl+K palette + palette window, contrast + palette unit tests (108 total). Verified in built app across 5 themes; code-review run and fixes applied (error Details in toasts, failed token save kept input, aria-keyshortcuts, confirmation on clear history, etc.). | P0-D: `P0.20` e2e |
+| 2026-10-22 | P0-D  | Playwright e2e (security 6, app 5, opt-in screenshots) — found and fixed a P0-A bug: settings patch schema filled defaults so each change reset sibling fields (regression tests added). Dependency/decision tables in DECISIONS.md, GitHub Actions matrix, Today screenshots. Test mode gated to unpackaged builds. arm64 dmg built + packaged app verified; x64 dmg blocked by local network timeout. code-review run, fixes applied (stronger secret/navigation/shortcut assertions, profile cleanup, opt-in screenshots). | Push, read CI, close Phase 0 → user review |

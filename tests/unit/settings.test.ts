@@ -2,7 +2,7 @@ import { existsSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } fro
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { SETTINGS_VERSION, defaultSettings } from '../../src/shared/settings'
+import { SETTINGS_VERSION, SettingsPatchSchema, defaultSettings } from '../../src/shared/settings'
 import { SettingsStore, applyPatch, migrate } from '../../src/main/services/settings'
 
 const tmp = () => join(mkdtempSync(join(tmpdir(), 'devdock-settings-')), 'settings.json')
@@ -42,6 +42,27 @@ describe('migrate', () => {
   it('rejects invalid values', () => {
     expect(migrate({ version: 1, appearance: { fontSize: 99 } }).ok).toBe(false)
     expect(migrate([]).ok).toBe(false)
+  })
+})
+
+describe('SettingsPatchSchema', () => {
+  // Regression: .partial() kept inner .default()s, so a one-field patch reset its siblings.
+  it('keeps only the fields that were sent', () => {
+    const patch = {
+      appearance: { theme: 'dark' },
+      notifications: { quietHours: { enabled: true } },
+      general: { demoMode: false },
+    }
+    expect(SettingsPatchSchema.parse(patch)).toEqual(patch)
+    expect(SettingsPatchSchema.parse({})).toEqual({})
+  })
+  it('still validates the values it gets', () => {
+    expect(SettingsPatchSchema.safeParse({ appearance: { theme: 'neon' } }).success).toBe(false)
+    expect(SettingsPatchSchema.safeParse({ appearance: { fontSize: 17 } }).success).toBe(false)
+    expect(SettingsPatchSchema.safeParse({ links: { allowedHosts: ['a b'] } }).success).toBe(false)
+    expect(
+      SettingsPatchSchema.safeParse({ notifications: { quietHours: { start: '25:00' } } }).success,
+    ).toBe(false)
   })
 })
 
