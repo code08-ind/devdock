@@ -22,6 +22,7 @@ import { createHandlers } from './handlers'
 import { GitActions } from './services/git/actions'
 import { GitRunner } from './services/git/exec'
 import { editorCommand, editorFallback, launchDetached, terminalCommand } from './services/open'
+import { RepoWatcher } from './services/repo-watcher'
 import { RepoService } from './services/repos'
 import { registerIpc } from './ipc/registry'
 import { checkExternalUrl, installSecurity, isAppUrl } from './security'
@@ -168,6 +169,8 @@ function start(): void {
 
   const git = new GitRunner()
   const repos = new RepoService(store, git)
+  const watcher = new RepoWatcher(git, (id) => broadcast('repos:changed', { id }))
+  void watcher.sync(store.get().repos)
 
   registerIpc(
     createHandlers({
@@ -217,6 +220,10 @@ function start(): void {
           })
         }
       },
+      requestRepoAction: (event) => {
+        showView('repos')
+        mainWindow?.webContents.send('repos:actionRequested', event)
+      },
       emitOutput: (event) => {
         // The window may close while git is still running.
         if (mainWindow && !mainWindow.isDestroyed())
@@ -232,6 +239,7 @@ function start(): void {
 
   store.onChange((s) => {
     broadcast('settings:changed', s)
+    void watcher.sync(s.repos)
     applyLoginItem(s)
     // settings:update/import/reset can name a shortcut that is taken or reserved. Keep the
     // working one and write it back, so the settings file never disagrees with the OS.
@@ -279,6 +287,7 @@ function start(): void {
   }
 
   app.on('will-quit', () => {
+    watcher.dispose()
     shortcut.dispose()
     tray?.destroy()
   })

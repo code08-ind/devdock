@@ -1,7 +1,7 @@
 /** One handler per IPC channel in @shared/ipc `contract`. Electron-free: adapters are injected. */
 import type { View } from '@shared/channels'
 import type { ErrorCode, Res } from '@shared/ipc'
-import type { OpenTarget, RepoOutputEvent } from '@shared/repos'
+import type { ActionRequest, OpenTarget, RepoOutputEvent } from '@shared/repos'
 import type { RepoConfig } from '@shared/settings'
 import { DEMO_ORIGIN } from './demo/handlers'
 import { IpcError, type HandlerMap } from './ipc/registry'
@@ -42,6 +42,8 @@ export interface HandlerDeps {
   openRepo: (repo: RepoConfig, target: OpenTarget) => Promise<void>
   /** Streams git output to the renderer's activity log. */
   emitOutput: (event: RepoOutputEvent) => void
+  /** Brings up the main window's action dialog (from the palette window). */
+  requestRepoAction: (event: { id: string; request: ActionRequest }) => void
 }
 
 const GIT_CODES: Record<GitErrorKind, ErrorCode> = {
@@ -155,5 +157,10 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
         ),
       ),
     'repos:open': ({ id, target }) => withGit(() => deps.openRepo(deps.repos.get(id), target)),
+    'repos:requestAction': ({ id, request }) =>
+      withGit(() => {
+        deps.repos.get(id)
+        deps.requestRepoAction({ id, request })
+      }),
   }
 }

@@ -1,14 +1,19 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { VIEWS, type View } from '@shared/channels'
+import type { ActionRequest } from '@shared/repos'
 import { useBridgeEvent, useSettings } from '../../lib/devdock'
 import { hasMod } from '../../lib/keyboard'
+import { useRepos } from '../../lib/repos'
 import { Button } from '../../ui/Button'
 import { useModal } from '../../ui/Dialog'
 import { EmptyState } from '../../ui/Feedback'
 import { CommandPalette } from '../palette/CommandPalette'
 import { VIEW_LABELS } from '../palette/commands'
 import { useCommands } from '../palette/useCommands'
+import { ActionDialog } from '../repos/ActionDialog'
+import { ReposPage } from '../repos/ReposPage'
 import { SettingsPage } from '../settings/SettingsPage'
+import { TodayPage } from '../today/TodayPage'
 import { NavRail } from './NavRail'
 import { EMPTY_COPY, VIEW_ICONS } from './views'
 
@@ -22,6 +27,8 @@ function ViewBody({
   onPalette: () => void
 }) {
   if (view === 'settings') return <SettingsPage />
+  if (view === 'repos') return <ReposPage />
+  if (view === 'today') return <TodayPage onView={onView} />
   return (
     <EmptyState
       icon={VIEW_ICONS[view]}
@@ -60,10 +67,23 @@ export function App() {
   const settings = useSettings().data
   const [view, setView] = useState<View>('today')
   const [paletteOpen, setPaletteOpen] = useState(false)
-  const commands = useCommands(setView)
+  const [requested, setRequested] = useState<{ id: string; request: ActionRequest } | null>(null)
+  const repos = useRepos()
+  const requestedRepo = requested ? repos.find((r) => r.id === requested.id) : undefined
+  const requestAction = useCallback((id: string, request: ActionRequest) => {
+    setView('repos')
+    setRequested({ id, request })
+  }, [])
+  const commands = useCommands(setView, requestAction)
   const main = useRef<HTMLElement>(null)
 
   useBridgeEvent('nav:goto', setView)
+  // From the palette window: run the action in this window's dialog.
+  const onActionRequested = useCallback(
+    ({ id, request }: { id: string; request: ActionRequest }) => requestAction(id, request),
+    [requestAction],
+  )
+  useBridgeEvent('repos:actionRequested', onActionRequested)
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -101,6 +121,14 @@ export function App() {
         </h1>
         <ViewBody view={view} onView={setView} onPalette={() => setPaletteOpen(true)} />
       </main>
+      {requested && requestedRepo ? (
+        <ActionDialog
+          key={`${requested.id}:${requested.request.action}`}
+          repo={requestedRepo}
+          initial={requested.request}
+          onClose={() => setRequested(null)}
+        />
+      ) : null}
       <PaletteOverlay open={paletteOpen} onClose={() => setPaletteOpen(false)}>
         <CommandPalette commands={commands} onClose={() => setPaletteOpen(false)} />
       </PaletteOverlay>

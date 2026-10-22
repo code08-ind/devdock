@@ -115,3 +115,14 @@ store with migrations).
 | `plan()` and `run()` share one precondition check and one command builder. | The disclosure must show what will run; plan refuses what run would refuse. |
 | `baseBranch` must pass `isValidBranchName` (no leading `-`, valid ref); generated branch names are re-validated. | Renderer-supplied values reach git as arguments: no option injection. |
 | `git.editorPath` must name a known launcher (`code`, `code-insiders`, `codium`, `vscodium`, `cursor`, optional `.cmd`/`.exe`, any folder) with no `"`, `%`, `^`. On Windows the repo folder is the child's **working directory** (`cmd.exe /d /s /c ""<editor>" ."`, `start cmd.exe`), never part of a cmd.exe command line. | The renderer must not be able to launch arbitrary programs; folder names like `R&D` must not break or inject into cmd.exe. |
+
+## P1-C — Repos UI (2026-10-22)
+
+| Decision | Why |
+| --- | --- |
+| Status refresh: React Query `refetchInterval` 2 min + refetch on focus (with `focusManager` wired to the window's `focus`/`blur`), plus main-process `fs.watch` on each repo's **git dir** for `HEAD`/`HEAD.lock` → `repos:changed` (debounced 300 ms). Watcher syncs are serialised. | SPEC 6.2. React Query's default focus signal (`visibilitychange`) doesn't fire when switching apps in Electron; git replaces HEAD by rename, which would end a watch on the file itself. |
+| Every repo action runs in one `ActionDialog`: description → "Commands that will run" (from `repos:plan`) → explicit button → streamed activity log → result toast (also on failure). Dirty tree → Stash & continue (re-plans with the stash commands shown); conflict → file list + Open in VS Code + Abort (its own plan step); Sync fork → "Review push to origin…" → confirmed `pushBase`. Escape is ignored while git runs. | SPEC 6.2 action rules and §7 "no remote-changing action without confirmation". |
+| Palette repo commands (Fetch, Sync base, Update, New branch, Push, Sync fork) **open that dialog in the main window**; from the global palette window via `repos:requestAction` → `repos:actionRequested`. Only the "open in editor/terminal/file manager" commands run directly. | Same disclosure and confirmation from every entry point; a palette must not push without confirmation. |
+| Ahead/behind vs `origin/<base>` is hidden until the repo has been fetched ("fetch to compare with develop"). | It compares with the local copy of `origin/<base>`, which is meaningless before a fetch. |
+| The activity log is keyboard-focusable but not a live region; results are announced by toasts and the conflict alert. | Raw git output would flood screen readers. |
+| `branch NM-1234`-style palette arguments are deferred to P6.01 (palette arg parsers). | Planned there in PROGRESS. |

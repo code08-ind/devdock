@@ -1,4 +1,10 @@
-import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  QueryClient,
+  focusManager,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 import { useEffect } from 'react'
 import type { EventChannel } from '@shared/channels'
 import type { ErrorCode, EventPayload, IpcEnvelope } from '@shared/ipc'
@@ -34,6 +40,19 @@ export const queryClient = new QueryClient({
 })
 
 /** Query keys. The `*All` roots invalidate every query in that area. */
+// React Query refetches "on focus" via visibilitychange, which an Electron window doesn't fire
+// when you switch apps. Use the window's focus/blur instead (SPEC 6.2: refresh on focus).
+focusManager.setEventListener((setFocused) => {
+  const onFocus = () => setFocused(true)
+  const onBlur = () => setFocused(false)
+  window.addEventListener('focus', onFocus)
+  window.addEventListener('blur', onBlur)
+  return () => {
+    window.removeEventListener('focus', onFocus)
+    window.removeEventListener('blur', onBlur)
+  }
+})
+
 export const keys = {
   settings: ['settings'],
   secretsAll: ['secrets'],
@@ -42,6 +61,8 @@ export const keys = {
   notificationsAll: ['notifications'],
   history: ['notifications', 'history'],
   pause: ['notifications', 'state'],
+  repoStatusAll: ['repos', 'status'],
+  repoStatus: (id: string) => ['repos', 'status', id] as const,
 } as const
 
 export function useBridgeEvent<E extends EventChannel>(
@@ -76,7 +97,12 @@ const onNotificationsChanged = () => {
   void queryClient.invalidateQueries({ queryKey: keys.notificationsAll })
 }
 
+const onRepoChanged = ({ id }: { id: string }) => {
+  void queryClient.invalidateQueries({ queryKey: keys.repoStatus(id) })
+}
+
 export function useMainEvents(): void {
   useBridgeEvent('settings:changed', onSettingsChanged)
   useBridgeEvent('notifications:changed', onNotificationsChanged)
+  useBridgeEvent('repos:changed', onRepoChanged)
 }

@@ -1,11 +1,12 @@
 import type { View } from '@shared/channels'
+import type { ActionRequest, OpenTarget } from '@shared/repos'
 import { THEMES, type SettingsPatch, type Theme } from '@shared/settings'
 
 /** One palette entry. Later phases add argument commands (`watch <link>`, `kill <port>`). */
 export interface Command {
   id: string
   title: string
-  group: 'Go to' | 'Appearance' | 'Notifications' | 'App'
+  group: 'Go to' | 'Repos' | 'Appearance' | 'Notifications' | 'App'
   keywords?: string[]
   shortcut?: string
   run: () => unknown
@@ -44,6 +45,57 @@ export interface CommandContext {
   openLogs: () => unknown
   testNotification: () => unknown
   quit: () => unknown
+  /** Registered repos, for per-repo commands. */
+  repos: readonly { id: string; name: string }[]
+  /** Opens the action dialog (commands disclosure, confirm, activity log) for a repo. */
+  requestAction: (id: string, request: ActionRequest) => unknown
+  openRepo: (id: string, target: OpenTarget) => unknown
+  openLabels: Record<OpenTarget, string>
+}
+
+const REPO_ACTIONS: { key: string; label: string; request: ActionRequest; keywords: string[] }[] = [
+  { key: 'fetch', label: 'Fetch all', request: { action: 'fetchAll' }, keywords: ['git', 'fetch'] },
+  {
+    key: 'sync',
+    label: 'Sync base',
+    request: { action: 'syncBase' },
+    keywords: ['develop', 'main'],
+  },
+  {
+    key: 'update',
+    label: 'Update my branch',
+    // The dialog swaps in the saved merge/rebase default.
+    request: { action: 'updateBranch', strategy: 'merge', stash: false },
+    keywords: ['merge', 'rebase', 'pull'],
+  },
+  {
+    key: 'branch',
+    label: 'New branch',
+    request: { action: 'newBranch', kind: 'feature', title: '' },
+    keywords: ['checkout', 'feature', 'bugfix'],
+  },
+  { key: 'push', label: 'Push branch', request: { action: 'pushBranch' }, keywords: ['publish'] },
+  { key: 'fork', label: 'Sync fork', request: { action: 'syncFork' }, keywords: ['upstream'] },
+]
+
+/** Every repo action goes through the same dialog as the Repos screen (commands shown first). */
+function repoCommands(ctx: CommandContext): Command[] {
+  return ctx.repos.flatMap<Command>((r) => [
+    ...REPO_ACTIONS.map<Command>((a) => ({
+      id: `repo:${r.id}:${a.key}`,
+      title: `${a.label} — ${r.name}`,
+      group: 'Repos',
+      keywords: ['git', ...a.keywords],
+      run: () => ctx.requestAction(r.id, a.request),
+    })),
+    ...(['editor', 'terminal', 'files'] as const).map<Command>((target) => ({
+      id: `repo:${r.id}:${target}`,
+      title: `${ctx.openLabels[target]} — ${r.name}`,
+      group: 'Repos',
+      keywords: ['open', 'code', 'shell', 'folder', 'finder', 'explorer'],
+      run: () => ctx.openRepo(r.id, target),
+    })),
+  ])
 }
 
 export function buildCommands(ctx: CommandContext, views: readonly View[]): Command[] {
@@ -64,6 +116,7 @@ export function buildCommands(ctx: CommandContext, views: readonly View[]): Comm
   }))
   return [
     ...go,
+    ...repoCommands(ctx),
     ...themes,
     ctx.paused
       ? {

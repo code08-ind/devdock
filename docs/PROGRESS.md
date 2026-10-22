@@ -15,7 +15,7 @@ Contract docs: `docs/SPEC.md`, `docs/UI-THEMES.md`, `docs/BUILD-PROMPTS.md` (pha
 | Field        | Value                                                         |
 | ------------ | ------------------------------------------------------------- |
 | Phase        | P1 — Repos and git actions (Phase 0 closed: all Done criteria met) |
-| Next step    | Sub-phase **P1-C** — renderer: Repos view, Today repo status, action UI (`P1.04`, `P1.05`) |
+| Next step    | Sub-phase **P1-D** — dev server manager + baseline (`P1.12`, `P1.13`, `P1.D3`) |
 | Blockers     | None                                                          |
 | Last updated | 2026-10-22                                                    |
 
@@ -176,14 +176,14 @@ Done criteria:
 - [x] `P1.01` Git `execFile` wrapper (cwd, timeout, output capture) + typed errors — `src/main/services/git/{exec,errors}.ts`: `GitRunner` (arg arrays, LC_ALL=C, prompts off, streaming, command log, destructive-command guard), 9 error kinds
 - [x] `P1.02` Parsers: `status --porcelain=v2 --branch`, `rev-list --left-right --count`, `stash list` — `git/parse.ts` (+ `remote -v`); fixtures in `tests/unit/git-parse.test.ts`, real output in `tests/integration/git-runner.test.ts`
 - [x] `P1.03` Repo registry: folder picker, validate, detect remotes + base branch, edit settings — main/IPC: `RepoService` + `repos:pickFolder/add/update/remove/list`; settings UI is P1-C
-- [ ] `P1.04` Status polling (focus, 2 min, `.git/HEAD` watcher) in Repos + Today
-- [ ] `P1.05` Action framework: commands disclosure, streamed activity log, result toast
+- [x] `P1.04` Status polling (focus, 2 min, `.git/HEAD` watcher) in Repos + Today — `lib/repos.ts` (interval + focusManager), `services/repo-watcher.ts` (integration-tested with real checkouts)
+- [x] `P1.05` Action framework: commands disclosure, streamed activity log, result toast — `features/repos/ActionDialog.tsx`; e2e `tests/e2e/repos.spec.ts`
 - [x] `P1.06` Fetch all + Sync base (ff without checkout when safe) — main/IPC; UI is P1-C
-- [x] `P1.07` Update my branch (merge/rebase, Stash & continue, conflict view, Abort) — main/IPC (conflict outcome + abort); conflict view UI is P1-C
+- [x] `P1.07` Update my branch (merge/rebase, Stash & continue, conflict view, Abort) — main/IPC + UI (dirty → Stash & continue, conflict view with Open in VS Code / Abort); e2e covers the whole flow
 - [x] `P1.08` Sync fork (upstream; push confirmed; never force) — main/IPC
 - [x] `P1.09` New branch from template + slug function
 - [x] `P1.10` Push branch (protected patterns blocked in handler)
-- [~] `P1.11` Open in VS Code / terminal / file manager — main/IPC + command unit tests; not yet clicked from UI (P1-C)
+- [x] `P1.11` Open in VS Code / terminal / file manager — buttons on each repo card + palette; command building unit-tested; **not launched in e2e** (would open real apps on the test machine)
 - [ ] `P1.12` Dev server manager: spawn, URL/port detect, log panel, Stop, tree kill (win `taskkill /T`, mac pgroup)
 - [ ] `P1.13` Baseline integration (`scripts/baseline.mjs`)
 
@@ -207,7 +207,12 @@ Done criteria:
   branch + stash & continue + conflict/abort, sync fork, new branch, push with protected check,
   open in VS Code/terminal/file manager), IPC channels, integration tests for every `P1.D1` case,
   command-log grep (`P1.D4`).
-- [ ] **P1-C — Renderer**: Repos view, Today repo status, action UI (commands disclosure, streamed
+- [x] **P1-C — Renderer** (done 2026-10-22). Evidence: `npm run lint` exit 0; `npm test` → 17 files,
+  265 passed; `npm run e2e` → 16 passed, 1 skipped (new `repos.spec.ts`: update → stash & continue →
+  conflict → abort restores HEAD/files/stash; protected push refused in UI; palette (both windows) opens
+  the action dialog; Today status). `code-review` run; fixes: palette actions now go through the dialog,
+  ahead vs base shown, focus refresh wired for Electron, Escape blocked mid-run, error toasts, run output
+  freed, watcher sync serialised, log keyboard-reachable. Scope was: Repos view, Today repo status, action UI (commands disclosure, streamed
   activity log, result toast, conflict view), polling on focus / 2 min / `.git/HEAD` watcher,
   screenshots of Update → conflict → Abort (`P1.D5`).
 - [ ] **P1-D — Dev server & baseline**: manager, port detection, log panel, tree kill, e2e (`P1.D3`).
@@ -218,7 +223,7 @@ Done criteria:
 - [x] `P1.D2` Branch slug unit tests (unicode, punctuation, max length, collisions) — Evidence: `tests/unit/git-branches.test.ts` (accents/CJK/emoji, punctuation, ≤50 at word boundary, over-long word, `-2/-3` case-insensitive collisions, valid ref names, protected patterns)
 - [ ] `P1.D3` Dev server e2e: start fixture, detect port, stop, port free — Evidence:
 - [x] `P1.D4` Command-log grep test: no `push --force` / `reset --hard` — Evidence: `afterAll` in `git-actions.test.ts` and `repos-ipc.test.ts` checks every logged command with `unsafeReason` + regex; the guard itself refuses them before spawning (unit-tested, incl. global options/aliases/abbreviations)
-- [ ] `P1.D5` Recording/screenshots: Update my branch → conflict → Abort — Evidence:
+- [x] `P1.D5` Recording/screenshots: Update my branch → conflict → Abort — Evidence: `docs/screenshots/p1-repos.png`, `p1-update-plan.png`, `p1-update-conflict.png`, `p1-abort-done.png` (from the e2e flow via `npm run screenshots`)
 
 ---
 
@@ -328,3 +333,4 @@ Done criteria:
 | 2026-10-22 | P0-D  | Playwright e2e (security 6, app 5, opt-in screenshots) — found and fixed a P0-A bug: settings patch schema filled defaults so each change reset sibling fields (regression tests added). Dependency/decision tables in DECISIONS.md, GitHub Actions matrix, Today screenshots. Test mode gated to unpackaged builds. arm64 dmg built + packaged app verified; x64 dmg blocked by local network timeout. code-review run, fixes applied (stronger secret/navigation/shortcut assertions, profile cleanup, opt-in screenshots). | Push, read CI, close Phase 0 → user review |
 | 2026-10-22 | P1-A  | User approved moving on. Git core: GitRunner (execFile, typed errors, command log, destructive-command guard), porcelain v2 / rev-list / stash / remote parsers, slug + template + collisions + protected patterns; temp-repo fixture; 69 unit + 10 integration tests. CI run #1: macOS all green (incl. dist); Windows failed 1 e2e (EBUSY on locked Chromium cache) → fixed, run #2 pending. | P1-B |
 | 2026-10-22 | P1-B  | Settings `repos` + `git`; RepoService (add/validate/detect base, symlink-safe duplicates); repoStatus; GitActions (fetch all, sync base, update branch merge/rebase + stash & continue + conflict outcome + abort, sync fork + confirmed pushBase, new branch, push branch with protected block), shared plan/run checks, per-repo lock; repos:* IPC + git error codes; open in editor/terminal/files. 35 action/IPC integration tests on real repos; code-review fixes (injection, Windows quoting, stash safety). | P1-C |
+| 2026-10-22 | P1-C  | `.git/HEAD` watcher + repos:changed; renderer repo hooks (2-min poll, focus refresh via focusManager); Repos page (cards, status line, per-repo settings, add/remove), ActionDialog (plan → disclosure → run → streamed log → toast; Stash & continue; conflict view + Abort; confirmed push after Sync fork); Today repo status; Settings → Git; palette repo commands routed to the dialog (both windows). e2e for P1.D5 + screenshots. Review fixes applied. | P1-D |

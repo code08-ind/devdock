@@ -18,6 +18,10 @@ const ctx = (over: Partial<CommandContext> = {}): CommandContext => ({
   openLogs: vi.fn(),
   testNotification: vi.fn(),
   quit: vi.fn(),
+  repos: [],
+  requestAction: vi.fn(),
+  openRepo: vi.fn(),
+  openLabels: { editor: 'Open in VS Code', terminal: 'Open terminal', files: 'Reveal in Finder' },
   ...over,
 })
 
@@ -49,6 +53,36 @@ describe('palette commands', () => {
     expect(c.goto).toHaveBeenCalledWith('builds')
     cmds.find((x) => x.id === 'app:demo')!.run()
     expect(c.update).toHaveBeenCalledWith({ general: { demoMode: false } })
+  })
+})
+
+describe('repo commands', () => {
+  const repos = [{ id: 'r1', name: 'web-app' }]
+  it('lists every action and open target per repo', () => {
+    const cmds = buildCommands(ctx({ repos }), VIEWS).filter((c) => c.group === 'Repos')
+    expect(cmds.map((c) => c.title)).toEqual([
+      'Fetch all — web-app',
+      'Sync base — web-app',
+      'Update my branch — web-app',
+      'New branch — web-app',
+      'Push branch — web-app',
+      'Sync fork — web-app',
+      'Open in VS Code — web-app',
+      'Open terminal — web-app',
+      'Reveal in Finder — web-app',
+    ])
+  })
+  it('actions open the dialog (never run git directly); opens go straight through', () => {
+    const c = ctx({ repos })
+    const cmds = buildCommands(c, VIEWS)
+    cmds.find((x) => x.id === 'repo:r1:push')!.run()
+    expect(c.requestAction).toHaveBeenCalledWith('r1', { action: 'pushBranch' })
+    cmds.find((x) => x.id === 'repo:r1:editor')!.run()
+    expect(c.openRepo).toHaveBeenCalledWith('r1', 'editor')
+  })
+  it('is searchable by repo name', () => {
+    const cmds = buildCommands(ctx({ repos }), VIEWS)
+    expect(filterCommands(cmds, 'sync base web').map((c) => c.id)).toEqual(['repo:r1:sync'])
   })
 })
 

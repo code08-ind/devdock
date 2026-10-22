@@ -274,3 +274,140 @@
   margin: var(--space-6) auto;
   padding: 0 var(--space-4);
 }
+
+/* ---- Repos ------------------------------------------------------------------------------ */
+
+.repos {
+  display: grid;
+  gap: var(--space-4);
+  max-width: 960px;
+}
+.repo-card {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: var(--border-w) solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+.repo-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.repo-card-head > .button-row {
+  flex: none;
+  flex-wrap: nowrap;
+}
+.repo-card-head h2 {
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
+}
+.repo-path {
+  font-size: var(--fs-sm);
+  overflow-wrap: anywhere;
+}
+.repo-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fs-sm);
+}
+.repo-status li,
+.repo-status li > span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.repo-status-error {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--danger);
+  font-size: var(--fs-sm);
+}
+.repo-actions {
+  padding-top: var(--space-1);
+}
+
+.today-section {
+  display: grid;
+  gap: var(--space-3);
+  max-width: 960px;
+}
+.today-section h2 {
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
+}
+.today-repos {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: var(--border-w) solid var(--border);
+  border-radius: var(--radius-md);
+}
+.today-repo {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--row-py) var(--space-3);
+  border-bottom: var(--border-w) solid var(--border);
+}
+.today-repo:last-child {
+  border-bottom: 0;
+}
+.today-repo-name {
+  font-weight: var(--fw-medium);
+}
+
+/* ---- Action dialog ---------------------------------------------------------------------- */
+
+.dialog-wide {
+  width: min(720px, calc(100vw - 2 * var(--space-5)));
+}
+.dialog-actions .spacer {
+  flex: 1;
+}
+.commands summary {
+  cursor: pointer;
+  font-weight: var(--fw-medium);
+}
+.commands ol {
+  margin: var(--space-2) 0 0;
+  padding: var(--space-2) var(--space-3) var(--space-2) var(--space-6);
+  border: var(--border-w) solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-subtle);
+  font-size: var(--fs-sm);
+}
+.activity-log {
+  max-height: 220px;
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  overflow: auto;
+  border: var(--border-w) solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-subtle);
+  font-size: var(--fs-sm);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.conflict {
+  display: grid;
+  gap: var(--space-2);
+}
+.conflict-files {
+  margin: 0;
+  padding: var(--space-2) var(--space-3) var(--space-2) var(--space-6);
+  border: var(--border-w) solid var(--danger);
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-sm);
+}
+.input-key {
+  width: 10em;
+}

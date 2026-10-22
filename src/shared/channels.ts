@@ -38,6 +38,8 @@ export const INVOKE_CHANNELS = [
   'repos:plan',
   'repos:run',
   'repos:open',
+  /** Palette → main window: show Repos and open the action dialog for this repo. */
+  'repos:requestAction',
 ] as const
 
 /** Events pushed from main to renderer. */
@@ -47,6 +49,9 @@ export const EVENT_CHANNELS = [
   'nav:goto',
   'palette:shown',
   'repos:output',
+  /** A repo's HEAD changed (checkout, commit, merge…): refresh its status. */
+  'repos:changed',
+  'repos:actionRequested',
 ] as const
 
 export type InvokeChannel = (typeof INVOKE_CHANNELS)[number]

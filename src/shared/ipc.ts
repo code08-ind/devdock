@@ -8,6 +8,7 @@ import {
   PlannedCommandSchema,
   RepoPatchSchema,
   RepoStatusSchema,
+  type ActionRequest,
   type RepoOutputEvent,
 } from './repos'
 import {
@@ -127,6 +128,10 @@ export const contract = {
     res: ActionOutcomeSchema,
   },
   'repos:open': { req: z.object({ id: z.string(), target: z.enum(OPEN_TARGETS) }), res: none },
+  'repos:requestAction': {
+    req: z.object({ id: z.string(), request: ActionRequestSchema }),
+    res: none,
+  },
 } satisfies Record<InvokeChannel, { req: z.ZodType; res: z.ZodType }>
 
 export type Contract = typeof contract
@@ -168,5 +173,7 @@ export interface EventPayloads {
   'nav:goto': (typeof VIEWS)[number]
   'palette:shown': null
   'repos:output': RepoOutputEvent
+  'repos:changed': { id: string }
+  'repos:actionRequested': { id: string; request: ActionRequest }
 }
 export type EventPayload<E extends EventChannel> = EventPayloads[E]

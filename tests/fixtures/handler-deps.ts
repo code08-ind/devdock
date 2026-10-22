@@ -92,6 +92,7 @@ export async function handlerSetup(
     pickFolder: vi.fn(async () => null as string | null),
     openRepo: vi.fn<HandlerDeps['openRepo']>(async () => undefined),
     emitOutput: vi.fn((e: RepoOutputEvent) => void output.push(e)),
+    requestRepoAction: vi.fn(),
   }
   return { deps, handlers: createHandlers(deps), output, git }
 }

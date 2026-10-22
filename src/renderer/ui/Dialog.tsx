@@ -21,19 +21,33 @@ export function Dialog({
   onClose,
   children,
   actions,
+  wide = false,
+  dismissible = true,
 }: {
   open: boolean
   title: string
   onClose: () => void
   children: ReactNode
   actions: ReactNode
+  /** For dialogs with logs or code (activity log, command lists). */
+  wide?: boolean
+  /** False while work is in progress: Escape then does nothing. */
+  dismissible?: boolean
 }) {
   const ref = useRef<HTMLDialogElement>(null)
   const titleId = useId()
   useModal(ref, open)
 
   return (
-    <dialog ref={ref} className="dialog" aria-labelledby={titleId} onClose={onClose}>
+    <dialog
+      ref={ref}
+      className={`dialog${wide ? ' dialog-wide' : ''}`}
+      aria-labelledby={titleId}
+      onClose={onClose}
+      onCancel={(e) => {
+        if (!dismissible) e.preventDefault()
+      }}
+    >
       <h2 id={titleId} className="dialog-title">
         {title}
       </h2>
