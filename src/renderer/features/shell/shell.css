@@ -1,0 +1,276 @@
+/* App layout: left nav rail + content area (UI-THEMES principle 4). Tokens only. */
+
+.app {
+  display: grid;
+  grid-template-columns: minmax(168px, max-content) 1fr;
+  height: 100%;
+}
+
+/* ---- Nav rail -------------------------------------------------------------------------- */
+
+.rail {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-2);
+  border-right: var(--border-w) solid var(--border);
+  background: var(--bg-subtle);
+  overflow-y: auto;
+}
+.rail-list {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rail-foot {
+  display: grid;
+  gap: var(--space-2);
+  padding-left: var(--space-2);
+}
+.rail-foot .rail-item {
+  margin-left: calc(-1 * var(--space-2));
+}
+.rail-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: var(--control-h);
+  padding: 0 var(--space-3) 0 var(--space-2);
+  border: 0;
+  border-left: 3px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.rail-item:hover {
+  color: var(--text);
+}
+.rail-item[aria-current='page'] {
+  border-left-color: var(--accent);
+  background: var(--selection);
+  color: var(--text);
+  font-weight: var(--fw-medium);
+}
+.rail-item .kbd {
+  margin-left: auto;
+}
+
+/* ---- Content --------------------------------------------------------------------------- */
+
+.content {
+  min-width: 0;
+  padding: var(--space-5) var(--space-6) var(--space-6);
+  overflow-y: auto;
+}
+.view-title {
+  margin-bottom: var(--space-4);
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-semibold);
+  line-height: 1.25;
+}
+.view-title:focus,
+.view-title:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+/* ---- Settings -------------------------------------------------------------------------- */
+
+.settings {
+  display: grid;
+  gap: var(--space-5);
+  max-width: 720px;
+}
+.settings-section {
+  display: grid;
+  gap: var(--space-3);
+  padding-bottom: var(--space-5);
+  border-bottom: var(--border-w) solid var(--border);
+}
+.settings-section:last-child {
+  border-bottom: 0;
+}
+.settings-section-head h2 {
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
+}
+.settings-section-body {
+  display: grid;
+  gap: var(--gap);
+}
+.field-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+.inline-form {
+  display: flex;
+  gap: var(--space-2);
+  max-width: 36rem;
+}
+.input-number {
+  width: 9em;
+}
+.input-time {
+  width: 8em;
+}
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.row-between {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.stack {
+  display: grid;
+  gap: var(--space-2);
+}
+.checks {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.secret-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: start;
+  gap: var(--space-3);
+}
+.secret-row > .pill {
+  margin-top: calc(var(--fs-base) * 1.5 + var(--space-1) + var(--space-2));
+}
+.danger-zone {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+.list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: var(--border-w) solid var(--border);
+  border-radius: var(--radius-md);
+}
+.list-row {
+  display: grid;
+  grid-template-columns: max-content 1fr max-content;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--row-py) var(--space-3);
+  border-bottom: var(--border-w) solid var(--border);
+}
+.list-row:last-child {
+  border-bottom: 0;
+}
+
+/* ---- Command palette ------------------------------------------------------------------- */
+
+.palette {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: 420px;
+  background: var(--surface);
+  color: var(--text);
+}
+.palette-search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: var(--border-w) solid var(--border);
+}
+.palette-input {
+  flex: 1;
+  min-width: 0;
+  height: calc(var(--control-h) * 1.1);
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: var(--fs-lg);
+}
+.palette-input:focus-visible {
+  box-shadow: none;
+}
+.palette-search:focus-within {
+  box-shadow: inset 0 -2px 0 var(--focus);
+}
+.palette-list {
+  flex: 1;
+  margin: 0;
+  padding: var(--space-1);
+  overflow-y: auto;
+  list-style: none;
+}
+.palette-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--row-py) var(--space-3);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.palette-item.is-active {
+  background: var(--selection);
+  color: var(--text);
+}
+/* Muted text on --selection is below 4.5:1 in Dark/Slate: use --text there. */
+.palette-item.is-active .muted {
+  color: var(--text);
+}
+.palette-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--fs-sm);
+}
+.palette-empty {
+  padding: var(--space-4) var(--space-3);
+}
+
+.palette-dialog {
+  width: min(640px, calc(100vw - 2 * var(--space-6)));
+  margin: 12vh auto auto;
+  padding: 0;
+  border: var(--border-w) solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  overflow: hidden;
+}
+.palette-dialog::backdrop {
+  background: color-mix(in srgb, var(--bg) 60%, transparent);
+}
+
+.palette-window {
+  height: 100vh;
+  border: var(--border-w) solid var(--border);
+  background: var(--surface);
+}
+.palette-window .palette {
+  max-height: none;
+}
+
+.boot-error {
+  display: grid;
+  gap: var(--space-3);
+  max-width: 60ch;
+  margin: var(--space-6) auto;
+  padding: 0 var(--space-4);
+}

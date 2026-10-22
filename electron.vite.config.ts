@@ -10,7 +10,11 @@ function cspMeta(): Plugin {
   return {
     name: 'devdock-csp-meta',
     configResolved(config) {
-      csp = config.command === 'serve' ? CSP_DEV : CSP_PROD
+      // frame-ancestors is header-only; in a <meta> tag Chromium ignores it with a warning.
+      csp = (config.command === 'serve' ? CSP_DEV : CSP_PROD)
+        .split('; ')
+        .filter((d) => !d.startsWith('frame-ancestors'))
+        .join('; ')
     },
     transformIndexHtml() {
       return [

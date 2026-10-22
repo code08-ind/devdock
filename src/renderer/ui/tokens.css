@@ -1,0 +1,244 @@
+/*
+ * Design tokens (docs/UI-THEMES.md). Components use only these semantic variables.
+ * Theme, font size and density are data attributes on <html>, set by ui/appearance.ts.
+ * tests/unit/contrast.test.ts parses this file, so keep one `--token: #RRGGBB;` per line.
+ */
+
+:root {
+  --font-ui: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono:
+    ui-monospace, 'SF Mono', 'Cascadia Code', 'Cascadia Mono', Consolas, Menlo, monospace;
+  --fs-base: 14px;
+  --fs-sm: calc(var(--fs-base) - 2px);
+  --fs-lg: calc(var(--fs-base) + 2px);
+  --fs-xl: calc(var(--fs-base) + 6px);
+  --lh: 1.5;
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --border-w: 1px;
+  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--focus);
+  --motion: 120ms ease-out;
+
+  /* Density: Comfortable (default) */
+  --control-h: calc(var(--fs-base) * 2.3);
+  --row-py: var(--space-2);
+  --gap: var(--space-4);
+}
+
+[data-font-size='12'] {
+  --fs-base: 12px;
+}
+[data-font-size='13'] {
+  --fs-base: 13px;
+}
+[data-font-size='14'] {
+  --fs-base: 14px;
+}
+[data-font-size='15'] {
+  --fs-base: 15px;
+}
+[data-font-size='16'] {
+  --fs-base: 16px;
+}
+[data-font-size='18'] {
+  --fs-base: 18px;
+}
+
+[data-density='compact'] {
+  --control-h: calc(var(--fs-base) * 1.9);
+  --row-py: var(--space-1);
+  --gap: var(--space-3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion: 0ms;
+  }
+}
+
+/* ---- Themes ---------------------------------------------------------------------------- */
+
+:root,
+[data-theme='light'] {
+  color-scheme: light;
+  --bg: #ffffff;
+  --bg-subtle: #f5f6f8;
+  --surface: #ffffff;
+  --border: #d8dbe0;
+  --text: #1f2328;
+  --text-muted: #59636e;
+  --accent: #0b5cad;
+  --accent-contrast: #ffffff;
+  --focus: #0b5cad;
+  --success: #1a7f37;
+  --warning: #9a6700;
+  --danger: #c21f3a;
+  --info: #0b5cad;
+  --selection: #dcebff;
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #1e1f22;
+  --bg-subtle: #26282c;
+  --surface: #2b2d31;
+  --border: #3c3f45;
+  --text: #e6e7ea;
+  --text-muted: #a4a8af;
+  --accent: #6cb0ff;
+  --accent-contrast: #0b1a2b;
+  --focus: #6cb0ff;
+  --success: #57c27a;
+  --warning: #e3b341;
+  --danger: #ff7b8a;
+  --info: #6cb0ff;
+  --selection: #2f4a6b;
+}
+
+/* System follows the OS. Must stay identical to [data-theme='dark'] (checked by the test). */
+@media (prefers-color-scheme: dark) {
+  [data-theme='system'] {
+    color-scheme: dark;
+    --bg: #1e1f22;
+    --bg-subtle: #26282c;
+    --surface: #2b2d31;
+    --border: #3c3f45;
+    --text: #e6e7ea;
+    --text-muted: #a4a8af;
+    --accent: #6cb0ff;
+    --accent-contrast: #0b1a2b;
+    --focus: #6cb0ff;
+    --success: #57c27a;
+    --warning: #e3b341;
+    --danger: #ff7b8a;
+    --info: #6cb0ff;
+    --selection: #2f4a6b;
+  }
+}
+
+[data-theme='high-contrast'] {
+  color-scheme: dark;
+  --bg: #000000;
+  --bg-subtle: #000000;
+  --surface: #0a0a0a;
+  --border: #ffffff;
+  --text: #ffffff;
+  --text-muted: #e0e0e0;
+  --accent: #ffd400;
+  --accent-contrast: #000000;
+  --focus: #ffd400;
+  --success: #7cff7c;
+  --warning: #ffd400;
+  --danger: #ff6b6b;
+  --info: #66ccff;
+  --selection: #333300;
+}
+
+[data-theme='paper'] {
+  color-scheme: light;
+  --bg: #f7f3ea;
+  --bg-subtle: #efe9dc;
+  --surface: #fbf8f1;
+  --border: #d9cfbd;
+  --text: #2b2620;
+  --text-muted: #5e5548;
+  --accent: #8a4b08;
+  --accent-contrast: #ffffff;
+  --focus: #8a4b08;
+  --success: #2f6b2f;
+  --warning: #8a5a00;
+  --danger: #a3222e;
+  --info: #2f5f8a;
+  --selection: #eadfc8;
+}
+
+/* --text-muted lightened from #8B949E (4.14:1 on --surface) to pass 4.5:1. See DECISIONS.md. */
+[data-theme='slate'] {
+  color-scheme: dark;
+  --bg: #22272e;
+  --bg-subtle: #2d333b;
+  --surface: #2d333b;
+  --border: #444c56;
+  --text: #adbac7;
+  --text-muted: #96a0aa;
+  --accent: #539bf5;
+  --accent-contrast: #1c2128;
+  --focus: #539bf5;
+  --success: #57ab5a;
+  --warning: #c69026;
+  --danger: #e5534b;
+  --info: #539bf5;
+  --selection: #2e4a6b;
+}
+
+/* ---- Base ------------------------------------------------------------------------------ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: var(--fs-base);
+  line-height: var(--lh);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+::selection {
+  background: var(--selection);
+  color: var(--text);
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+.muted {
+  color: var(--text-muted);
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

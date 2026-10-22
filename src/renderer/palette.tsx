@@ -1,9 +1,12 @@
-import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import './ui/tokens.css'
+import './ui/components.css'
+import './features/shell/shell.css'
+import { PaletteWindow } from './features/palette/PaletteWindow'
+import { Providers } from './features/shell/Providers'
 
-// Placeholder until P0-C builds the real command palette.
 createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <p>Command palette</p>
-  </StrictMode>,
+  <Providers>
+    <PaletteWindow />
+  </Providers>,
 )

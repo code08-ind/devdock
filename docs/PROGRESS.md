@@ -15,7 +15,7 @@ Contract docs: `docs/SPEC.md`, `docs/UI-THEMES.md`, `docs/BUILD-PROMPTS.md` (pha
 | Field        | Value                                                         |
 | ------------ | ------------------------------------------------------------- |
 | Phase        | P0 — Scaffold, security baseline, shell, settings, secrets, demo |
-| Next step    | Sub-phase **P0-C** — start at `P0.13` (design tokens + themes)  |
+| Next step    | Sub-phase **P0-D** — start at `P0.20` (Playwright e2e)          |
 | Blockers     | None                                                          |
 | Last updated | 2026-10-22                                                    |
 
@@ -62,17 +62,17 @@ Steps:
 - [x] `P0.10` Tray (macOS template image, Windows ICO; Open / Pause notifications / Quit; close-to-tray configurable)
 - [x] `P0.11` Global shortcut + conflict detection + palette window
 - [x] `P0.12` Demo-mode HttpClient mechanism (switch real ↔ MSW `getResponse` handlers)
-- [ ] `P0.13` Design tokens + 5 themes + System, font size, density (apply live, persist)
-- [ ] `P0.14` UI components (design system primitives)
-- [ ] `P0.15` Nav rail (Today, Repos, Pull Requests, Builds, Tickets, Utilities, Settings) + empty states
-- [ ] `P0.16` Settings page (theme, font, density, demo mode, secrets, logs folder, notifications, shortcut)
-- [ ] `P0.17` Cmd/Ctrl+K command palette component
-- [ ] `P0.18` Contrast unit test (all themes, per UI-THEMES.md)
+- [x] `P0.13` Design tokens + 5 themes + System, font size, density (apply live, persist)
+- [x] `P0.14` UI components (design system primitives) — Table/Splitter/Tabs deferred (DECISIONS.md)
+- [x] `P0.15` Nav rail (Today, Repos, Pull Requests, Builds, Tickets, Utilities, Settings) + empty states
+- [x] `P0.16` Settings page (theme, font, density, demo mode, secrets, logs folder, notifications, shortcut)
+- [x] `P0.17` Cmd/Ctrl+K command palette component
+- [x] `P0.18` Contrast unit test (all themes, per UI-THEMES.md) — `tests/unit/contrast.test.ts`, 22 tests; Slate muted adjusted
 - [~] `P0.19` Unit tests: redaction, `openExternal` guard, settings migrations, secrets file bytes
 - [ ] `P0.20` e2e (Playwright `_electron`): security (no `require`/`process`, CSP blocks inline remote script, external nav blocked), each nav item, theme persists, palette via IPC test hook
 - [~] `P0.21` Packaging config: dmg arm64 + x64, NSIS per-user, portable
 - [ ] `P0.22` GitHub Actions workflow (macOS + Windows matrix: lint, test, e2e, dist)
-- [~] `P0.23` `docs/DECISIONS.md` (created; P0-B decisions in, deps/pins still to add) (deps + version pins + demo-mode approach)
+- [~] `P0.23` `docs/DECISIONS.md` (P0-B + P0-C decisions in; deps/pins still to add) (deps + version pins + demo-mode approach)
 - [ ] `P0.24` Run lint / test / e2e / dist and record real output here
 - [ ] `P0.25` Screenshots: Today in Light + Dark
 
@@ -93,20 +93,37 @@ Steps:
   `BrowserWindow`, real `safeStorage`/`globalShortcut`/`Notification`/`net.fetch` adapters,
   `shell.openExternal` via `checkExternalUrl`, "Open logs folder", e2e hook
   `globalThis.__devdockTest` only when `DEVDOCK_E2E=1`. Prove: `npm run dev` boots.
-- [ ] **P0-C — Renderer**: `src/renderer/index.html` + `palette.html`, tokens/themes CSS, components,
+- [x] **P0-C — Renderer** (done 2026-10-22). Evidence: `npm run lint` exit 0; `npm test` → 10 files,
+  108 tests passed (new: contrast 22, palette 10); `npm run build` OK. Built app driven with Playwright:
+  theme/font/density apply live (`data-font-size=18` → body 18px), Cmd+K palette → "jen" + Enter →
+  Builds, Cmd+1..7 nav, palette window renders, Utilities action opens palette, Clear history asks
+  first, Cmd+2 ignored behind a dialog, bad import JSON → inline error, Clear all data → no secrets,
+  no history, theme back to System; zero console errors/warnings. Screenshots checked in Light, Dark,
+  Paper, High contrast, Slate. `code-review` (Standards + Spec) run; fixes applied. Scope was: `src/renderer/index.html` + `palette.html`, tokens/themes CSS, components,
   nav rail + empty states, Settings page, Cmd/Ctrl+K palette, renderer client that unwraps
   envelopes (`src/renderer/lib/devdock.ts`), contrast test (`P0.18`).
 - [ ] **P0-D — Proof & ship**: e2e (`P0.20`), DECISIONS.md, GitHub Actions, `npm run dist`,
   screenshots, tick Done criteria.
 
-### Notes for P0-C (from the P0-B review)
+### Notes for P0-D
 
-- `src/renderer/{index,palette}.html` + `main.tsx`/`palette.tsx` are **placeholders** — replace their
-  bodies. `src/renderer/env.d.ts` already types `window.devdock` as `DevDockBridge`.
-- Event `palette:toggle` is declared but nothing sends it (main sends `palette:shown` when the
-  palette window opens). Use it for the in-window Cmd/Ctrl+K palette or remove it from the contract.
-- Main sends `nav:goto` (view) on `app:showView`; `settings:changed` and `notifications:changed` are
-  broadcast to both windows.
+- **Window order is not stable at launch**: `electronApp.firstWindow()` may return the palette
+  window. Select the main window by URL (`…/index.html`).
+- Test hook: `globalThis.__devdockTest` (`togglePalette`, `showView`, `isPaletteVisible`,
+  `shortcutStatus`, `userData`); profile isolation via `DEVDOCK_USER_DATA` (needs `DEVDOCK_E2E=1`).
+- Useful selectors: `nav[aria-label=Main]` buttons by name, `main[data-view]`, `h1`,
+  `[data-testid=command-palette]`, `html[data-theme]`.
+- `P0.D3` "persist" still needs a restart check (apply-live is verified).
+
+### What exists after P0-C (additions)
+
+- `src/renderer/ui/` — `tokens.css` (tokens + 5 themes + System), `components.css`, components
+  (`Button`, `Field`, `Feedback`, `Dialog`, `Tooltip`, `Text`), `appearance.ts`.
+- `src/renderer/lib/` — `devdock.ts` (unwrap, query client/keys, hooks), `actions.ts`,
+  `useAction.ts`, `keyboard.ts`.
+- `src/renderer/features/` — `shell/` (App, NavRail, Providers, views, shell.css), `settings/`
+  (one file per section), `palette/` (`commands.ts` pure registry + filter, `CommandPalette`,
+  `PaletteWindow`, `useCommands`).
 
 ### What exists after P0-B (additions)
 
@@ -275,3 +292,4 @@ Done criteria:
 | 2026-10-22 | P0    | Read specs, asked clarifying questions, git init, moved specs to docs/, installed deps, created PROGRESS.md | `P0.03` Config files |
 | 2026-10-22 | P0-A  | Configs, shared IPC contract + settings schema, preload, security helpers, IPC registry, logger/settings/secrets/notifications/shortcut/http services, demo handlers, icons, 66 unit tests green, lint/typecheck clean. Paused at user request. | P0-B: `P0.04` `src/main/index.ts` |
 | 2026-10-22 | P0-B  | index.ts lifecycle/single-instance/close-to-tray, handlers.ts for every channel, tray, main + palette windows, real safeStorage/globalShortcut/Notification/net.fetch adapters, e2e hook, placeholder renderer pages. `npm run dev` boots; built-app smoke via Playwright passes; 76 unit tests green; lint clean. code-review run → fixed shortcut-conflict bypass via settings:update, stale tray after pause expiry, unhandled openExternal rejection. DECISIONS.md started. | P0-C: `P0.13` tokens + themes |
+| 2026-10-22 | P0-C  | Tokens/themes CSS (Slate muted fixed after contrast check), design-system components, nav rail + empty states, full Settings page (appearance, demo, general, notifications + history, credentials, links, import/export, danger zone incl. Clear all data), Cmd/Ctrl+K palette + palette window, contrast + palette unit tests (108 total). Verified in built app across 5 themes; code-review run and fixes applied (error Details in toasts, failed token save kept input, aria-keyshortcuts, confirmation on clear history, etc.). | P0-D: `P0.20` e2e |

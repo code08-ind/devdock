@@ -36,7 +36,6 @@ export const EVENT_CHANNELS = [
   'settings:changed',
   'notifications:changed',
   'nav:goto',
-  'palette:toggle',
   'palette:shown',
 ] as const
 

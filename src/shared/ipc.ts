@@ -117,7 +117,6 @@ export interface EventPayloads {
   'settings:changed': z.output<typeof SettingsSchema>
   'notifications:changed': null
   'nav:goto': (typeof VIEWS)[number]
-  'palette:toggle': null
   'palette:shown': null
 }
 export type EventPayload<E extends EventChannel> = EventPayloads[E]

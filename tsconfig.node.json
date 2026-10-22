@@ -13,6 +13,8 @@
     "src/main/**/*",
     "src/preload/**/*",
     "src/shared/**/*",
+    // DOM-free renderer logic that unit tests import directly.
+    "src/renderer/features/palette/commands.ts",
     "tests/**/*"
   ]
 }
