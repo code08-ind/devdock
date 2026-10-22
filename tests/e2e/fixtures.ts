@@ -86,8 +86,9 @@ export const test = base.extend<{ launched: Launched }>({
     try {
       await use(launched)
     } finally {
-      await launched.app.close()
-      rmSync(launched.userData, { recursive: true, force: true })
+      // A test may already have closed the app (e.g. to read files Windows keeps locked).
+      await launched.app.close().catch(() => undefined)
+      rmSync(launched.userData, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 })
     }
   },
 })

@@ -80,7 +80,7 @@ test('theme, font size and density apply live and persist across restarts', asyn
     await expect(html).toHaveAttribute('data-density', 'compact')
   } finally {
     await current?.app.close()
-    rmSync(profile, { recursive: true, force: true })
+    rmSync(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 })
   }
 })
 
@@ -130,6 +130,11 @@ test('a secret saved in Settings is encrypted on disk', async ({ launched }) => 
     .click()
   await expect(win.getByText('Jira API token saved')).toBeVisible()
 
+  const keys = await win.evaluate(() => window.devdock.secrets.list())
+  expect(keys).toEqual({ ok: true, data: ['jira.token'] })
+  // Close first: Windows locks Chromium's cache files while the app runs.
+  await launched.app.close()
+
   // The store really wrote something...
   const secretsFile = join(userData, 'secrets.bin')
   expect(statSync(secretsFile).size).toBeGreaterThan(0)
@@ -138,7 +143,4 @@ test('a secret saved in Settings is encrypted on disk', async ({ launched }) => 
   const files = filesUnder(userData)
   expect(files).toContain(secretsFile)
   for (const file of files) expect(readFileSync(file).includes(needle), file).toBe(false)
-
-  const keys = await win.evaluate(() => window.devdock.secrets.list())
-  expect(keys).toEqual({ ok: true, data: ['jira.token'] })
 })
