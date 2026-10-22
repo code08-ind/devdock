@@ -1,0 +1,12 @@
+out
+dist
+release
+node_modules
+coverage
+test-results
+playwright-report
+docs/*.md
+package-lock.json
+.claude
+skills-lock.json
+CLAUDE.md

@@ -1,0 +1,39 @@
+appId: com.devdock.app
+productName: DevDock
+directories:
+  output: release/${version}
+  buildResources: build
+files:
+  - out/**
+  - package.json
+asarUnpack: []
+mac:
+  category: public.app-category.developer-tools
+  icon: build/icon.png
+  target:
+    - target: dmg
+      arch: [arm64, x64]
+  extendInfo:
+    LSUIElement: false
+  # Unsigned in v1; see README "Unsigned app warnings".
+  identity: null
+win:
+  icon: build/icon.ico
+  target:
+    - target: nsis
+      arch: [x64]
+    - target: portable
+      arch: [x64]
+nsis:
+  oneClick: false
+  perMachine: false
+  allowElevation: false
+  allowToChangeInstallationDirectory: true
+  artifactName: ${productName}-Setup-${version}.${ext}
+portable:
+  artifactName: ${productName}-Portable-${version}.${ext}
+dmg:
+  artifactName: ${productName}-${version}-${arch}.${ext}
+extraResources:
+  - from: build/tray
+    to: tray
