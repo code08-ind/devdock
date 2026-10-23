@@ -1,0 +1,3 @@
+Use the bug-fixer agent. Ticket brief: docs/ai/specs/DD-101/TICKET.md.
+Use the feature-builder agent. Ticket brief: docs/ai/specs/DD-102/TICKET.md. Figma: https://www.figma.com/design/DEMOfile123/Profile?node-id=12-34.
+Use the spec-writer agent. Ticket brief: docs/ai/specs/DD-103/TICKET.md.

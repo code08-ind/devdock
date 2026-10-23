@@ -1,5 +1,6 @@
 import type { JiraComment, JiraIssue, JiraIssueDetail, JiraLink } from '@shared/jira'
-import { STATUS_CATEGORIES } from '@shared/jira'
+import { ISSUE_KEY, STATUS_CATEGORIES } from '@shared/jira'
+import { ServiceError } from '../service-error'
 import { obj, text } from './json'
 
 /** Raw REST issue (v2 and v3 share this shape; only rich-text fields differ). */
@@ -15,6 +16,13 @@ export interface FieldIds {
 }
 
 export function normaliseIssue(raw: RawIssue, baseUrl: string, ids: FieldIds): JiraIssue {
+  // The key ends up in file paths (TICKET.md) and URLs: never trust the server's value blindly.
+  if (!ISSUE_KEY.test(raw.key)) {
+    throw new ServiceError(
+      'bad_response',
+      `Jira returned an invalid issue key "${raw.key.slice(0, 40)}".`,
+    )
+  }
   const f = raw.fields
   const status = obj(f.status)
   const category = text(obj(status.statusCategory).key)
@@ -105,20 +113,38 @@ const AC_TITLE = /^acceptance\s+criteria\b/i
  * there's no such section or it is empty.
  */
 export function acceptanceSection(markdown: string): string | null {
+  return findAcceptanceSection(markdown.split('\n'))?.body ?? null
+}
+
+/** The description without its "Acceptance criteria" section (the brief shows that separately). */
+export function withoutAcceptanceSection(markdown: string): string {
   const lines = markdown.split('\n')
+  const found = findAcceptanceSection(lines)
+  if (!found) return markdown
+  return [...lines.slice(0, found.start), ...lines.slice(found.end)]
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
+/** Lines [start, end) of the first non-empty acceptance-criteria section, and its body. */
+function findAcceptanceSection(
+  lines: string[],
+): { start: number; end: number; body: string } | null {
   for (let i = 0; i < lines.length; i++) {
     const title = sectionTitle(lines[i]!)
     if (!title || !AC_TITLE.test(title.text)) continue
     // Text after "Acceptance criteria:" on the same line counts too.
     const inlineRest = title.text.replace(AC_TITLE, '').replace(/^\s*:?\s*/, '')
     const body: string[] = inlineRest ? [inlineRest] : []
-    for (let j = i + 1; j < lines.length; j++) {
-      const next = sectionTitle(lines[j]!)
+    let end = i + 1
+    for (; end < lines.length; end++) {
+      const next = sectionTitle(lines[end]!)
       if (next && (next.level <= title.level || title.level === 7)) break
-      body.push(lines[j]!)
+      body.push(lines[end]!)
     }
-    const result = body.join('\n').trim()
-    return result || null
+    const text = body.join('\n').trim()
+    return text ? { start: i, end, body: text } : null
   }
   return null
 }

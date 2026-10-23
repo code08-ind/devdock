@@ -14,6 +14,7 @@ export type TestDeps = HandlerDeps & {
   pickFolder: Mock<() => Promise<string | null>>
   openRepo: Mock<HandlerDeps['openRepo']>
   emitOutput: Mock<(e: RepoOutputEvent) => void>
+  writeClipboard: Mock<(text: string) => void>
 }
 
 export interface HandlerSetup {
@@ -43,6 +44,7 @@ export async function handlerSetup(
   const { DevServerManager } = await import('../../src/main/services/process/devserver')
   const { JiraService } = await import('../../src/main/services/jira/service')
   const { DEMO_JIRA } = await import('../../src/main/demo/jira')
+  const { StartWorkService } = await import('../../src/main/services/startwork')
 
   const dir = mkdtempSync(join(tmpdir(), 'devdock-handlers-'))
   const settings = new SettingsStore(join(dir, 'settings.json'))
@@ -68,7 +70,17 @@ export async function handlerSetup(
   )
   const git = new GitRunner()
   const output: RepoOutputEvent[] = []
+  const repos = new RepoService(settings, git)
+  const actions = new GitActions(git)
+  const openRepo = vi.fn<HandlerDeps['openRepo']>(async () => undefined)
+  const writeClipboard = vi.fn<(text: string) => void>()
   const http = new DemoHttpClient(demoHandlers())
+  const jira = new JiraService({
+    http,
+    settings: () => settings.get(),
+    token: () => secrets.get('jira.token'),
+    demo: DEMO_JIRA,
+  })
   const deps: TestDeps = {
     settings,
     secrets,
@@ -90,19 +102,25 @@ export async function handlerSetup(
     openPalette: vi.fn(),
     closePalette: vi.fn(),
     quit: vi.fn(),
-    repos: new RepoService(settings, git),
+    repos,
     git,
-    actions: new GitActions(git),
+    actions,
     pickFolder: vi.fn(async () => null as string | null),
-    openRepo: vi.fn<HandlerDeps['openRepo']>(async () => undefined),
+    openRepo,
     emitOutput: vi.fn((e: RepoOutputEvent) => void output.push(e)),
     requestRepoAction: vi.fn(),
     devServers: new DevServerManager({ onChange: vi.fn(), onOutput: vi.fn() }),
-    jira: new JiraService({
-      http,
+    jira,
+    writeClipboard,
+    startWork: new StartWorkService({
+      jira,
+      actions,
+      git,
+      repo: (id) => repos.get(id),
       settings: () => settings.get(),
-      token: () => secrets.get('jira.token'),
-      demo: DEMO_JIRA,
+      briefsDir: join(dir, 'briefs'),
+      writeClipboard,
+      openEditor: (repo) => openRepo(repo, 'editor'),
     }),
   }
   return { deps, handlers: createHandlers(deps), output, git }

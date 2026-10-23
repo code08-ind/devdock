@@ -12,6 +12,7 @@ import type { GitRunner } from './services/git/exec'
 import { repoStatus } from './services/git/repo'
 import type { HttpClient } from './services/http'
 import type { JiraService } from './services/jira/service'
+import { StartWorkError, type StartWorkService } from './services/startwork'
 import type { NotificationService } from './services/notifications'
 import { DevServerError, type DevServerManager } from './services/process/devserver'
 import { RepoNotFoundError, type RepoService } from './services/repos'
@@ -47,6 +48,7 @@ export interface HandlerDeps {
   emitOutput: (event: RepoOutputEvent) => void
   devServers: DevServerManager
   jira: JiraService
+  startWork: StartWorkService
   /** Brings up the main window's action dialog (from the palette window). */
   requestRepoAction: (event: { id: string; request: ActionRequest }) => void
 }
@@ -104,6 +106,25 @@ async function withService<T>(fn: () => Promise<T>): Promise<T> {
       throw new IpcError('SECRETS_UNAVAILABLE', err.message)
     throw err
   }
+}
+
+/** Start work touches Jira, git and the file system: map each kind of failure. */
+function withStartWork<T>(fn: () => Promise<T>): Promise<T> {
+  return withService(() =>
+    withGit(async () => {
+      try {
+        return await fn()
+      } catch (err) {
+        if (err instanceof StartWorkError) {
+          throw new IpcError(
+            err.kind === 'changed' ? 'PRECONDITION_FAILED' : 'INTERNAL',
+            err.message,
+          )
+        }
+        throw err
+      }
+    }),
+  )
 }
 
 function withSecrets<T>(fn: () => T): T {
@@ -213,6 +234,13 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
     'jira:testConnection': () => withService(() => deps.jira.testConnection()),
     'jira:list': (request) => withService(() => deps.jira.list(request)),
     'jira:issue': ({ key }) => withService(() => deps.jira.issue(key)),
+    'startwork:plan': (request) => withStartWork(() => deps.startWork.plan(request)),
+    'startwork:run': (request) =>
+      withStartWork(() =>
+        deps.startWork.run(request, (chunk, stream) =>
+          deps.emitOutput({ runId: request.runId, chunk, stream }),
+        ),
+      ),
     'repos:requestAction': ({ id, request }) =>
       withGit(() => {
         deps.repos.get(id)

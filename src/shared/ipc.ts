@@ -7,6 +7,12 @@ import {
 } from './devserver'
 import type { EventChannel, InvokeChannel } from './channels'
 import {
+  StartWorkPlanSchema,
+  StartWorkRequestSchema,
+  StartWorkResultSchema,
+  StartWorkRunSchema,
+} from './startwork'
+import {
   IssueKeySchema,
   JiraConnectionSchema,
   JiraIssueDetailSchema,
@@ -149,6 +155,9 @@ export const contract = {
   'jira:testConnection': { req: none, res: JiraConnectionSchema },
   'jira:list': { req: JiraListRequestSchema, res: z.array(JiraIssueSchema) },
   'jira:issue': { req: z.object({ key: IssueKeySchema }), res: JiraIssueDetailSchema },
+  /** Read-only: branch name, commands, brief path + .gitignore check, agent and message. */
+  'startwork:plan': { req: StartWorkRequestSchema, res: StartWorkPlanSchema },
+  'startwork:run': { req: StartWorkRunSchema, res: StartWorkResultSchema },
   'repos:requestAction': {
     req: z.object({ id: z.string(), request: ActionRequestSchema }),
     res: none,

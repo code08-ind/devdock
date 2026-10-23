@@ -319,6 +319,21 @@ export const jiraHandlers: RequestHandler[] = [
       ? HttpResponse.json({ isLast: true, values: [SPRINT] })
       : HttpResponse.json({ errorMessages: ['Board not found'] }, { status: 404 }),
   ),
+  // Workflow: To Do → In Progress ("Start progress"); other statuses offer no such move.
+  http.get(`${BASE}/rest/api/3/issue/:key/transitions`, ({ params }) => {
+    const issue = ISSUES.find((i) => i.key === params.key)
+    if (!issue)
+      return HttpResponse.json({ errorMessages: ['Issue does not exist'] }, { status: 404 })
+    const transitions =
+      issue.status === 'todo'
+        ? [{ id: '21', name: 'Start progress', to: STATUS.progress }]
+        : [{ id: '31', name: 'Done', to: STATUS.done }]
+    return HttpResponse.json({ transitions })
+  }),
+  http.post(
+    `${BASE}/rest/api/3/issue/:key/transitions`,
+    () => new HttpResponse(null, { status: 204 }),
+  ),
   // Newest first, like `orderBy=-created`.
   http.get(`${BASE}/rest/api/3/issue/:key/comment`, ({ params }) => {
     const issue = ISSUES.find((i) => i.key === params.key)

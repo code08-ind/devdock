@@ -12,6 +12,9 @@ export const DEFAULT_JQL =
 export const ISSUE_KEY = /^[A-Z][A-Z0-9_]{0,19}-\d{1,9}$/
 export const IssueKeySchema = z.string().regex(ISSUE_KEY, 'Not a Jira issue key')
 
+/** A status or transition name meaning "In Progress" (case and spacing ignored). */
+export const isInProgress = (name: string) => /^in\s+progress$/i.test(name.trim())
+
 /** Jira's status categories: To Do / In Progress / Done. */
 export const STATUS_CATEGORIES = ['new', 'indeterminate', 'done', 'unknown'] as const
 

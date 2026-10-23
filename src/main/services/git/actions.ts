@@ -185,6 +185,17 @@ export class GitActions {
     return this.commands(repo, ctx, req, name)
   }
 
+  /** plan() for newBranch, also returning the name the branch will get (Start work shows it). */
+  async planNewBranch(
+    repo: RepoConfig,
+    req: Req<'newBranch'>,
+  ): Promise<{ branch: string; commands: PlannedCommand[] }> {
+    const ctx = await this.context(repo)
+    this.check(repo, ctx, req)
+    const branch = await this.branchName(repo, req)
+    return { branch, commands: this.commands(repo, ctx, req, branch) }
+  }
+
   async run(
     repo: RepoConfig,
     req: ActionRequest,

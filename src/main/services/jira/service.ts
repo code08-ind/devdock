@@ -49,6 +49,11 @@ export class JiraService {
     return this.client().issue(key)
   }
 
+  /** Only Start work calls this, and only when Settings → "Transition on Start work" is on. */
+  async transitionToInProgress(key: string): Promise<'done' | 'unavailable'> {
+    return this.client().transitionToInProgress(key)
+  }
+
   private client(): JiraClient {
     const config = this.config()
     const signature = JSON.stringify(config)

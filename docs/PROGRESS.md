@@ -15,7 +15,7 @@ Contract docs: `docs/SPEC.md`, `docs/UI-THEMES.md`, `docs/BUILD-PROMPTS.md` (pha
 | Field        | Value                                                         |
 | ------------ | ------------------------------------------------------------- |
 | Phase        | P2 — Jira (P1 closed; CI green on macOS + Windows, run 39901019363) |
-| Next step    | Sub-phase **P2-B — Start work (main)**: `P2.06` (branch, TICKET.md + `.gitignore` check + location toggle, classification, clipboard, optional transition), tests for `P2.D3`/`P2.D4`/`P2.D5` |
+| Next step    | Sub-phase **P2-C — Renderer**: Tickets view (lists, saved queries), issue drawer, Start work dialog (shows plan, `.gitignore` warning, location toggle, transition confirmation), Settings → Jira + Test connection, Playwright e2e for `P2.D3` |
 | Blockers     | None                                                          |
 | Last updated | 2026-10-23                                                    |
 
@@ -247,7 +247,7 @@ Done criteria:
 - [x] `P2.03` Normalised issue model + "Test connection" (reports user) — `shared/jira.ts`, `services/jira/model.ts`, IPC `jira:testConnection` (status + user; failures carry hints). Settings UI is P2-C
 - [~] `P2.04` Lists: My open issues (JQL), Sprint (board id), saved queries — main/IPC done (`jira:list`); UI is P2-C
 - [~] `P2.05` Issue detail drawer + Figma/Confluence link extraction — extraction + `jira:issue` done; drawer is P2-C
-- [ ] `P2.06` Start work flow (branch, TICKET.md + `.gitignore` warning + location toggle, agent classification, clipboard, optional transition, open VS Code)
+- [~] `P2.06` Start work flow (branch, TICKET.md + `.gitignore` warning + location toggle, agent classification, clipboard, optional transition, open VS Code) — main + IPC done (`services/startwork.ts`, `jira/brief.ts`, `startwork:plan/run`); dialog is P2-C
 - [x] `P2.07` Demo fixtures: 8 fake issues — `src/main/demo/jira.ts` (`DD-101…108`: 3 bugs, 3 stories incl. vague `DD-103`, task without AC `DD-104`, AC in custom field `DD-106`)
 
 ### Sub-phases (pause points)
@@ -259,8 +259,15 @@ Done criteria:
   redacted error details, base URL rejects `?`/`#`, wiki table cells keep links with `|`, ADF code span
   with edge backticks, Confluence `/display/` anchored, demo links openable, shared JSON/table helpers,
   demo config injected. All 8 fixes mutation-checked (each test fails without its fix).
-- [ ] **P2-B — Start work (main)**: branch, TICKET.md (+ `.gitignore` warning, location toggle),
-  classification, clipboard message, optional transition; integration tests (`P2.D3` main part, `P2.D4`, `P2.D5`).
+- [x] **P2-B — Start work (main)** (done 2026-10-23). Evidence: `npm run lint` exit 0; `npm test` → 26 files,
+  425 passed, 1 skipped (opt-in samples); `npm run e2e` → 18 passed, 1 skipped. New: `jira-brief` unit (19),
+  `tests/integration/startwork.test.ts` (16, real temp repos + demo Jira): Bug → bugfix branch from
+  origin/develop + TICKET.md sections + bug-fixer message; vague Story → spec-writer; Figma in message;
+  `.gitignore`/info-exclude/already-tracked warning; DevDock-data location; transition off/declined/done/
+  already/unavailable; editor failure = warning; collision suffix; IPC. `code-review` run; fixes: server key
+  validated (path traversal), transition needs setting **and** confirmation, run refuses a ticket that changed
+  since the preview, typed error after the branch exists, SPEC-literal classification, smells. Fixes
+  mutation-checked (one check proved redundant and was removed).
 - [ ] **P2-C — Renderer**: Tickets view (lists, saved queries), issue drawer, Start work dialog, Settings → Jira
   (+ Test connection), e2e (`P2.D3`), screenshots.
 
@@ -269,8 +276,8 @@ Done criteria:
 - [x] `P2.D1` Adapter tests Cloud + DC incl. 401, 403, 429 `Retry-After`, proxy/cert errors — Evidence: `tests/unit/jira-client.test.ts` (recorded-style payloads in `tests/fixtures/jira.ts`): both flavours via `describe.each` — 401, 403, 404, 407, 429 (seconds, HTTP date, none), 5xx, non-JSON 200, Electron `net::ERR_*` proxy/tunnel/cert/DNS/refused/timeout, Node cert cause + timeout abort; redaction of details; + `jira-service.test.ts` (IPC codes `SERVICE_AUTH`, `RATE_LIMITED`, `INVALID_PAYLOAD`)
 - [x] `P2.D2` ADF→Markdown tests per node type — Evidence: `tests/unit/jira-adf.test.ts` (paragraph, marks, hard break, heading, bullet/nested/ordered/task lists, code block, mention/emoji/card/status/date, table with/without header, blockquote/panel/rule/expand/media, unknown nodes, empty input) + `jira-wiki.test.ts` for Data Center
 - [ ] `P2.D3` Start work e2e (branch, TICKET.md sections, clipboard for Bug + vague Story) — Evidence:
-- [ ] `P2.D4` Transition never called unless setting on (test) — Evidence:
-- [ ] `P2.D5` Generated TICKET.md from demo data attached — Evidence:
+- [x] `P2.D4` Transition never called unless setting on (test) — Evidence: `tests/integration/startwork.test.ts` "P2.D4: transition is never called while the setting is off" (spy on every Jira request: no `/transitions` call even with `confirmTransition: true`); also "setting on but not confirmed → declined, nothing sent"; mutation-checked
+- [x] `P2.D5` Generated TICKET.md from demo data attached — Evidence: `docs/samples/DD-101-TICKET.md` (Bug), `DD-102-TICKET.md` (Story + Figma/Confluence + table), `DD-103-TICKET.md` (vague Story) and `clipboard-messages.txt`, written by the real Start work run (`DEVDOCK_WRITE_SAMPLES=1 npx vitest run tests/integration/startwork.test.ts -t P2.D5`)
 
 ---
 
@@ -364,3 +371,4 @@ Done criteria:
 | 2026-10-23 | P1-D  | Resumed: P1-D code existed uncommitted and green (lint, 289 tests, 18 e2e). Found + fixed settings-load regression (strict devCommand reset all settings). Wrote DECISIONS P1-D. code-review (Standards + Spec) run; fixed double-start race, unbounded kill wait, leftover process group, stale renderer log, fish PATH, Windows `./script`; 7 new tests. Phase 1 Done criteria all met. | User review + commit; CI; Phase 2 |
 | 2026-10-23 | P1 close | Committed P1-D (a257c9b), pushed. CI showed Windows red since P1-B: missing git identity in tests + EBUSY temp cleanup; also a host-dependent spawn test. Fixed (07b49c4, a268dab), CI run 39901019363 green on both OSes, incl. dev-server e2e on Windows. Phase 1 closed. | Phase 2 — P2-A |
 | 2026-10-23 | P2-A  | Jira core: shared model + settings `jira`, ServiceError (HTTP/proxy/cert/429 hints), JiraClient with Cloud (v3, Basic, ADF) / DC (v2, Bearer, wiki) flavours, field discovery, sprint via Agile API, AC + link extraction, JiraService (config/demo), IPC `jira:testConnection/list/issue`, 8 demo issues. 108 new tests. code-review run; 10 fixes, mutation-checked. | P2-B |
+| 2026-10-23 | P2-B  | Committed P2-A (a46166b, local). Start work in main: StartWorkService plan/run (GitActions newBranch, TICKET.md + check-ignore warning, repo/DevDock-data location, classification, clipboard, confirmed optional transition, VS Code), brief.ts, JiraClient POST + transition, demo transitions, IPC `startwork:plan/run`, docs/samples. code-review run; 8 fixes. | P2-C |

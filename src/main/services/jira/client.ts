@@ -1,5 +1,5 @@
 import type { JiraConnection, JiraFlavor, JiraIssue, JiraIssueDetail } from '@shared/jira'
-import { ISSUE_KEY } from '@shared/jira'
+import { ISSUE_KEY, isInProgress } from '@shared/jira'
 import type { HttpClient } from '../http'
 import { ServiceError, errorFromFetchFailure, errorFromResponse } from '../service-error'
 import { cloud } from './cloud'
@@ -92,6 +92,28 @@ export class JiraClient {
     )
   }
 
+  /**
+   * Moves the issue to "In Progress" if the workflow offers that transition from its current
+   * status (SPEC 6.5 step 6). Matches the transition's name or its target status, case-insensitive.
+   */
+  async transitionToInProgress(key: string): Promise<'done' | 'unavailable'> {
+    if (!ISSUE_KEY.test(key)) throw new ServiceError('not_found', `"${key}" is not an issue key.`)
+    const url = `${this.config.baseUrl}${this.api.api}/issue/${key}/transitions`
+    const { body } = await this.get(url)
+    const list = obj(body).transitions
+    if (!Array.isArray(list)) throw badResponse('a transition list')
+    const match = list.map(obj).find((t) => {
+      const names = [t.name, obj(t.to).name].map((n) => (typeof n === 'string' ? n.trim() : ''))
+      return names.some(isInProgress)
+    })
+    if (!match) return 'unavailable'
+    if (typeof match.id !== 'string' && typeof match.id !== 'number') {
+      throw badResponse('a transition id')
+    }
+    await this.send(url, { transition: { id: String(match.id) } })
+    return 'done'
+  }
+
   /** Sprint and "Acceptance Criteria" custom field ids, looked up once per client. */
   private fields(): Promise<FieldIds> {
     this.fieldIds ??= this.get(`${this.config.baseUrl}${this.api.api}/field`).then(
@@ -116,12 +138,20 @@ export class JiraClient {
     return this.fieldIds
   }
 
-  private async get(url: string): Promise<{ status: number; body: unknown }> {
+  private get(url: string): Promise<{ status: number; body: unknown }> {
+    return this.send(url)
+  }
+
+  private async send(url: string, post?: unknown): Promise<{ status: number; body: unknown }> {
+    const headers: Record<string, string> = {
+      Accept: 'application/json',
+      Authorization: this.api.authorization(this.config),
+    }
+    if (post !== undefined) headers['Content-Type'] = 'application/json'
     const request = new Request(url, {
-      headers: {
-        Accept: 'application/json',
-        Authorization: this.api.authorization(this.config),
-      },
+      method: post === undefined ? 'GET' : 'POST',
+      headers,
+      body: post === undefined ? undefined : JSON.stringify(post),
       signal: AbortSignal.timeout(this.timeoutMs),
     })
     let res: Response
@@ -131,6 +161,7 @@ export class JiraClient {
       throw errorFromFetchFailure('Jira', err)
     }
     if (!res.ok) throw await errorFromResponse('Jira', res, this.api.hints)
+    if (res.status === 204) return { status: 204, body: null }
     try {
       return { status: res.status, body: await res.json() }
     } catch {

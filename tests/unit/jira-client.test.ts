@@ -349,3 +349,13 @@ describe('review fixes', () => {
     expect(e.details).toContain('[REDACTED]')
   })
 })
+
+it('refuses an issue whose key from the server is not a valid key (it becomes a file path)', async () => {
+  const evil = { ...cloud.issue, key: '../../../.zshrc' }
+  const http = new ScriptedHttp([
+    on('/rest/api/3/field', () => json(cloud.fields)),
+    on('/rest/api/3/search/jql', () => json({ issues: [evil] })),
+  ])
+  const e = await failure(new JiraClient(http, CLOUD).search('x'))
+  expect(e.kind).toBe('bad_response')
+})

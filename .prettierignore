@@ -6,6 +6,7 @@ coverage
 test-results
 playwright-report
 docs/*.md
+docs/samples
 package-lock.json
 .claude
 skills-lock.json

@@ -3,9 +3,12 @@
  * Services are plain classes with injected Electron adapters (see ./services).
  */
 import { join } from 'node:path'
+import type { OpenTarget } from '@shared/repos'
+import type { RepoConfig } from '@shared/settings'
 import {
   app,
   BrowserWindow,
+  clipboard,
   dialog,
   globalShortcut,
   net,
@@ -24,6 +27,7 @@ import { GitRunner } from './services/git/exec'
 import { editorCommand, editorFallback, launchDetached, terminalCommand } from './services/open'
 import { DEMO_JIRA } from './demo/jira'
 import { JiraService } from './services/jira/service'
+import { StartWorkService } from './services/startwork'
 import { DevServerManager } from './services/process/devserver'
 import { loginShellPath, mergePath } from './services/process/shell-path'
 import { RepoWatcher } from './services/repo-watcher'
@@ -192,6 +196,30 @@ function start(): void {
   })
   void watcher.sync(store.get().repos)
 
+  const actions = new GitActions(git)
+  const jira = new JiraService({
+    http,
+    settings: () => store.get(),
+    token: () => secrets.get('jira.token'),
+    demo: DEMO_JIRA,
+  })
+  const openRepo = async (repo: RepoConfig, target: OpenTarget): Promise<void> => {
+    if (target === 'files') {
+      const error = await shell.openPath(repo.path)
+      if (error) throw new Error(error)
+    } else if (target === 'terminal') {
+      await launchDetached(terminalCommand(repo.path, process.platform))
+    } else {
+      const cmd = editorCommand(store.get().git.editorPath, repo.path, process.platform)
+      const fallback = editorFallback(repo.path, process.platform)
+      // Finder-launched apps don't get the shell PATH where `code` usually lives.
+      await launchDetached(cmd).catch((err) => {
+        if (!fallback) throw err
+        return launchDetached(fallback)
+      })
+    }
+  }
+
   registerIpc(
     createHandlers({
       settings: store,
@@ -216,7 +244,7 @@ function start(): void {
       quit,
       repos,
       git,
-      actions: new GitActions(git),
+      actions,
       pickFolder: async () => {
         const opts = { title: 'Add a git repository', properties: ['openDirectory' as const] }
         const result = mainWindow
@@ -224,28 +252,18 @@ function start(): void {
           : await dialog.showOpenDialog(opts)
         return result.canceled ? null : (result.filePaths[0] ?? null)
       },
-      openRepo: async (repo, target) => {
-        if (target === 'files') {
-          const error = await shell.openPath(repo.path)
-          if (error) throw new Error(error)
-        } else if (target === 'terminal') {
-          await launchDetached(terminalCommand(repo.path, process.platform))
-        } else {
-          const cmd = editorCommand(store.get().git.editorPath, repo.path, process.platform)
-          const fallback = editorFallback(repo.path, process.platform)
-          // Finder-launched apps don't get the shell PATH where `code` usually lives.
-          await launchDetached(cmd).catch((err) => {
-            if (!fallback) throw err
-            return launchDetached(fallback)
-          })
-        }
-      },
+      openRepo,
       devServers,
-      jira: new JiraService({
-        http,
+      jira,
+      startWork: new StartWorkService({
+        jira,
+        actions,
+        git,
+        repo: (id) => repos.get(id),
         settings: () => store.get(),
-        token: () => secrets.get('jira.token'),
-        demo: DEMO_JIRA,
+        briefsDir: join(userData, 'briefs'),
+        writeClipboard: (text) => clipboard.writeText(text),
+        openEditor: (repo) => openRepo(repo, 'editor'),
       }),
       requestRepoAction: (event) => {
         showView('repos')

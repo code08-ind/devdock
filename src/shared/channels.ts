@@ -47,6 +47,8 @@ export const INVOKE_CHANNELS = [
   'jira:testConnection',
   'jira:list',
   'jira:issue',
+  'startwork:plan',
+  'startwork:run',
 ] as const
 
 /** Events pushed from main to renderer. */
