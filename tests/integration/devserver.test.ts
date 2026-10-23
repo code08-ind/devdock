@@ -1,19 +1,20 @@
 import { EventEmitter } from 'node:events'
 import type { ChildProcess } from 'node:child_process'
-import { cpSync, mkdtempSync, rmSync } from 'node:fs'
+import { cpSync, mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { DevServerState } from '../../src/shared/devserver'
 import { DEFAULT_PROTECTED, DEFAULT_TEMPLATES, type RepoConfig } from '../../src/shared/settings'
 import { DevServerManager, killTree } from '../../src/main/services/process/devserver'
+import { removeTempDir } from '../fixtures/cleanup'
 import { isListening } from '../fixtures/ports'
 
 let manager: DevServerManager | undefined
 let dir: string | undefined
 afterEach(async () => {
   await manager?.stopAll()
-  if (dir) rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 })
+  if (dir) removeTempDir(dir)
 })
 
 function setup(devCommand = 'npm run dev') {

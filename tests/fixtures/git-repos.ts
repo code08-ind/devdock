@@ -1,7 +1,8 @@
 import { execFileSync } from 'node:child_process'
-import { mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, realpathSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { removeTempDir } from './cleanup'
 
 /** Throwaway git setups for integration tests: bare origin, a clone, optional upstream. */
 export interface Repos {
@@ -95,8 +96,7 @@ export function makeRepos(opts: { upstream?: boolean; base?: string } = {}): Rep
     upstream,
     git,
     commit,
-    // Windows: a process git started (hook, alias) can outlive a timed-out git and hold the folder.
-    cleanup: () => rmSync(root, { recursive: true, force: true, maxRetries: 15, retryDelay: 200 }),
+    cleanup: () => removeTempDir(root),
   }
 }
 

@@ -8,6 +8,7 @@
   },
   "include": [
     "tests/e2e/**/*",
+    "tests/fixtures/cleanup.ts",
     "tests/fixtures/git-repos.ts",
     "tests/fixtures/ports.ts",
     "src/renderer/env.d.ts",
