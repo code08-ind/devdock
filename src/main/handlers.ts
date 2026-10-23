@@ -12,6 +12,7 @@ import type { GitRunner } from './services/git/exec'
 import { repoStatus } from './services/git/repo'
 import type { HttpClient } from './services/http'
 import type { NotificationService } from './services/notifications'
+import { DevServerError, type DevServerManager } from './services/process/devserver'
 import { RepoNotFoundError, type RepoService } from './services/repos'
 import { SecretsUnavailableError, type SecretStore } from './services/secrets'
 import type { SettingsStore } from './services/settings'
@@ -42,6 +43,7 @@ export interface HandlerDeps {
   openRepo: (repo: RepoConfig, target: OpenTarget) => Promise<void>
   /** Streams git output to the renderer's activity log. */
   emitOutput: (event: RepoOutputEvent) => void
+  devServers: DevServerManager
   /** Brings up the main window's action dialog (from the palette window). */
   requestRepoAction: (event: { id: string; request: ActionRequest }) => void
 }
@@ -67,6 +69,7 @@ async function withGit<T>(fn: () => Promise<T> | T): Promise<T> {
   } catch (err) {
     if (err instanceof GitError) throw new IpcError(GIT_CODES[err.kind], err.message, err.details)
     if (err instanceof RepoNotFoundError) throw new IpcError('NOT_FOUND', err.message)
+    if (err instanceof DevServerError) throw new IpcError('PRECONDITION_FAILED', err.message)
     throw err
   }
 }
@@ -86,7 +89,9 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
   return {
     'app:info': () => ({ ...deps.versions(), shortcut: deps.shortcut.status() }),
     'app:openExternal': async ({ url }) => {
-      const verdict = checkExternalUrl(url, deps.settings.get().links.allowedHosts)
+      // Local dev servers (P1 "Start dev server" URL) are always allowed besides the list.
+      const hosts = [...deps.settings.get().links.allowedHosts, 'localhost', '127.0.0.1', '[::1]']
+      const verdict = checkExternalUrl(url, hosts)
       if (!verdict.ok) throw new IpcError('NOT_ALLOWED', verdict.reason)
       await deps.openExternal(verdict.url)
     },
@@ -157,6 +162,12 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
         ),
       ),
     'repos:open': ({ id, target }) => withGit(() => deps.openRepo(deps.repos.get(id), target)),
+    'devserver:list': () => deps.devServers.list(),
+    'devserver:start': ({ id, kind }) =>
+      withGit(() => deps.devServers.start(deps.repos.get(id), kind)),
+    'devserver:stop': ({ id, kind }) =>
+      withGit(() => deps.devServers.stop(deps.repos.get(id).id, kind)),
+    'devserver:log': ({ id, kind }) => deps.devServers.log(id, kind),
     'repos:requestAction': ({ id, request }) =>
       withGit(() => {
         deps.repos.get(id)

@@ -5,6 +5,7 @@ import type { RepoConfig } from '@shared/settings'
 import { ACTION_LABELS, OPEN_LABELS, useOpenRepo, useRepoStatus } from '../../lib/repos'
 import { Button, IconButton } from '../../ui/Button'
 import { ActionDialog } from './ActionDialog'
+import { DevServerPanel } from './DevServerPanel'
 import { RepoSettingsDialog } from './RepoSettingsDialog'
 import { RepoStatusError, RepoStatusLine } from './RepoStatusLine'
 
@@ -85,6 +86,9 @@ export function RepoCard({ repo }: { repo: RepoConfig }) {
         {actionButton({ action: 'pushBranch' }, false, !s?.branch)}
         {s?.hasUpstreamRemote ? actionButton({ action: 'syncFork' }) : null}
       </div>
+
+      <DevServerPanel repo={repo} kind="dev" />
+      {s?.hasBaseline ? <DevServerPanel repo={repo} kind="baseline" /> : null}
 
       {action ? (
         <ActionDialog repo={repo} initial={action} onClose={() => setAction(null)} />

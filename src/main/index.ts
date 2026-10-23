@@ -22,6 +22,8 @@ import { createHandlers } from './handlers'
 import { GitActions } from './services/git/actions'
 import { GitRunner } from './services/git/exec'
 import { editorCommand, editorFallback, launchDetached, terminalCommand } from './services/open'
+import { DevServerManager } from './services/process/devserver'
+import { loginShellPath, mergePath } from './services/process/shell-path'
 import { RepoWatcher } from './services/repo-watcher'
 import { RepoService } from './services/repos'
 import { registerIpc } from './ipc/registry'
@@ -170,6 +172,22 @@ function start(): void {
   const git = new GitRunner()
   const repos = new RepoService(store, git)
   const watcher = new RepoWatcher(git, (id) => broadcast('repos:changed', { id }))
+  // Finder-launched macOS apps don't get the shell PATH (npm, node, code). Dev servers wait for it.
+  const envReady =
+    process.platform === 'darwin' && app.isPackaged
+      ? loginShellPath().then((p) => {
+          if (p) process.env.PATH = mergePath(p, process.env.PATH)
+          else log.warn('could not read the login shell PATH')
+        })
+      : Promise.resolve()
+  const devServers = new DevServerManager({
+    envReady,
+    onChange: (states) => broadcast('devserver:changed', states),
+    onOutput: (e) => {
+      if (mainWindow && !mainWindow.isDestroyed())
+        mainWindow.webContents.send('devserver:output', e)
+    },
+  })
   void watcher.sync(store.get().repos)
 
   registerIpc(
@@ -220,6 +238,7 @@ function start(): void {
           })
         }
       },
+      devServers,
       requestRepoAction: (event) => {
         showView('repos')
         mainWindow?.webContents.send('repos:actionRequested', event)
@@ -286,6 +305,16 @@ function start(): void {
     })
   }
 
+  // SPEC 6.2: dev server process trees are killed when the app quits.
+  let serversStopped = false
+  app.on('before-quit', (event) => {
+    if (serversStopped || !devServers.hasRunning()) return
+    event.preventDefault()
+    void devServers.stopAll().finally(() => {
+      serversStopped = true
+      app.quit()
+    })
+  })
   app.on('will-quit', () => {
     watcher.dispose()
     shortcut.dispose()

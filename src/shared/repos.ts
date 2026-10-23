@@ -66,6 +66,8 @@ export const RepoStatusSchema = z.object({
   lastFetch: z.number().nullable(),
   operation: z.enum(['merge', 'rebase']).nullable(),
   hasUpstreamRemote: z.boolean(),
+  /** `scripts/baseline.mjs` exists (SPEC 6.2 "Baseline server"). */
+  hasBaseline: z.boolean(),
 })
 export type RepoStatus = z.infer<typeof RepoStatusSchema>
 

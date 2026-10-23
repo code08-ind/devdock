@@ -14,10 +14,10 @@ Contract docs: `docs/SPEC.md`, `docs/UI-THEMES.md`, `docs/BUILD-PROMPTS.md` (pha
 
 | Field        | Value                                                         |
 | ------------ | ------------------------------------------------------------- |
-| Phase        | P1 — Repos and git actions (Phase 0 closed: all Done criteria met) |
-| Next step    | Sub-phase **P1-D** — dev server manager + baseline (`P1.12`, `P1.13`, `P1.D3`) |
+| Phase        | P1 — Repos and git actions: **all sub-phases done, all Done criteria met** — awaiting user review/commit |
+| Next step    | User reviews + commits P1-D, push for CI (Windows dev-server path untested locally), then **Phase 2 — Jira** (`P2.01`) |
 | Blockers     | None                                                          |
-| Last updated | 2026-10-22                                                    |
+| Last updated | 2026-10-23                                                    |
 
 ---
 
@@ -184,8 +184,8 @@ Done criteria:
 - [x] `P1.09` New branch from template + slug function
 - [x] `P1.10` Push branch (protected patterns blocked in handler)
 - [x] `P1.11` Open in VS Code / terminal / file manager — buttons on each repo card + palette; command building unit-tested; **not launched in e2e** (would open real apps on the test machine)
-- [ ] `P1.12` Dev server manager: spawn, URL/port detect, log panel, Stop, tree kill (win `taskkill /T`, mac pgroup)
-- [ ] `P1.13` Baseline integration (`scripts/baseline.mjs`)
+- [x] `P1.12` Dev server manager: spawn, URL/port detect, log panel, Stop, tree kill (win `taskkill /T`, mac pgroup) — `services/process/{devserver,detect,shell-path}.ts`, `DevServerPanel.tsx`; shell-free dev command allow-list; quit waits for `stopAll()`. Windows path (cmd.exe shim, `taskkill /T /F`) unit-tested only — needs CI
+- [x] `P1.13` Baseline integration (`scripts/baseline.mjs`) — offered only when the file exists (`RepoStatus.hasBaseline`), runs under Electron's Node; integration test detects its port, e2e checks the row appears
 
 ### Sub-phases (pause points)
 
@@ -215,13 +215,21 @@ Done criteria:
   freed, watcher sync serialised, log keyboard-reachable. Scope was: Repos view, Today repo status, action UI (commands disclosure, streamed
   activity log, result toast, conflict view), polling on focus / 2 min / `.git/HEAD` watcher,
   screenshots of Update → conflict → Abort (`P1.D5`).
-- [ ] **P1-D — Dev server & baseline**: manager, port detection, log panel, tree kill, e2e (`P1.D3`).
+- [x] **P1-D — Dev server & baseline** (done 2026-10-23). Evidence: `npm run lint` exit 0; `npm test` →
+  19 files, 296 passed; `npm run e2e` → 18 passed, 1 skipped; `devserver.spec.ts --repeat-each=3` → 6 passed.
+  `npm run dist` **not run** this sub-phase (no packaging changes). `code-review` run; fixes: concurrent
+  starts could orphan a process, stop/quit could hang when exit never fires (capped wait), leftover group
+  killed when npm exits on its own, stale renderer log after restart, URL scan only on new output,
+  fish-safe PATH read, Windows `./script` → `.\script`, `[::1]` allowed, shared `BASELINE_SCRIPT`/`isActive`/
+  `ServerRefSchema`. Also fixed a load regression: the strict dev-command check had made `SettingsSchema`
+  reject P1-C-saved commands → **all settings reset**; stored schema is lenient again (regression test,
+  mutation-checked). Deferred (DECISIONS.md): palette/tray Start dev server → P6.01.
 
 Done criteria:
 
 - [x] `P1.D1` Integration tests with temp repos: non-ff refusal, dirty-tree + Stash round trip, merge conflict abort, rebase conflict abort, protected push rejected, sync-fork e2e — Evidence: `tests/integration/git-actions.test.ts` (25) + `repos-ipc.test.ts` (10): each case asserts the outcome **and** repo state (HEAD/refs unchanged, files restored, stash list empty, origin untouched, no push in the command log); protected push rejected through the IPC handler → `NOT_ALLOWED`
 - [x] `P1.D2` Branch slug unit tests (unicode, punctuation, max length, collisions) — Evidence: `tests/unit/git-branches.test.ts` (accents/CJK/emoji, punctuation, ≤50 at word boundary, over-long word, `-2/-3` case-insensitive collisions, valid ref names, protected patterns)
-- [ ] `P1.D3` Dev server e2e: start fixture, detect port, stop, port free — Evidence:
+- [x] `P1.D3` Dev server e2e: start fixture, detect port, stop, port free — Evidence: `tests/e2e/devserver.spec.ts` drives the UI: Start → "Running on port N" → port listening → Stop → port free; the port is held by a SIGTERM-ignoring grandchild, so only a tree kill frees it. Second test: quitting the app frees the port. Screenshot `docs/screenshots/p1-devserver.png`. Integration (`tests/integration/devserver.test.ts`, 8): same on real processes + stopAll, baseline, concurrent start, leader-exit group kill, kill never hangs
 - [x] `P1.D4` Command-log grep test: no `push --force` / `reset --hard` — Evidence: `afterAll` in `git-actions.test.ts` and `repos-ipc.test.ts` checks every logged command with `unsafeReason` + regex; the guard itself refuses them before spawning (unit-tested, incl. global options/aliases/abbreviations)
 - [x] `P1.D5` Recording/screenshots: Update my branch → conflict → Abort — Evidence: `docs/screenshots/p1-repos.png`, `p1-update-plan.png`, `p1-update-conflict.png`, `p1-abort-done.png` (from the e2e flow via `npm run screenshots`)
 
@@ -334,3 +342,4 @@ Done criteria:
 | 2026-10-22 | P1-A  | User approved moving on. Git core: GitRunner (execFile, typed errors, command log, destructive-command guard), porcelain v2 / rev-list / stash / remote parsers, slug + template + collisions + protected patterns; temp-repo fixture; 69 unit + 10 integration tests. CI run #1: macOS all green (incl. dist); Windows failed 1 e2e (EBUSY on locked Chromium cache) → fixed, run #2 pending. | P1-B |
 | 2026-10-22 | P1-B  | Settings `repos` + `git`; RepoService (add/validate/detect base, symlink-safe duplicates); repoStatus; GitActions (fetch all, sync base, update branch merge/rebase + stash & continue + conflict outcome + abort, sync fork + confirmed pushBase, new branch, push branch with protected block), shared plan/run checks, per-repo lock; repos:* IPC + git error codes; open in editor/terminal/files. 35 action/IPC integration tests on real repos; code-review fixes (injection, Windows quoting, stash safety). | P1-C |
 | 2026-10-22 | P1-C  | `.git/HEAD` watcher + repos:changed; renderer repo hooks (2-min poll, focus refresh via focusManager); Repos page (cards, status line, per-repo settings, add/remove), ActionDialog (plan → disclosure → run → streamed log → toast; Stash & continue; conflict view + Abort; confirmed push after Sync fork); Today repo status; Settings → Git; palette repo commands routed to the dialog (both windows). e2e for P1.D5 + screenshots. Review fixes applied. | P1-D |
+| 2026-10-23 | P1-D  | Resumed: P1-D code existed uncommitted and green (lint, 289 tests, 18 e2e). Found + fixed settings-load regression (strict devCommand reset all settings). Wrote DECISIONS P1-D. code-review (Standards + Spec) run; fixed double-start race, unbounded kill wait, leftover process group, stale renderer log, fish PATH, Windows `./script`; 7 new tests. Phase 1 Done criteria all met. | User review + commit; CI; Phase 2 |

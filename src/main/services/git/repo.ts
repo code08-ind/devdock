@@ -1,5 +1,6 @@
 import { existsSync, statSync } from 'node:fs'
 import { basename, join } from 'node:path'
+import { BASELINE_SCRIPT } from '@shared/devserver'
 import type { RepoStatus } from '@shared/repos'
 import type { RepoConfig } from '@shared/settings'
 import { GitError } from './errors'
@@ -119,5 +120,6 @@ export async function repoStatus(git: GitRunner, repo: RepoConfig): Promise<Repo
     lastFetch: existsSync(fetchHead) ? statSync(fetchHead).mtimeMs : null,
     operation: operationIn(gitDir),
     hasUpstreamRemote: 'upstream' in remotes,
+    hasBaseline: existsSync(join(cwd, BASELINE_SCRIPT)),
   }
 }

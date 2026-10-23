@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { SETTINGS_VERSION, SettingsPatchSchema, defaultSettings } from '../../src/shared/settings'
+import { RepoPatchSchema } from '../../src/shared/repos'
 import { SettingsStore, applyPatch, migrate } from '../../src/main/services/settings'
 
 const tmp = () => join(mkdtempSync(join(tmpdir(), 'devdock-settings-')), 'settings.json')
@@ -42,6 +43,19 @@ describe('migrate', () => {
   it('rejects invalid values', () => {
     expect(migrate({ version: 1, appearance: { fontSize: 99 } }).ok).toBe(false)
     expect(migrate([]).ok).toBe(false)
+  })
+  it('keeps repos whose saved dev command the stricter P1-D check would reject', () => {
+    const repo = { id: 'r1', path: '/tmp/r', name: 'r', baseBranch: 'main' }
+    const r = migrate({
+      version: SETTINGS_VERSION,
+      repos: [{ ...repo, devCommand: 'PORT=3000 npm run dev' }],
+    })
+    expect(r.ok && r.settings.repos[0]?.devCommand).toBe('PORT=3000 npm run dev')
+    // New values still go through the strict check.
+    expect(RepoPatchSchema.safeParse({ devCommand: 'PORT=3000 npm run dev' }).success).toBe(false)
+    expect(RepoPatchSchema.safeParse({ devCommand: 'npm run dev -- --port 3000' }).success).toBe(
+      true,
+    )
   })
 })
 

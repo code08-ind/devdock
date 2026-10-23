@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { isAllowedEditorPath, isValidBranchName } from './gitref'
+import { isAllowedEditorPath, isValidBranchName, parseDevCommand } from './gitref'
 
 export const SETTINGS_VERSION = 1
 
@@ -40,7 +40,13 @@ export const RepoFields = {
   baseBranch: z.string().trim().refine(isValidBranchName, 'Not a valid branch name'),
   protectedPatterns: z.array(z.string().trim().min(1).max(200)),
   branchTemplates: z.object({ feature: template, bugfix: template }),
-  devCommand: z.string().trim().max(500),
+  devCommand: z
+    .string()
+    .trim()
+    .refine(
+      (c) => parseDevCommand(c) !== null,
+      'Start with npm, pnpm, yarn, bun, npx, node or ./script — no shell syntax',
+    ),
 }
 
 /** One registered local repo. Managed through the repos:* IPC channels, not settings:update. */
@@ -51,7 +57,9 @@ export const RepoConfigSchema = z.object({
   baseBranch: RepoFields.baseBranch,
   protectedPatterns: RepoFields.protectedPatterns.default(() => [...DEFAULT_PROTECTED]),
   branchTemplates: RepoFields.branchTemplates.default(() => ({ ...DEFAULT_TEMPLATES })),
-  devCommand: RepoFields.devCommand.default('npm run dev'),
+  // Lenient when stored: P1-C saved any command, and one rejected value must not reset every
+  // setting on load. New values go through RepoFields (patch); start re-checks with parseDevCommand.
+  devCommand: z.string().trim().max(500).default('npm run dev'),
 })
 export type RepoConfig = z.infer<typeof RepoConfigSchema>
 

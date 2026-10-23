@@ -40,6 +40,7 @@ export async function handlerSetup(
   const { GitRunner } = await import('../../src/main/services/git/exec')
   const { GitActions } = await import('../../src/main/services/git/actions')
   const { RepoService } = await import('../../src/main/services/repos')
+  const { DevServerManager } = await import('../../src/main/services/process/devserver')
 
   const dir = mkdtempSync(join(tmpdir(), 'devdock-handlers-'))
   const settings = new SettingsStore(join(dir, 'settings.json'))
@@ -93,6 +94,7 @@ export async function handlerSetup(
     openRepo: vi.fn<HandlerDeps['openRepo']>(async () => undefined),
     emitOutput: vi.fn((e: RepoOutputEvent) => void output.push(e)),
     requestRepoAction: vi.fn(),
+    devServers: new DevServerManager({ onChange: vi.fn(), onOutput: vi.fn() }),
   }
   return { deps, handlers: createHandlers(deps), output, git }
 }

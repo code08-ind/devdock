@@ -411,3 +411,25 @@
 .input-key {
   width: 10em;
 }
+
+/* ---- Dev server ------------------------------------------------------------------------- */
+
+.devserver {
+  display: grid;
+  gap: var(--space-2);
+  padding-top: var(--space-2);
+  border-top: var(--border-w) solid var(--border);
+}
+.devserver-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  font-size: var(--fs-sm);
+}
+.devserver-name {
+  font-weight: var(--fw-medium);
+}
+.devserver-row .spacer {
+  flex: 1;
+}

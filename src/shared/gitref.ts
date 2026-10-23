@@ -21,3 +21,21 @@ export function isAllowedEditorPath(path: string): boolean {
   const name = path.split(/[\\/]/).pop() ?? ''
   return EDITOR_NAMES.test(name)
 }
+
+/** Programs a dev command may start (SPEC 6.2 "runs the repo's npm run dev (configurable)"). */
+const DEV_RUNNERS = new Set(['npm', 'pnpm', 'yarn', 'bun', 'npx', 'node'])
+/** Characters a shell or cmd.exe would interpret; the command runs without a shell. */
+const SHELL_META = /[&|<>^%"'`$;(){}\\\r\n*?!]/
+
+/**
+ * Splits a dev command into argv, or returns null if it isn't allowed: it must start with a
+ * package-manager runner or a script inside the repo (`./…`), with no shell syntax.
+ */
+export function parseDevCommand(command: string): string[] | null {
+  const trimmed = command.trim()
+  if (!trimmed || trimmed.length > 500 || SHELL_META.test(trimmed)) return null
+  const argv = trimmed.split(/\s+/)
+  const first = argv[0]!
+  const inRepo = first.startsWith('./') && !first.includes('..')
+  return DEV_RUNNERS.has(first) || inRepo ? argv : null
+}

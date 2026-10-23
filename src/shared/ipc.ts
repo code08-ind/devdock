@@ -1,4 +1,10 @@
 import { z } from 'zod'
+import {
+  DevServerStateSchema,
+  ServerRefSchema,
+  type DevServerOutputEvent,
+  type DevServerState,
+} from './devserver'
 import type { EventChannel, InvokeChannel } from './channels'
 import { VIEWS } from './channels'
 import {
@@ -128,6 +134,11 @@ export const contract = {
     res: ActionOutcomeSchema,
   },
   'repos:open': { req: z.object({ id: z.string(), target: z.enum(OPEN_TARGETS) }), res: none },
+  'devserver:list': { req: none, res: z.array(DevServerStateSchema) },
+  'devserver:start': { req: ServerRefSchema, res: DevServerStateSchema },
+  'devserver:stop': { req: ServerRefSchema, res: none },
+  /** Output so far, for a log panel opened after the server started. */
+  'devserver:log': { req: ServerRefSchema, res: z.string() },
   'repos:requestAction': {
     req: z.object({ id: z.string(), request: ActionRequestSchema }),
     res: none,
@@ -175,5 +186,7 @@ export interface EventPayloads {
   'repos:output': RepoOutputEvent
   'repos:changed': { id: string }
   'repos:actionRequested': { id: string; request: ActionRequest }
+  'devserver:changed': DevServerState[]
+  'devserver:output': DevServerOutputEvent
 }
 export type EventPayload<E extends EventChannel> = EventPayloads[E]
