@@ -6,6 +6,13 @@ import {
   type DevServerState,
 } from './devserver'
 import type { EventChannel, InvokeChannel } from './channels'
+import {
+  IssueKeySchema,
+  JiraConnectionSchema,
+  JiraIssueDetailSchema,
+  JiraIssueSchema,
+  JiraListRequestSchema,
+} from './jira'
 import { VIEWS } from './channels'
 import {
   ActionOutcomeSchema,
@@ -139,6 +146,9 @@ export const contract = {
   'devserver:stop': { req: ServerRefSchema, res: none },
   /** Output so far, for a log panel opened after the server started. */
   'devserver:log': { req: ServerRefSchema, res: z.string() },
+  'jira:testConnection': { req: none, res: JiraConnectionSchema },
+  'jira:list': { req: JiraListRequestSchema, res: z.array(JiraIssueSchema) },
+  'jira:issue': { req: z.object({ key: IssueKeySchema }), res: JiraIssueDetailSchema },
   'repos:requestAction': {
     req: z.object({ id: z.string(), request: ActionRequestSchema }),
     res: none,
@@ -167,6 +177,15 @@ export const ERROR_CODES = [
   'TIMEOUT',
   'GIT_FAILED',
   'PRECONDITION_FAILED',
+  // HTTP service failures (services/service-error.ts kinds).
+  'NOT_CONFIGURED',
+  'SERVICE_AUTH',
+  'SERVICE_FORBIDDEN',
+  'RATE_LIMITED',
+  'PROXY',
+  'CERTIFICATE',
+  'NETWORK',
+  'SERVICE_FAILED',
 ] as const
 export type ErrorCode = (typeof ERROR_CODES)[number]
 

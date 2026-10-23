@@ -14,8 +14,8 @@ Contract docs: `docs/SPEC.md`, `docs/UI-THEMES.md`, `docs/BUILD-PROMPTS.md` (pha
 
 | Field        | Value                                                         |
 | ------------ | ------------------------------------------------------------- |
-| Phase        | P1 — Repos and git actions: **closed** (all Done criteria met; CI green on macOS + Windows, run 39901019363) |
-| Next step    | **Phase 2 — Jira**, sub-phase P2-A starting at `P2.01` (Cloud adapter + ADF→Markdown) |
+| Phase        | P2 — Jira (P1 closed; CI green on macOS + Windows, run 39901019363) |
+| Next step    | Sub-phase **P2-B — Start work (main)**: `P2.06` (branch, TICKET.md + `.gitignore` check + location toggle, classification, clipboard, optional transition), tests for `P2.D3`/`P2.D4`/`P2.D5` |
 | Blockers     | None                                                          |
 | Last updated | 2026-10-23                                                    |
 
@@ -242,18 +242,32 @@ Done criteria:
 
 ## Phase 2 — Jira (SPEC 6.5)
 
-- [ ] `P2.01` Cloud adapter (REST v3, email + token) + ADF→Markdown
-- [ ] `P2.02` Data Center adapter (REST v2, PAT Bearer) + wiki-markup conversion
-- [ ] `P2.03` Normalised issue model + "Test connection" (reports user)
-- [ ] `P2.04` Lists: My open issues (JQL), Sprint (board id), saved queries
-- [ ] `P2.05` Issue detail drawer + Figma/Confluence link extraction
+- [x] `P2.01` Cloud adapter (REST v3, email + token) + ADF→Markdown — `services/jira/{client,cloud,adf}.ts`
+- [x] `P2.02` Data Center adapter (REST v2, PAT Bearer) + wiki-markup conversion — `services/jira/{datacenter,wiki}.ts`
+- [x] `P2.03` Normalised issue model + "Test connection" (reports user) — `shared/jira.ts`, `services/jira/model.ts`, IPC `jira:testConnection` (status + user; failures carry hints). Settings UI is P2-C
+- [~] `P2.04` Lists: My open issues (JQL), Sprint (board id), saved queries — main/IPC done (`jira:list`); UI is P2-C
+- [~] `P2.05` Issue detail drawer + Figma/Confluence link extraction — extraction + `jira:issue` done; drawer is P2-C
 - [ ] `P2.06` Start work flow (branch, TICKET.md + `.gitignore` warning + location toggle, agent classification, clipboard, optional transition, open VS Code)
-- [ ] `P2.07` Demo fixtures: 8 fake issues
+- [x] `P2.07` Demo fixtures: 8 fake issues — `src/main/demo/jira.ts` (`DD-101…108`: 3 bugs, 3 stories incl. vague `DD-103`, task without AC `DD-104`, AC in custom field `DD-106`)
+
+### Sub-phases (pause points)
+
+- [x] **P2-A — Jira core (main)** (done 2026-10-23). Evidence: `npm run lint` exit 0; `npm test` → 24 files,
+  389 passed (new: jira-adf 16, jira-wiki 11, jira-model 13, jira-client 49, jira-service 11 + settings);
+  `npm run e2e` → 18 passed, 1 skipped. `code-review` (Standards + Spec) run; fixes: newest comments via
+  `/comment?orderBy=-created`, 407 → proxy hint, Kanban/unknown board messages, per-flavour auth hints,
+  redacted error details, base URL rejects `?`/`#`, wiki table cells keep links with `|`, ADF code span
+  with edge backticks, Confluence `/display/` anchored, demo links openable, shared JSON/table helpers,
+  demo config injected. All 8 fixes mutation-checked (each test fails without its fix).
+- [ ] **P2-B — Start work (main)**: branch, TICKET.md (+ `.gitignore` warning, location toggle),
+  classification, clipboard message, optional transition; integration tests (`P2.D3` main part, `P2.D4`, `P2.D5`).
+- [ ] **P2-C — Renderer**: Tickets view (lists, saved queries), issue drawer, Start work dialog, Settings → Jira
+  (+ Test connection), e2e (`P2.D3`), screenshots.
 
 Done criteria:
 
-- [ ] `P2.D1` Adapter tests Cloud + DC incl. 401, 403, 429 `Retry-After`, proxy/cert errors — Evidence:
-- [ ] `P2.D2` ADF→Markdown tests per node type — Evidence:
+- [x] `P2.D1` Adapter tests Cloud + DC incl. 401, 403, 429 `Retry-After`, proxy/cert errors — Evidence: `tests/unit/jira-client.test.ts` (recorded-style payloads in `tests/fixtures/jira.ts`): both flavours via `describe.each` — 401, 403, 404, 407, 429 (seconds, HTTP date, none), 5xx, non-JSON 200, Electron `net::ERR_*` proxy/tunnel/cert/DNS/refused/timeout, Node cert cause + timeout abort; redaction of details; + `jira-service.test.ts` (IPC codes `SERVICE_AUTH`, `RATE_LIMITED`, `INVALID_PAYLOAD`)
+- [x] `P2.D2` ADF→Markdown tests per node type — Evidence: `tests/unit/jira-adf.test.ts` (paragraph, marks, hard break, heading, bullet/nested/ordered/task lists, code block, mention/emoji/card/status/date, table with/without header, blockquote/panel/rule/expand/media, unknown nodes, empty input) + `jira-wiki.test.ts` for Data Center
 - [ ] `P2.D3` Start work e2e (branch, TICKET.md sections, clipboard for Bug + vague Story) — Evidence:
 - [ ] `P2.D4` Transition never called unless setting on (test) — Evidence:
 - [ ] `P2.D5` Generated TICKET.md from demo data attached — Evidence:
@@ -349,3 +363,4 @@ Done criteria:
 | 2026-10-22 | P1-C  | `.git/HEAD` watcher + repos:changed; renderer repo hooks (2-min poll, focus refresh via focusManager); Repos page (cards, status line, per-repo settings, add/remove), ActionDialog (plan → disclosure → run → streamed log → toast; Stash & continue; conflict view + Abort; confirmed push after Sync fork); Today repo status; Settings → Git; palette repo commands routed to the dialog (both windows). e2e for P1.D5 + screenshots. Review fixes applied. | P1-D |
 | 2026-10-23 | P1-D  | Resumed: P1-D code existed uncommitted and green (lint, 289 tests, 18 e2e). Found + fixed settings-load regression (strict devCommand reset all settings). Wrote DECISIONS P1-D. code-review (Standards + Spec) run; fixed double-start race, unbounded kill wait, leftover process group, stale renderer log, fish PATH, Windows `./script`; 7 new tests. Phase 1 Done criteria all met. | User review + commit; CI; Phase 2 |
 | 2026-10-23 | P1 close | Committed P1-D (a257c9b), pushed. CI showed Windows red since P1-B: missing git identity in tests + EBUSY temp cleanup; also a host-dependent spawn test. Fixed (07b49c4, a268dab), CI run 39901019363 green on both OSes, incl. dev-server e2e on Windows. Phase 1 closed. | Phase 2 — P2-A |
+| 2026-10-23 | P2-A  | Jira core: shared model + settings `jira`, ServiceError (HTTP/proxy/cert/429 hints), JiraClient with Cloud (v3, Basic, ADF) / DC (v2, Bearer, wiki) flavours, field discovery, sprint via Agile API, AC + link extraction, JiraService (config/demo), IPC `jira:testConnection/list/issue`, 8 demo issues. 108 new tests. code-review run; 10 fixes, mutation-checked. | P2-B |

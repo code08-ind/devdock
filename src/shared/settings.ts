@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { isAllowedEditorPath, isValidBranchName, parseDevCommand } from './gitref'
+import { DEFAULT_JQL, JIRA_FLAVORS, SavedQuerySchema } from './jira'
 
 export const SETTINGS_VERSION = 1
 
@@ -69,6 +70,24 @@ const host = z
   .trim()
   .toLowerCase()
   .regex(/^[a-z0-9.-]+$/, 'Host names only, e.g. bitbucket.org')
+
+/** A service's base URL: empty (not configured) or http(s) without credentials, no trailing /. */
+const serviceUrl = z
+  .string()
+  .trim()
+  .max(500)
+  .transform((u) => u.replace(/\/+$/, ''))
+  .refine((u) => {
+    if (u === '') return true
+    try {
+      const url = new URL(u)
+      // A query or fragment would swallow every API path appended to the base URL.
+      const plain = !url.username && !url.password && !url.search && !url.hash && !/[?#]/.test(u)
+      return (url.protocol === 'https:' || url.protocol === 'http:') && plain
+    } catch {
+      return false
+    }
+  }, 'Use the site address, e.g. https://your-team.atlassian.net')
 
 export const SettingsSchema = z.object({
   version: z.literal(SETTINGS_VERSION),
@@ -142,6 +161,19 @@ export const SettingsSchema = z.object({
         .default('code'),
     })
     .prefault({}),
+  /** SPEC 6.5 / 6.7. The token is a secret (`jira.token`), never stored here. */
+  jira: z
+    .object({
+      flavor: z.enum(JIRA_FLAVORS).default('cloud'),
+      baseUrl: serviceUrl.default(''),
+      /** Cloud only: the account email used with the API token. */
+      email: z.string().trim().max(200).default(''),
+      jql: z.string().trim().min(1).max(2000).default(DEFAULT_JQL),
+      /** Agile board for "Current sprint"; null hides that list. */
+      boardId: z.number().int().positive().nullable().default(null),
+      savedQueries: z.array(SavedQuerySchema).max(20).default([]),
+    })
+    .prefault({}),
   repos: z.array(RepoConfigSchema).default([]),
 })
 
@@ -181,6 +213,7 @@ export const SettingsPatchSchema = z.object({
   links: patchOf(SettingsSchema.shape.links),
   features: patchOf(SettingsSchema.shape.features),
   git: patchOf(SettingsSchema.shape.git),
+  jira: patchOf(SettingsSchema.shape.jira),
 })
 
 export type SettingsPatch = z.infer<typeof SettingsPatchSchema>

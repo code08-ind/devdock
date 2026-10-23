@@ -44,6 +44,9 @@ export const INVOKE_CHANNELS = [
   'devserver:start',
   'devserver:stop',
   'devserver:log',
+  'jira:testConnection',
+  'jira:list',
+  'jira:issue',
 ] as const
 
 /** Events pushed from main to renderer. */

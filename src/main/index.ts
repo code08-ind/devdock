@@ -22,6 +22,8 @@ import { createHandlers } from './handlers'
 import { GitActions } from './services/git/actions'
 import { GitRunner } from './services/git/exec'
 import { editorCommand, editorFallback, launchDetached, terminalCommand } from './services/open'
+import { DEMO_JIRA } from './demo/jira'
+import { JiraService } from './services/jira/service'
 import { DevServerManager } from './services/process/devserver'
 import { loginShellPath, mergePath } from './services/process/shell-path'
 import { RepoWatcher } from './services/repo-watcher'
@@ -239,6 +241,12 @@ function start(): void {
         }
       },
       devServers,
+      jira: new JiraService({
+        http,
+        settings: () => store.get(),
+        token: () => secrets.get('jira.token'),
+        demo: DEMO_JIRA,
+      }),
       requestRepoAction: (event) => {
         showView('repos')
         mainWindow?.webContents.send('repos:actionRequested', event)

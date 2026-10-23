@@ -41,6 +41,8 @@ export async function handlerSetup(
   const { GitActions } = await import('../../src/main/services/git/actions')
   const { RepoService } = await import('../../src/main/services/repos')
   const { DevServerManager } = await import('../../src/main/services/process/devserver')
+  const { JiraService } = await import('../../src/main/services/jira/service')
+  const { DEMO_JIRA } = await import('../../src/main/demo/jira')
 
   const dir = mkdtempSync(join(tmpdir(), 'devdock-handlers-'))
   const settings = new SettingsStore(join(dir, 'settings.json'))
@@ -66,12 +68,13 @@ export async function handlerSetup(
   )
   const git = new GitRunner()
   const output: RepoOutputEvent[] = []
+  const http = new DemoHttpClient(demoHandlers())
   const deps: TestDeps = {
     settings,
     secrets,
     notifications,
     shortcut,
-    http: new DemoHttpClient(demoHandlers()),
+    http,
     logsDir: join(dir, 'logs'),
     versions: () => ({
       version: '0.0.0',
@@ -95,6 +98,12 @@ export async function handlerSetup(
     emitOutput: vi.fn((e: RepoOutputEvent) => void output.push(e)),
     requestRepoAction: vi.fn(),
     devServers: new DevServerManager({ onChange: vi.fn(), onOutput: vi.fn() }),
+    jira: new JiraService({
+      http,
+      settings: () => settings.get(),
+      token: () => secrets.get('jira.token'),
+      demo: DEMO_JIRA,
+    }),
   }
   return { deps, handlers: createHandlers(deps), output, git }
 }

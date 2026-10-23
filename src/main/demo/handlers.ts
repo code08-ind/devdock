@@ -1,12 +1,14 @@
 import { http, HttpResponse, type RequestHandler } from 'msw'
+import { jiraHandlers } from './jira'
+import { DEMO_ORIGIN } from './origin'
 
-/** Base host used by all demo fixtures. Adapters added in later phases register their own. */
-export const DEMO_ORIGIN = 'https://demo.devdock.invalid'
+export { DEMO_ORIGIN }
 
 export const coreHandlers: RequestHandler[] = [
   http.get(`${DEMO_ORIGIN}/ping`, () => HttpResponse.text('pong (demo)')),
 ]
 
+/** Every adapter's demo fixtures. Adapters added in later phases register theirs here. */
 export function demoHandlers(): RequestHandler[] {
-  return [...coreHandlers]
+  return [...coreHandlers, ...jiraHandlers]
 }
