@@ -1,3 +1,4 @@
+import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { parseDevCommand } from '../../src/shared/gitref'
 import { detectUrl, stripAnsi } from '../../src/main/services/process/detect'
@@ -74,7 +75,7 @@ describe('devSpawnSpec', () => {
       args: ['run', 'dev'],
     })
     expect(devSpawnSpec('./bin/dev --x', '/r', 'darwin')).toEqual({
-      file: '/r/bin/dev',
+      file: resolve('/r', 'bin/dev'),
       args: ['--x'],
     })
   })

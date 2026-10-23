@@ -25,7 +25,11 @@ export interface Repos {
  * inherits process.env.
  */
 const emptyConfig = join(mkdtempSync(join(tmpdir(), 'devdock-gitcfg-')), 'gitconfig')
-writeFileSync(emptyConfig, '')
+// GitRunner commits too (merge, stash, rebase): CI machines have no identity to fall back on.
+writeFileSync(
+  emptyConfig,
+  '[user]\n\tname = DevDock Test\n\temail = test@devdock.invalid\n[commit]\n\tgpgsign = false\n',
+)
 process.env.GIT_CONFIG_GLOBAL = emptyConfig
 process.env.GIT_CONFIG_NOSYSTEM = '1'
 process.env.GIT_CEILING_DIRECTORIES = realpathSync(tmpdir())
@@ -91,7 +95,8 @@ export function makeRepos(opts: { upstream?: boolean; base?: string } = {}): Rep
     upstream,
     git,
     commit,
-    cleanup: () => rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }),
+    // Windows: a process git started (hook, alias) can outlive a timed-out git and hold the folder.
+    cleanup: () => rmSync(root, { recursive: true, force: true, maxRetries: 15, retryDelay: 200 }),
   }
 }
 

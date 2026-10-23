@@ -183,7 +183,7 @@ describe('GitRunner against real repositories', { timeout: 20_000 }, () => {
   it('times out long commands', async () => {
     repos = makeRepos()
     // Repo config, not `-c alias.…`: the guard refuses command-line alias overrides.
-    repos.git(repos.clone, 'config', 'alias.slow', '!sleep 5')
+    repos.git(repos.clone, 'config', 'alias.slow', '!sleep 2')
     const e = await failure(new GitRunner().run(['slow'], { cwd: repos.clone, timeoutMs: 300 }))
     expect(e.kind).toBe('timeout')
   })
