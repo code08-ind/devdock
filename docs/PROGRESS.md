@@ -14,8 +14,8 @@ Contract docs: `docs/SPEC.md`, `docs/UI-THEMES.md`, `docs/BUILD-PROMPTS.md` (pha
 
 | Field        | Value                                                         |
 | ------------ | ------------------------------------------------------------- |
-| Phase        | P1 — Repos and git actions: **all sub-phases done, all Done criteria met** — awaiting user review/commit |
-| Next step    | User reviews + commits P1-D, push for CI (Windows dev-server path untested locally), then **Phase 2 — Jira** (`P2.01`) |
+| Phase        | P1 — Repos and git actions: **closed** (all Done criteria met; CI green on macOS + Windows, run 39901019363) |
+| Next step    | **Phase 2 — Jira**, sub-phase P2-A starting at `P2.01` (Cloud adapter + ADF→Markdown) |
 | Blockers     | None                                                          |
 | Last updated | 2026-10-23                                                    |
 
@@ -184,7 +184,7 @@ Done criteria:
 - [x] `P1.09` New branch from template + slug function
 - [x] `P1.10` Push branch (protected patterns blocked in handler)
 - [x] `P1.11` Open in VS Code / terminal / file manager — buttons on each repo card + palette; command building unit-tested; **not launched in e2e** (would open real apps on the test machine)
-- [x] `P1.12` Dev server manager: spawn, URL/port detect, log panel, Stop, tree kill (win `taskkill /T`, mac pgroup) — `services/process/{devserver,detect,shell-path}.ts`, `DevServerPanel.tsx`; shell-free dev command allow-list; quit waits for `stopAll()`. Windows path (cmd.exe shim, `taskkill /T /F`) unit-tested only — needs CI
+- [x] `P1.12` Dev server manager: spawn, URL/port detect, log panel, Stop, tree kill (win `taskkill /T`, mac pgroup) — `services/process/{devserver,detect,shell-path}.ts`, `DevServerPanel.tsx`; shell-free dev command allow-list; quit waits for `stopAll()`. Windows path (cmd.exe shim, `taskkill /T /F`) verified on Windows CI: e2e start → port → stop → port free + quit, run 39901019363
 - [x] `P1.13` Baseline integration (`scripts/baseline.mjs`) — offered only when the file exists (`RepoStatus.hasBaseline`), runs under Electron's Node; integration test detects its port, e2e checks the row appears
 
 ### Sub-phases (pause points)
@@ -224,6 +224,11 @@ Done criteria:
   `ServerRefSchema`. Also fixed a load regression: the strict dev-command check had made `SettingsSchema`
   reject P1-C-saved commands → **all settings reset**; stored schema is lenient again (regression test,
   mutation-checked). Deferred (DECISIONS.md): palette/tray Start dev server → P6.01.
+  **CI:** Windows had been red since P1-B (runs 39824158167, 39827617040 — not noticed then): no git
+  identity on the runner ("Committer identity unknown") and EBUSY deleting temp folders. Fixed in test
+  fixtures (identity in the isolated test gitconfig; best-effort `removeTempDir` on Windows). Run
+  **39901019363: macOS + Windows green**, lint/unit/e2e (18 passed, 1 skipped) and dist on both.
+  Known gap (P1-A): on Windows a timed-out git doesn't kill processes git started (hooks/aliases).
 
 Done criteria:
 
@@ -343,3 +348,4 @@ Done criteria:
 | 2026-10-22 | P1-B  | Settings `repos` + `git`; RepoService (add/validate/detect base, symlink-safe duplicates); repoStatus; GitActions (fetch all, sync base, update branch merge/rebase + stash & continue + conflict outcome + abort, sync fork + confirmed pushBase, new branch, push branch with protected block), shared plan/run checks, per-repo lock; repos:* IPC + git error codes; open in editor/terminal/files. 35 action/IPC integration tests on real repos; code-review fixes (injection, Windows quoting, stash safety). | P1-C |
 | 2026-10-22 | P1-C  | `.git/HEAD` watcher + repos:changed; renderer repo hooks (2-min poll, focus refresh via focusManager); Repos page (cards, status line, per-repo settings, add/remove), ActionDialog (plan → disclosure → run → streamed log → toast; Stash & continue; conflict view + Abort; confirmed push after Sync fork); Today repo status; Settings → Git; palette repo commands routed to the dialog (both windows). e2e for P1.D5 + screenshots. Review fixes applied. | P1-D |
 | 2026-10-23 | P1-D  | Resumed: P1-D code existed uncommitted and green (lint, 289 tests, 18 e2e). Found + fixed settings-load regression (strict devCommand reset all settings). Wrote DECISIONS P1-D. code-review (Standards + Spec) run; fixed double-start race, unbounded kill wait, leftover process group, stale renderer log, fish PATH, Windows `./script`; 7 new tests. Phase 1 Done criteria all met. | User review + commit; CI; Phase 2 |
+| 2026-10-23 | P1 close | Committed P1-D (a257c9b), pushed. CI showed Windows red since P1-B: missing git identity in tests + EBUSY temp cleanup; also a host-dependent spawn test. Fixed (07b49c4, a268dab), CI run 39901019363 green on both OSes, incl. dev-server e2e on Windows. Phase 1 closed. | Phase 2 — P2-A |
