@@ -128,7 +128,7 @@ test('a secret saved in Settings is encrypted on disk', async ({ launched }) => 
     .locator('.secret-row', { has: input })
     .getByRole('button', { name: 'Save', exact: true })
     .click()
-  await expect(win.getByText('Jira API token saved')).toBeVisible()
+  await expect(win.getByText('Jira API token or personal access token saved')).toBeVisible()
 
   const keys = await win.evaluate(() => window.devdock.secrets.list())
   expect(keys).toEqual({ ok: true, data: ['jira.token'] })

@@ -13,6 +13,7 @@ import { useCommands } from '../palette/useCommands'
 import { ActionDialog } from '../repos/ActionDialog'
 import { ReposPage } from '../repos/ReposPage'
 import { SettingsPage } from '../settings/SettingsPage'
+import { TicketsPage } from '../tickets/TicketsPage'
 import { TodayPage } from '../today/TodayPage'
 import { NavRail } from './NavRail'
 import { EMPTY_COPY, VIEW_ICONS } from './views'
@@ -29,6 +30,7 @@ function ViewBody({
   if (view === 'settings') return <SettingsPage />
   if (view === 'repos') return <ReposPage />
   if (view === 'today') return <TodayPage onView={onView} />
+  if (view === 'tickets') return <TicketsPage onView={onView} />
   return (
     <EmptyState
       icon={VIEW_ICONS[view]}

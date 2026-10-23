@@ -115,7 +115,14 @@ test('palette repo actions open the same dialog with the commands first', async 
   await win.evaluate((path) => window.devdock.repos.add({ path }), repos.clone)
   const mod = process.platform === 'darwin' ? 'Meta' : 'Control'
   await win.keyboard.press(`${mod}+K`)
-  await win.keyboard.type('fetch all clone')
+  // Type only once the input has focus, and press Enter only once the repo's command is listed:
+  // otherwise Enter runs whatever is highlighted first ("Go to Today").
+  const input = win.getByTestId('command-palette').getByRole('combobox', { name: 'Command' })
+  await expect(input).toBeFocused()
+  await input.fill('fetch all clone')
+  await expect(win.getByTestId('command-palette').getByRole('option').first()).toContainText(
+    'Fetch all',
+  )
   await win.keyboard.press('Enter')
   const dialog = win.getByRole('dialog', { name: 'Fetch all — clone' })
   await expect(dialog.locator('.commands')).toContainText('git fetch --all --prune')

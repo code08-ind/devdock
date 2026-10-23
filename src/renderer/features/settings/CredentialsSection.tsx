@@ -13,7 +13,7 @@ import { Section } from './Section'
 const SECRET_LABELS: Record<SecretKey, string> = {
   'bitbucket.token': 'Bitbucket access token',
   'jenkins.token': 'Jenkins API token',
-  'jira.token': 'Jira API token',
+  'jira.token': 'Jira API token or personal access token',
 }
 
 function SecretRow({

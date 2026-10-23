@@ -9,6 +9,7 @@ import { Button } from '../../ui/Button'
 import { Dialog } from '../../ui/Dialog'
 import { ErrorNotice, StatusPill, useToast } from '../../ui/Feedback'
 import { Field, Input, SegmentedControl } from '../../ui/Field'
+import { ActivityLog, CommandList } from '../../ui/Run'
 
 type Stage =
   | { kind: 'form' }
@@ -43,50 +44,6 @@ const WHAT_IT_DOES: Partial<Record<ActionRequest['action'], (base: string) => st
     `Pushes ${b} to origin. Never forced: origin rejects it if the histories diverged.`,
   newBranch: (b) => `Creates a branch from a freshly fetched origin/${b} and switches to it.`,
   pushBranch: () => 'Pushes your current branch to origin and sets it as the upstream.',
-}
-
-/** Shows an argument the way you'd type it in a shell (quoted when it has spaces). */
-const shellArg = (a: string) =>
-  /^[\w@%+=:,./{}-]+$/.test(a) ? a : `"${a.replace(/(["\\$`])/g, '\\$1')}"`
-
-function CommandList({ commands }: { commands: PlannedCommand[] }) {
-  return (
-    <details className="commands" open>
-      <summary>Commands that will run</summary>
-      <ol className="mono">
-        {commands.map((c, i) => (
-          <li key={i}>
-            git {c.args.map(shellArg).join(' ')}
-            {c.note ? <span className="muted"> — {c.note}</span> : null}
-          </li>
-        ))}
-      </ol>
-    </details>
-  )
-}
-
-function ActivityLog({ text }: { text: string }) {
-  const ref = useRef<HTMLPreElement>(null)
-  useEffect(() => {
-    const el = ref.current
-    if (el) el.scrollTop = el.scrollHeight
-  }, [text])
-  return (
-    // Scrollable by keyboard; not a live region (raw git output would flood screen readers —
-    // the result is announced by the toast and the status line instead).
-    <pre
-      ref={ref}
-      className="activity-log mono"
-      role="log"
-      aria-live="off"
-      aria-label="Git output"
-      // A scrollable region must be reachable by keyboard (WCAG 2.1.1).
-      // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
-      tabIndex={0}
-    >
-      {text || 'Waiting for output…'}
-    </pre>
-  )
 }
 
 /**

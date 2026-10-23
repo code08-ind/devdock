@@ -433,3 +433,165 @@
 .devserver-row .spacer {
   flex: 1;
 }
+
+/* ---- Tickets (SPEC 6.5): list + detail pane --------------------------------------------- */
+.tickets {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: var(--space-5);
+  align-items: start;
+}
+@media (max-width: 1100px) {
+  .tickets {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.tickets-list {
+  display: grid;
+  gap: var(--space-3);
+}
+.tickets-list-title {
+  margin: 0;
+  font-size: var(--fs-lg);
+}
+.tickets-hint {
+  padding-top: var(--space-6);
+}
+.issue-list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: var(--border-w) solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+.issue-list > li + li {
+  border-top: var(--border-w) solid var(--border);
+}
+.issue-row {
+  display: grid;
+  gap: var(--space-1);
+  width: 100%;
+  padding: var(--row-py) var(--space-3);
+  border: 0;
+  border-left: 3px solid transparent;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.issue-row:hover {
+  background: var(--bg-subtle);
+}
+.issue-row:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.issue-row[aria-current='true'] {
+  border-left-color: var(--accent);
+  background: var(--selection);
+}
+/* P0-C rule: muted text never sits on --selection (contrast); selected rows use --text. */
+.issue-row[aria-current='true'] .muted {
+  color: var(--text);
+}
+.issue-row-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  font-size: var(--fs-sm);
+}
+.issue-key {
+  font-weight: var(--fw-semibold);
+}
+.issue-type {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.issue-summary {
+  overflow-wrap: anywhere;
+}
+.issue-pane {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border: var(--border-w) solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+/* Focus is moved here programmatically (not a control): no ring. */
+.issue-pane:focus {
+  outline: none;
+}
+.issue-pane-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.issue-title {
+  margin: 0;
+  font-size: var(--fs-xl);
+  line-height: 1.3;
+}
+.issue-pane h3 {
+  margin: 0 0 var(--space-2);
+  font-size: var(--fs-base);
+}
+.issue-text {
+  max-width: 90ch;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.issue-links {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.link-button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  text-align: left;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+.link-button:hover {
+  text-decoration: underline;
+}
+.link-button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: var(--radius-sm);
+}
+.issue-comment + .issue-comment {
+  margin-top: var(--space-3);
+}
+.issue-comment p {
+  margin: 0 0 var(--space-1);
+  font-size: var(--fs-sm);
+}
+.saved-queries {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.saved-queries .list-row {
+  grid-template-columns: minmax(0, 1fr) max-content;
+}
+.saved-queries .list-row p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}

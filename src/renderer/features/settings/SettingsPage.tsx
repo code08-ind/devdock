@@ -7,6 +7,7 @@ import { CredentialsSection } from './CredentialsSection'
 import { DataSection } from './DataSection'
 import { GeneralSection } from './GeneralSection'
 import { GitSection } from './GitSection'
+import { JiraSection } from './JiraSection'
 import { NotificationsSection } from './NotificationsSection'
 import { Section } from './Section'
 
@@ -70,6 +71,7 @@ export function SettingsPage() {
       <DemoSection settings={settings} />
       <GeneralSection settings={settings} />
       <GitSection settings={settings} />
+      <JiraSection settings={settings} />
       <NotificationsSection settings={settings} />
       <CredentialsSection />
       <DataSection settings={settings} />
