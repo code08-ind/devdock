@@ -14,10 +14,10 @@ Contract docs: `docs/SPEC.md`, `docs/UI-THEMES.md`, `docs/BUILD-PROMPTS.md` (pha
 
 | Field        | Value                                                         |
 | ------------ | ------------------------------------------------------------- |
-| Phase        | P2 — Jira: **closed** (all Done criteria met; CI run 39908837385 green on macOS + Windows). Paused by the user before Phase 3. |
-| Next step    | **Phase 3 — Bitbucket pull requests**, when the user resumes: split into sub-phases first (adapters + link parser / watcher + scheduler / renderer), start at `P3.01` |
+| Phase        | P3 — Bitbucket PRs: **P3-A done** (main-process core, uncommitted). Paused by the user; P3-B next session. |
+| Next step    | User review/commit of P3-A, then **P3-B — Watcher, scheduler, PR actions (main)**: `P3.05`, `P3.06`, `P3.07` (+ `P3.D2`, `P3.D3`) |
 | Blockers     | None                                                          |
-| Last updated | 2026-10-23                                                    |
+| Last updated | 2026-10-24                                                    |
 
 ---
 
@@ -288,18 +288,36 @@ Done criteria:
 
 ## Phase 3 — Bitbucket pull requests (SPEC 6.3)
 
-- [ ] `P3.01` Cloud 2.0 + DC 1.0 adapters → one PR model; base-URL Detect probe
-- [ ] `P3.02` PR link parser (both shapes, `/overview` `/diff`, query strings, project vs user repos)
-- [ ] `P3.03` Lists: My PRs, Reviewing, Recently merged
-- [ ] `P3.04` PR card + build status API
+- [x] `P3.01` Cloud 2.0 + DC 1.0 adapters → one PR model; base-URL Detect probe — `services/bitbucket/{adapter,client,cloud,datacenter,detect,service}.ts`, `shared/bitbucket.ts`, IPC `bitbucket:detect`/`testConnection`; Settings UI is P3-C
+- [x] `P3.02` PR link parser (both shapes, `/overview` `/diff`, query strings, project vs user repos) — `shared/prlink.ts` (`tests/unit/prlink.test.ts`, 43 cases incl. context path, port, `~user`, rejects)
+- [x] `P3.03` Lists: My PRs, Reviewing, Recently merged — `bitbucket:list` (Cloud: per registered repo BBQL; DC: dashboard); UI is P3-C
+- [~] `P3.04` PR card + build status API — model + build statuses done (`bitbucket:list`/`bitbucket:pr`); the card itself is P3-C
 - [ ] `P3.05` Watch list (palette `watch <link>`, paste field), state-change detection, notifications, persisted state
 - [ ] `P3.06` Scheduler: 60s fg / 3 min bg, backoff + jitter, `Retry-After`
 - [ ] `P3.07` PR actions behind Settings switch (off default), merge needs typed target branch, handler re-checks
-- [ ] `P3.08` Demo-mode Today view with PRs
+- [~] `P3.08` Demo-mode Today view with PRs — DC demo fixtures done (`src/main/demo/bitbucket.ts`: 4 mine in mixed states, 2 reviewing, 2 merged); Today view is P3-C
+
+### Sub-phases (pause points)
+
+- [x] **P3-A — Bitbucket core (main)** (done 2026-10-24). Evidence: `npm run lint` exit 0; `npm test` → 29 files,
+  520 passed, 1 skipped; `npm run e2e` → 21 passed, 1 skipped. New: `prlink` (43), `bitbucket-client` (41),
+  `bitbucket-service` (11). Jira moved onto shared `services/rest.ts` + `services/json.ts` (Jira tests unchanged,
+  passing). `code-review` (Standards + Spec) run; fixes: server-sent refs validated before URL use, lower-case
+  `prKey` (DC `~JDOE` vs `/users/jdoe`), Detect treats 401/403 as DC, `:` refused in Cloud user name, DC user
+  lookup only hides 403/404, shared build/state/vote mappers + one Cloud-host definition, `RepoRef`, remotes
+  helper in `git/repo.ts`, unused `method` option dropped. 6 fixes mutation-checked (each test fails without
+  its fix). Known limits recorded in DECISIONS (Cloud lists scan registered repos; access tokens act as a bot).
+- [ ] **P3-B — Watcher, scheduler, PR actions (main)**: `P3.05` watch list (add by link, persisted state,
+  change detection → notifications), `P3.06` scheduler (60 s / 3 min focus-aware, backoff + jitter,
+  `Retry-After` from `ServiceError.retryAfterSec`), `P3.07` approve / needs-work / merge behind
+  `features.prActions`, handler re-checks, merge needs the typed target branch. Done: `P3.D2`, `P3.D3`.
+- [ ] **P3-C — Renderer**: PRs view (3 lists, cards), Today with PRs, Settings → Bitbucket (flavor, URL, Detect,
+  user name, Test connection, PR-actions switch + warning), palette `watch <link>` + Watch field, action
+  confirmations. Done: `P3.D4` screenshot.
 
 Done criteria:
 
-- [ ] `P3.D1` Adapter tests both flavours incl. pagination — Evidence:
+- [x] `P3.D1` Adapter tests both flavours incl. pagination — Evidence: `tests/unit/bitbucket-client.test.ts`: Cloud (Basic/Bearer auth, BBQL per list, `next` followed only on the API origin, 10-page cap, per-repo 403/404 skip vs 401 fail, unresolved threads, SUPERSEDED, no builds) and DC (`X-AUSERNAME`, dashboard params, `start=nextPageStart` until `isLastPage`, 7-day merged cut, `threadResolved`, `~user` repos, 401/403/500/429 `Retry-After`/HTML page), Detect (Cloud host, DC probe without credentials, login-protected DC, not-Bitbucket, certificate); payloads in `tests/fixtures/bitbucket.ts`
 - [ ] `P3.D2` Watcher snapshot tests: exact notifications, no duplicates on restart — Evidence:
 - [ ] `P3.D3` Actions off → handler rejects approve/merge called directly (test) — Evidence:
 - [ ] `P3.D4` Screenshot: Today with PRs in mixed states — Evidence:
@@ -379,3 +397,4 @@ Done criteria:
 | 2026-10-23 | P2-B  | Committed P2-A (a46166b, local). Start work in main: StartWorkService plan/run (GitActions newBranch, TICKET.md + check-ignore warning, repo/DevDock-data location, classification, clipboard, confirmed optional transition, VS Code), brief.ts, JiraClient POST + transition, demo transitions, IPC `startwork:plan/run`, docs/samples. code-review run; 8 fixes. | P2-C |
 | 2026-10-23 | P2-C  | Committed P2-B (45bde8b, local). Tickets view (lists, detail pane), Start work dialog, Settings → Jira (Test connection, JQL, board, saved queries, switches), `lib/jira.ts`, e2e for P2.D3 + screenshots. code-review run; 14 fixes. Found and fixed a flaky P1-C palette e2e. Phase 2 Done criteria all met. | User review → commit/push/CI → Phase 3 |
 | 2026-10-23 | P2 close | Committed P2-C (8a19f13) and pushed P2-A/B/C. CI run 39908837385: macOS + Windows green — lint, unit/integration (startwork incl.), e2e 21 passed + 1 skipped on each (tickets.spec Start work ran on Windows), dist. Phase 2 closed; user paused before Phase 3. | Phase 3 (`P3.01`) |
+| 2026-10-24 | P3-A  | Split Phase 3 into P3-A/B/C. Bitbucket core: Cloud 2.0 + DC 1.0 adapters, one PR model with build statuses, Detect, link parser, 3 lists, settings `bitbucket`, IPC `bitbucket:*`, DC demo fixtures; Jira moved onto shared `rest.ts`. code-review run; 9 fixes (6 mutation-checked). lint/test/e2e green. Not committed. | User review → commit → P3-B |

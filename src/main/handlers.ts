@@ -11,6 +11,7 @@ import { GitError, type GitErrorKind } from './services/git/errors'
 import type { GitRunner } from './services/git/exec'
 import { repoStatus } from './services/git/repo'
 import type { HttpClient } from './services/http'
+import type { BitbucketService } from './services/bitbucket/service'
 import type { JiraService } from './services/jira/service'
 import { StartWorkError, type StartWorkService } from './services/startwork'
 import type { NotificationService } from './services/notifications'
@@ -48,6 +49,7 @@ export interface HandlerDeps {
   emitOutput: (event: RepoOutputEvent) => void
   devServers: DevServerManager
   jira: JiraService
+  bitbucket: BitbucketService
   startWork: StartWorkService
   /** Brings up the main window's action dialog (from the palette window). */
   requestRepoAction: (event: { id: string; request: ActionRequest }) => void
@@ -234,6 +236,10 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
     'jira:testConnection': () => withService(() => deps.jira.testConnection()),
     'jira:list': (request) => withService(() => deps.jira.list(request)),
     'jira:issue': ({ key }) => withService(() => deps.jira.issue(key)),
+    'bitbucket:detect': ({ baseUrl }) => withService(() => deps.bitbucket.detect(baseUrl)),
+    'bitbucket:testConnection': () => withService(() => deps.bitbucket.testConnection()),
+    'bitbucket:list': ({ list }) => withService(() => deps.bitbucket.list(list)),
+    'bitbucket:pr': (ref) => withService(() => deps.bitbucket.pr(ref)),
     'startwork:plan': (request) => withStartWork(() => deps.startWork.plan(request)),
     'startwork:run': (request) =>
       withStartWork(() =>
@@ -251,7 +257,7 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
 
 /** Hosts of the services configured in Settings (links to them may be opened). */
 function serviceHosts(settings: Settings): string[] {
-  return [settings.jira.baseUrl].flatMap((url) => {
+  return [settings.jira.baseUrl, settings.bitbucket.baseUrl].flatMap((url) => {
     try {
       return url ? [new URL(url).hostname] : []
     } catch {

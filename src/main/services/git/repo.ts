@@ -7,6 +7,22 @@ import { GitError } from './errors'
 import type { GitRunner } from './exec'
 import { parseLeftRight, parseRemotes, parseStashList, parseStatusV2 } from './parse'
 
+/**
+ * Fetch URLs of every remote of the registered repos (Bitbucket Cloud scans their
+ * bitbucket.org repos). A repo whose remotes can't be read (moved, deleted) contributes none.
+ */
+export async function remoteUrls(git: GitRunner, repos: RepoConfig[]): Promise<string[]> {
+  const urls = await Promise.all(
+    repos.map((repo) =>
+      git.run(['remote', '-v'], { cwd: repo.path }).then(
+        ({ stdout }) => Object.values(parseRemotes(stdout)),
+        () => [],
+      ),
+    ),
+  )
+  return urls.flat()
+}
+
 /** What DevDock learns about a folder when it is added (SPEC 6.2 "Register"). */
 export interface RepoInspection {
   /** Top level of the work tree (the user may pick a subfolder). */

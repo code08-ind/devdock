@@ -1,11 +1,12 @@
 import type { JiraConnection, JiraFlavor, JiraIssue, JiraIssueDetail } from '@shared/jira'
 import { ISSUE_KEY, isInProgress } from '@shared/jira'
 import type { HttpClient } from '../http'
-import { ServiceError, errorFromFetchFailure, errorFromResponse } from '../service-error'
+import { requestJson } from '../rest'
+import { ServiceError } from '../service-error'
 import { cloud } from './cloud'
 import { datacenter } from './datacenter'
 import type { JiraFlavorApi } from './flavor'
-import { obj, type JsonObject } from './json'
+import { obj, type JsonObject } from '../json'
 import { normaliseDetail, normaliseIssue, type FieldIds, type RawIssue } from './model'
 
 export interface JiraConfig {
@@ -142,32 +143,18 @@ export class JiraClient {
     return this.send(url)
   }
 
-  private async send(url: string, post?: unknown): Promise<{ status: number; body: unknown }> {
-    const headers: Record<string, string> = {
-      Accept: 'application/json',
-      Authorization: this.api.authorization(this.config),
-    }
-    if (post !== undefined) headers['Content-Type'] = 'application/json'
-    const request = new Request(url, {
-      method: post === undefined ? 'GET' : 'POST',
-      headers,
-      body: post === undefined ? undefined : JSON.stringify(post),
-      signal: AbortSignal.timeout(this.timeoutMs),
-    })
-    let res: Response
-    try {
-      res = await this.http.fetch(request)
-    } catch (err) {
-      throw errorFromFetchFailure('Jira', err)
-    }
-    if (!res.ok) throw await errorFromResponse('Jira', res, this.api.hints)
-    if (res.status === 204) return { status: 204, body: null }
-    try {
-      return { status: res.status, body: await res.json() }
-    } catch {
-      // A login page or proxy block page instead of JSON.
-      throw badResponse('a JSON response (got something else — a proxy or login page?)')
-    }
+  private send(url: string, post?: unknown): Promise<{ status: number; body: unknown }> {
+    return requestJson(
+      this.http,
+      {
+        service: 'Jira',
+        authorization: this.api.authorization(this.config),
+        hints: this.api.hints,
+        timeoutMs: this.timeoutMs,
+      },
+      url,
+      { body: post },
+    )
   }
 }
 

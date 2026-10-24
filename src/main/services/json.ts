@@ -1,4 +1,4 @@
-/** Guards for reading untyped Jira JSON. */
+/** Guards for reading untyped JSON from the service APIs. */
 
 export type JsonObject = Record<string, unknown>
 

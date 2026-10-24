@@ -13,6 +13,13 @@ import {
   StartWorkRunSchema,
 } from './startwork'
 import {
+  BitbucketConnectionSchema,
+  BitbucketDetectionSchema,
+  PR_LISTS,
+  PrRefSchema,
+  PullRequestSchema,
+} from './bitbucket'
+import {
   IssueKeySchema,
   JiraConnectionSchema,
   JiraIssueDetailSchema,
@@ -155,6 +162,14 @@ export const contract = {
   'jira:testConnection': { req: none, res: JiraConnectionSchema },
   'jira:list': { req: JiraListRequestSchema, res: z.array(JiraIssueSchema) },
   'jira:issue': { req: z.object({ key: IssueKeySchema }), res: JiraIssueDetailSchema },
+  /** Probes a base URL being typed in Settings (no credentials sent). */
+  'bitbucket:detect': {
+    req: z.object({ baseUrl: z.url({ protocol: /^https?$/ }).max(500) }),
+    res: BitbucketDetectionSchema,
+  },
+  'bitbucket:testConnection': { req: none, res: BitbucketConnectionSchema },
+  'bitbucket:list': { req: z.object({ list: z.enum(PR_LISTS) }), res: z.array(PullRequestSchema) },
+  'bitbucket:pr': { req: PrRefSchema, res: PullRequestSchema },
   /** Read-only: branch name, commands, brief path + .gitignore check, agent and message. */
   'startwork:plan': { req: StartWorkRequestSchema, res: StartWorkPlanSchema },
   'startwork:run': { req: StartWorkRunSchema, res: StartWorkResultSchema },

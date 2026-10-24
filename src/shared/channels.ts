@@ -47,6 +47,10 @@ export const INVOKE_CHANNELS = [
   'jira:testConnection',
   'jira:list',
   'jira:issue',
+  'bitbucket:detect',
+  'bitbucket:testConnection',
+  'bitbucket:list',
+  'bitbucket:pr',
   'startwork:plan',
   'startwork:run',
 ] as const

@@ -24,8 +24,11 @@ import { demoHandlers } from './demo/handlers'
 import { createHandlers } from './handlers'
 import { GitActions } from './services/git/actions'
 import { GitRunner } from './services/git/exec'
+import { remoteUrls } from './services/git/repo'
 import { editorCommand, editorFallback, launchDetached, terminalCommand } from './services/open'
+import { DEMO_BITBUCKET } from './demo/bitbucket'
 import { DEMO_JIRA } from './demo/jira'
+import { BitbucketService } from './services/bitbucket/service'
 import { JiraService } from './services/jira/service'
 import { StartWorkService } from './services/startwork'
 import { DevServerManager } from './services/process/devserver'
@@ -203,6 +206,13 @@ function start(): void {
     token: () => secrets.get('jira.token'),
     demo: DEMO_JIRA,
   })
+  const bitbucket = new BitbucketService({
+    http,
+    settings: () => store.get(),
+    token: () => secrets.get('bitbucket.token'),
+    repoRemotes: () => remoteUrls(git, store.get().repos),
+    demo: DEMO_BITBUCKET,
+  })
   const openRepo = async (repo: RepoConfig, target: OpenTarget): Promise<void> => {
     if (target === 'files') {
       const error = await shell.openPath(repo.path)
@@ -255,6 +265,7 @@ function start(): void {
       openRepo,
       devServers,
       jira,
+      bitbucket,
       startWork: new StartWorkService({
         jira,
         actions,

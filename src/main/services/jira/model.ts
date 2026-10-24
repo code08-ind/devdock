@@ -1,7 +1,7 @@
 import type { JiraComment, JiraIssue, JiraIssueDetail, JiraLink } from '@shared/jira'
 import { ISSUE_KEY, STATUS_CATEGORIES } from '@shared/jira'
 import { ServiceError } from '../service-error'
-import { obj, text } from './json'
+import { obj, text } from '../json'
 
 /** Raw REST issue (v2 and v3 share this shape; only rich-text fields differ). */
 export interface RawIssue {

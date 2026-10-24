@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { isAllowedEditorPath, isValidBranchName, parseDevCommand } from './gitref'
+import { BITBUCKET_FLAVORS } from './bitbucket'
 import { DEFAULT_JQL, JIRA_FLAVORS, SavedQuerySchema } from './jira'
 
 export const SETTINGS_VERSION = 1
@@ -174,6 +175,23 @@ export const SettingsSchema = z.object({
       savedQueries: z.array(SavedQuerySchema).max(20).default([]),
     })
     .prefault({}),
+  /** SPEC 6.3 / 6.7. The token is a secret (`bitbucket.token`), never stored here. */
+  bitbucket: z
+    .object({
+      flavor: z.enum(BITBUCKET_FLAVORS).default('cloud'),
+      baseUrl: serviceUrl.default(''),
+      /**
+       * Cloud only: user name (app password) or Atlassian account email (API token), sent as
+       * Basic auth. Empty means the token is an access token, sent as Bearer.
+       */
+      username: z
+        .string()
+        .trim()
+        .max(200)
+        .refine((u) => !u.includes(':'), 'A user name or email has no ":"')
+        .default(''),
+    })
+    .prefault({}),
   repos: z.array(RepoConfigSchema).default([]),
 })
 
@@ -214,6 +232,7 @@ export const SettingsPatchSchema = z.object({
   features: patchOf(SettingsSchema.shape.features),
   git: patchOf(SettingsSchema.shape.git),
   jira: patchOf(SettingsSchema.shape.jira),
+  bitbucket: patchOf(SettingsSchema.shape.bitbucket),
 })
 
 export type SettingsPatch = z.infer<typeof SettingsPatchSchema>

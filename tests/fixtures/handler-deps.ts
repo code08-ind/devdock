@@ -44,6 +44,8 @@ export async function handlerSetup(
   const { DevServerManager } = await import('../../src/main/services/process/devserver')
   const { JiraService } = await import('../../src/main/services/jira/service')
   const { DEMO_JIRA } = await import('../../src/main/demo/jira')
+  const { BitbucketService } = await import('../../src/main/services/bitbucket/service')
+  const { DEMO_BITBUCKET } = await import('../../src/main/demo/bitbucket')
   const { StartWorkService } = await import('../../src/main/services/startwork')
 
   const dir = mkdtempSync(join(tmpdir(), 'devdock-handlers-'))
@@ -111,6 +113,13 @@ export async function handlerSetup(
     requestRepoAction: vi.fn(),
     devServers: new DevServerManager({ onChange: vi.fn(), onOutput: vi.fn() }),
     jira,
+    bitbucket: new BitbucketService({
+      http,
+      settings: () => settings.get(),
+      token: () => secrets.get('bitbucket.token'),
+      repoRemotes: async () => [],
+      demo: DEMO_BITBUCKET,
+    }),
     writeClipboard,
     startWork: new StartWorkService({
       jira,

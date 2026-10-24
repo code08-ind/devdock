@@ -1,6 +1,6 @@
 import { adfToMarkdown } from './adf'
 import type { JiraFlavorApi } from './flavor'
-import { text } from './json'
+import { text } from '../json'
 
 /** Jira Cloud: REST v3, Basic auth with account email + API token, ADF rich text. */
 export const cloud: JiraFlavorApi = {

@@ -1,5 +1,5 @@
 import type { JiraFlavorApi } from './flavor'
-import { text } from './json'
+import { text } from '../json'
 import { wikiToMarkdown } from './wiki'
 
 /** Jira Data Center / Server: REST v2, personal access token as Bearer, wiki-markup rich text. */
