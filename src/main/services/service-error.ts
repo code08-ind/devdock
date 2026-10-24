@@ -10,6 +10,7 @@ export type ServiceErrorKind =
   | 'auth' // 401
   | 'forbidden' // 403
   | 'not_found' // 404
+  | 'conflict' // 409: the item changed, or the server vetoed the change
   | 'rate_limited' // 429
   | 'server' // 5xx and other unexpected statuses
   | 'bad_response' // 2xx that isn't what the API documents
@@ -88,6 +89,12 @@ export async function errorFromResponse(
           status,
           details,
         },
+      )
+    case 409:
+      return new ServiceError(
+        'conflict',
+        `${service} refused the change (409): the item may have changed, or a check blocks it.`,
+        { status, details },
       )
     case 429: {
       const retryAfterSec = parseRetryAfter(res.headers.get('retry-after')) ?? undefined

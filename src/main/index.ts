@@ -29,6 +29,8 @@ import { editorCommand, editorFallback, launchDetached, terminalCommand } from '
 import { DEMO_BITBUCKET } from './demo/bitbucket'
 import { DEMO_JIRA } from './demo/jira'
 import { BitbucketService } from './services/bitbucket/service'
+import { PrWatcher } from './services/bitbucket/watcher'
+import { Scheduler } from './services/scheduler'
 import { JiraService } from './services/jira/service'
 import { StartWorkService } from './services/startwork'
 import { DevServerManager } from './services/process/devserver'
@@ -36,7 +38,7 @@ import { loginShellPath, mergePath } from './services/process/shell-path'
 import { RepoWatcher } from './services/repo-watcher'
 import { RepoService } from './services/repos'
 import { registerIpc } from './ipc/registry'
-import { checkExternalUrl, installSecurity, isAppUrl } from './security'
+import { checkExternalUrl, installSecurity, isAppUrl, linkHosts } from './security'
 import { DemoHttpClient, RealHttpClient, SwitchingHttpClient } from './services/http'
 import { initLogger, log } from './services/logger'
 import { NotificationService, type NativeNotifier } from './services/notifications'
@@ -67,7 +69,9 @@ let quitting = false
 
 /** Opens a link in the browser only if it passes the allowlist; otherwise logs why not. */
 function openExternalSafe(url: string): void {
-  const verdict = checkExternalUrl(url, settings?.get().links.allowedHosts ?? [])
+  const current = settings?.get()
+  const hosts = current ? linkHosts(current, current.general.demoMode) : []
+  const verdict = checkExternalUrl(url, hosts)
   if (verdict.ok) {
     shell.openExternal(verdict.url).catch((err) => log.warn('could not open link', err))
   } else {
@@ -213,6 +217,21 @@ function start(): void {
     repoRemotes: () => remoteUrls(git, store.get().repos),
     demo: DEMO_BITBUCKET,
   })
+  const prWatcher = new PrWatcher({
+    file: join(userData, 'watches.json'),
+    bitbucket,
+    notify: (n) => notifications.notify(n),
+    onChange: () => broadcast('watch:changed', prWatcher.list()),
+  })
+  // SPEC 6.3: 60 s while a DevDock window has focus, 3 min otherwise (Settings → Polling).
+  const prPolling = new Scheduler({
+    name: 'pr watcher',
+    run: () => prWatcher.poll(),
+    intervalsMs: () => {
+      const { foregroundSec, backgroundSec } = store.get().polling
+      return { foreground: foregroundSec * 1000, background: backgroundSec * 1000 }
+    },
+  })
   const openRepo = async (repo: RepoConfig, target: OpenTarget): Promise<void> => {
     if (target === 'files') {
       const error = await shell.openPath(repo.path)
@@ -266,6 +285,7 @@ function start(): void {
       devServers,
       jira,
       bitbucket,
+      prWatcher,
       startWork: new StartWorkService({
         jira,
         actions,
@@ -293,8 +313,14 @@ function start(): void {
   if (!registered.ok) log.warn(`palette shortcut not registered: ${registered.reason}`)
   applyLoginItem(store.get())
 
+  let bitbucketSignature = JSON.stringify([store.get().bitbucket, store.get().general.demoMode])
   store.onChange((s) => {
     broadcast('settings:changed', s)
+    // New intervals apply now; a new site or demo toggle is worth a check straight away.
+    const signature = JSON.stringify([s.bitbucket, s.general.demoMode])
+    if (signature !== bitbucketSignature) void prPolling.runNow()
+    else prPolling.reschedule()
+    bitbucketSignature = signature
     void watcher.sync(s.repos)
     applyLoginItem(s)
     // settings:update/import/reset can name a shortcut that is taken or reserved. Keep the
@@ -318,6 +344,15 @@ function start(): void {
     }
   })
   paletteWindow = createPaletteWindow()
+
+  // Focus moves between our windows as blur-then-focus; read the result after both.
+  const focusChanged = (): void => {
+    setImmediate(() => prPolling.setFocused(BrowserWindow.getFocusedWindow() !== null))
+  }
+  app.on('browser-window-focus', focusChanged)
+  app.on('browser-window-blur', focusChanged)
+  prPolling.setFocused(mainWindow.isFocused())
+  prPolling.start()
 
   const trayDir = app.isPackaged
     ? join(process.resourcesPath, 'tray')
@@ -353,6 +388,7 @@ function start(): void {
     })
   })
   app.on('will-quit', () => {
+    prPolling.stop()
     watcher.dispose()
     shortcut.dispose()
     tray?.destroy()

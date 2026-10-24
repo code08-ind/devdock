@@ -47,6 +47,7 @@ export async function handlerSetup(
   const { BitbucketService } = await import('../../src/main/services/bitbucket/service')
   const { DEMO_BITBUCKET } = await import('../../src/main/demo/bitbucket')
   const { StartWorkService } = await import('../../src/main/services/startwork')
+  const { PrWatcher } = await import('../../src/main/services/bitbucket/watcher')
 
   const dir = mkdtempSync(join(tmpdir(), 'devdock-handlers-'))
   const settings = new SettingsStore(join(dir, 'settings.json'))
@@ -83,6 +84,13 @@ export async function handlerSetup(
     token: () => secrets.get('jira.token'),
     demo: DEMO_JIRA,
   })
+  const bitbucket = new BitbucketService({
+    http,
+    settings: () => settings.get(),
+    token: () => secrets.get('bitbucket.token'),
+    repoRemotes: async () => [],
+    demo: DEMO_BITBUCKET,
+  })
   const deps: TestDeps = {
     settings,
     secrets,
@@ -113,12 +121,12 @@ export async function handlerSetup(
     requestRepoAction: vi.fn(),
     devServers: new DevServerManager({ onChange: vi.fn(), onOutput: vi.fn() }),
     jira,
-    bitbucket: new BitbucketService({
-      http,
-      settings: () => settings.get(),
-      token: () => secrets.get('bitbucket.token'),
-      repoRemotes: async () => [],
-      demo: DEMO_BITBUCKET,
+    bitbucket,
+    prWatcher: new PrWatcher({
+      file: join(dir, 'watches.json'),
+      bitbucket,
+      notify: (n) => notifications.notify(n),
+      onChange: vi.fn(),
     }),
     writeClipboard,
     startWork: new StartWorkService({

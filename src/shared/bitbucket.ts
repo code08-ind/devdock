@@ -111,3 +111,43 @@ export function summariseBuilds(statuses: BuildStatus[]): BuildSummary {
   const state = order.find((s) => statuses.some((b) => b.state === s)) ?? 'none'
   return { state, statuses }
 }
+
+/** SPEC 6.3 PR actions; off unless `features.prActions`, each confirmed in the renderer. */
+export const PR_ACTIONS = ['approve', 'needs_work', 'merge'] as const
+export type PrAction = (typeof PR_ACTIONS)[number]
+
+export const PrActionRequestSchema = z
+  .object({
+    ref: PrRefSchema,
+    action: z.enum(PR_ACTIONS),
+    /** The renderer's confirmation dialog was accepted (SPEC 7: no remote change without one). */
+    confirmed: z.literal(true),
+    /** Merge only: the target branch as the user typed it; must equal the PR's current target. */
+    targetBranch: z.string().max(255).optional(),
+  })
+  .refine((r) => r.action !== 'merge' || !!r.targetBranch, {
+    message: 'Type the target branch name to merge',
+    path: ['targetBranch'],
+  })
+export type PrActionRequest = z.infer<typeof PrActionRequestSchema>
+
+/** Most PRs watched at once (SPEC 7 measures 10; this keeps polling bounded). */
+export const MAX_WATCHES = 50
+
+/** One watched PR, persisted with the last state seen so a restart doesn't notify again. */
+export const WatchItemSchema = z.object({
+  key: z.string(),
+  ref: PrRefSchema,
+  /** Site the link belongs to (lower case); polled only while Settings point at it. */
+  site: z.string(),
+  addedAt: z.number(),
+  checkedAt: z.number().nullable(),
+  /** Last snapshot; changes against it produce the notifications. */
+  pr: PullRequestSchema,
+  /** Why the last check failed (shown on the item); null when it worked. */
+  error: z.string().nullable(),
+})
+export type WatchItem = z.infer<typeof WatchItemSchema>
+
+/** Watches are polled until the PR is merged or declined. */
+export const isLive = (w: WatchItem) => w.pr.state === 'open'

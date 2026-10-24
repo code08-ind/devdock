@@ -16,8 +16,11 @@ import {
   BitbucketConnectionSchema,
   BitbucketDetectionSchema,
   PR_LISTS,
+  PrActionRequestSchema,
   PrRefSchema,
   PullRequestSchema,
+  WatchItemSchema,
+  type WatchItem,
 } from './bitbucket'
 import {
   IssueKeySchema,
@@ -170,6 +173,11 @@ export const contract = {
   'bitbucket:testConnection': { req: none, res: BitbucketConnectionSchema },
   'bitbucket:list': { req: z.object({ list: z.enum(PR_LISTS) }), res: z.array(PullRequestSchema) },
   'bitbucket:pr': { req: PrRefSchema, res: PullRequestSchema },
+  /** Returns the PR after the action. */
+  'bitbucket:action': { req: PrActionRequestSchema, res: PullRequestSchema },
+  'watch:list': { req: none, res: z.array(WatchItemSchema) },
+  'watch:add': { req: z.object({ link: z.string().min(1).max(2000) }), res: WatchItemSchema },
+  'watch:remove': { req: z.object({ key: z.string().min(1).max(400) }), res: none },
   /** Read-only: branch name, commands, brief path + .gitignore check, agent and message. */
   'startwork:plan': { req: StartWorkRequestSchema, res: StartWorkPlanSchema },
   'startwork:run': { req: StartWorkRunSchema, res: StartWorkResultSchema },
@@ -231,5 +239,6 @@ export interface EventPayloads {
   'repos:actionRequested': { id: string; request: ActionRequest }
   'devserver:changed': DevServerState[]
   'devserver:output': DevServerOutputEvent
+  'watch:changed': WatchItem[]
 }
 export type EventPayload<E extends EventChannel> = EventPayloads[E]

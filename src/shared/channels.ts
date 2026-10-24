@@ -51,6 +51,12 @@ export const INVOKE_CHANNELS = [
   'bitbucket:testConnection',
   'bitbucket:list',
   'bitbucket:pr',
+  /** Approve / needs work / merge. Rejected unless `features.prActions` is on. */
+  'bitbucket:action',
+  'watch:list',
+  /** Watch the PR behind a pasted link (palette `watch <link>` or the Watch field). */
+  'watch:add',
+  'watch:remove',
   'startwork:plan',
   'startwork:run',
 ] as const
@@ -67,6 +73,8 @@ export const EVENT_CHANNELS = [
   'repos:actionRequested',
   'devserver:changed',
   'devserver:output',
+  /** The watch list or a watched PR's snapshot changed. */
+  'watch:changed',
 ] as const
 
 export type InvokeChannel = (typeof INVOKE_CHANNELS)[number]

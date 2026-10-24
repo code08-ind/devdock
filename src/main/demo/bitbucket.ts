@@ -45,6 +45,10 @@ interface DemoPr {
   unresolved: number
   merge: 'CLEAN' | 'CONFLICTED'
   builds: [string, Build][]
+  /** A running build passes this many minutes after the demo starts (the watcher sees it). */
+  passesAfterMin?: number
+  /** Bumped by each vote or merge, like DC's optimistic-locking `version`. */
+  version?: number
 }
 
 const PRS: DemoPr[] = [
@@ -104,6 +108,7 @@ const PRS: DemoPr[] = [
     unresolved: 1,
     merge: 'CONFLICTED',
     builds: [['design-system » PR-88', 'INPROGRESS']],
+    passesAfterMin: 2,
   },
   {
     id: 419,
@@ -203,6 +208,7 @@ function prJson(pr: DemoPr, now: number) {
   })
   return {
     id: pr.id,
+    version: pr.version ?? 0,
     title: pr.title,
     state: pr.state,
     author: { user: pr.mine ? ME : user('Priya Reviewer'), role: 'AUTHOR' },
@@ -230,61 +236,137 @@ const page = (values: unknown[]) =>
 
 const authed = (request: Request) => /^Bearer .+/.test(request.headers.get('authorization') ?? '')
 
-export const bitbucketHandlers: RequestHandler[] = [
-  http.get(`${API}/application-properties`, ({ request }) =>
-    HttpResponse.json(
-      { version: '8.19.1', buildNumber: '8019001', displayName: 'Bitbucket' },
-      { headers: authed(request) ? { 'X-AUSERNAME': ME.name } : {} },
-    ),
-  ),
-  http.get(`${API}/users/:slug`, ({ params }) =>
-    params.slug === ME.slug ? HttpResponse.json(ME) : new HttpResponse(null, { status: 404 }),
-  ),
-  http.get(`${API}/dashboard/pull-requests`, ({ request }) => {
-    const q = new URL(request.url).searchParams
-    const reviewing = q.get('role') === 'REVIEWER'
-    const state = q.get('state') ?? 'OPEN'
-    const now = Date.now()
-    return page(
-      PRS.filter(
-        (pr) =>
-          pr.state === state &&
-          (reviewing ? pr.reviewers.some(([name]) => name === ME.displayName) : pr.mine),
-      )
-        .sort((a, b) => a.updated - b.updated)
-        .map((pr) => prJson(pr, now)),
-    )
-  }),
-  http.get(`${API}/projects/DEMO/repos/:repo/pull-requests/:id/activities`, ({ params }) => {
-    const pr = find(params)
-    if (!pr) return new HttpResponse(null, { status: 404 })
-    const threads = Array.from({ length: Math.min(pr.comments, 10) }, (_, i) => ({
-      id: pr.id * 100 + i,
-      action: 'COMMENTED',
-      commentAction: 'ADDED',
-      comment: { id: pr.id * 100 + i, text: 'Demo comment', threadResolved: i >= pr.unresolved },
-    }))
-    return page(threads)
-  }),
-  http.get(`${API}/projects/DEMO/repos/:repo/pull-requests/:id`, ({ params }) => {
-    const pr = find(params)
-    return pr ? HttpResponse.json(prJson(pr, Date.now())) : new HttpResponse(null, { status: 404 })
-  }),
-  http.get(`${BASE}/rest/build-status/1.0/commits/:commit`, ({ params }) => {
-    const pr = PRS.find((p) => commitOf(p) === params.commit)
-    const now = Date.now()
-    return page(
-      (pr?.builds ?? []).map(([name, state], i) => ({
-        key: name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-        name,
-        state,
-        url: `${DEMO_ORIGIN}/jenkins/job/${pr!.repo}/job/PR-${pr!.id}/${12 + i}/`,
-        dateAdded: now - pr!.updated * HOUR,
-      })),
-    )
-  }),
-]
+/**
+ * Fresh demo state per call (demoHandlers() builds one set per app or test): votes and merges
+ * change it, and the running build on design-system #88 passes a couple of minutes in.
+ */
+export function bitbucketHandlers(): RequestHandler[] {
+  const prs: DemoPr[] = structuredClone(PRS)
+  const startedAt = Date.now()
+  const find = (params: Record<string, unknown>) =>
+    prs.find((p) => p.repo === params.repo && String(p.id) === params.id)
+  const builds = (pr: DemoPr): [string, Build][] =>
+    pr.passesAfterMin !== undefined && Date.now() >= startedAt + pr.passesAfterMin * 60_000
+      ? pr.builds.map(([name, state]) => [name, state === 'INPROGRESS' ? 'SUCCESSFUL' : state])
+      : pr.builds
+  const refused = (status: number, message: string) =>
+    HttpResponse.json({ errors: [{ context: null, message }] }, { status })
+  const prUrl = `${API}/projects/DEMO/repos/:repo/pull-requests/:id`
 
-function find(params: Record<string, unknown>): DemoPr | undefined {
-  return PRS.find((p) => p.repo === params.repo && String(p.id) === params.id)
+  return [
+    http.get(`${API}/application-properties`, ({ request }) =>
+      HttpResponse.json(
+        { version: '8.19.1', buildNumber: '8019001', displayName: 'Bitbucket' },
+        { headers: authed(request) ? { 'X-AUSERNAME': ME.name } : {} },
+      ),
+    ),
+    http.get(`${API}/users/:slug`, ({ params }) =>
+      params.slug === ME.slug ? HttpResponse.json(ME) : new HttpResponse(null, { status: 404 }),
+    ),
+    http.get(`${API}/dashboard/pull-requests`, ({ request }) => {
+      const q = new URL(request.url).searchParams
+      const reviewing = q.get('role') === 'REVIEWER'
+      const state = q.get('state') ?? 'OPEN'
+      const now = Date.now()
+      return page(
+        prs
+          .filter(
+            (pr) =>
+              pr.state === state &&
+              (reviewing ? pr.reviewers.some(([name]) => name === ME.displayName) : pr.mine),
+          )
+          .sort((a, b) => a.updated - b.updated)
+          .map((pr) => prJson(pr, now)),
+      )
+    }),
+    http.get(`${API}/projects/DEMO/repos/:repo/pull-requests/:id/activities`, ({ params }) => {
+      const pr = find(params)
+      if (!pr) return new HttpResponse(null, { status: 404 })
+      const threads = Array.from({ length: Math.min(pr.comments, 10) }, (_, i) => ({
+        id: pr.id * 100 + i,
+        action: 'COMMENTED',
+        commentAction: 'ADDED',
+        comment: { id: pr.id * 100 + i, text: 'Demo comment', threadResolved: i >= pr.unresolved },
+      }))
+      return page(threads)
+    }),
+    http.get(`${API}/projects/DEMO/repos/:repo/pull-requests/:id`, ({ params }) => {
+      const pr = find(params)
+      return pr
+        ? HttpResponse.json(prJson(pr, Date.now()))
+        : new HttpResponse(null, { status: 404 })
+    }),
+    http.get(`${BASE}/rest/build-status/1.0/commits/:commit`, ({ params }) => {
+      const pr = prs.find((p) => commitOf(p) === params.commit)
+      const now = Date.now()
+      return page(
+        (pr ? builds(pr) : []).map(([name, state], i) => ({
+          key: name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+          name,
+          state,
+          url: `${DEMO_ORIGIN}/jenkins/job/${pr!.repo}/job/PR-${pr!.id}/${12 + i}/`,
+          dateAdded: now - pr!.updated * HOUR,
+        })),
+      )
+    }),
+    // Approve / needs work: DC 7+ participants endpoint, as the signed-in user.
+    http.put(`${prUrl}/participants/:slug`, async ({ params, request }) => {
+      const pr = find(params)
+      if (!pr) return new HttpResponse(null, { status: 404 })
+      if (params.slug !== ME.slug) return refused(403, 'You can only update your own review.')
+      if (pr.mine)
+        return refused(409, 'You are the author of this pull request and cannot review it.')
+      if (pr.state !== 'OPEN') return refused(409, 'This pull request is already closed.')
+      const { status } = (await request.json()) as { status?: Review }
+      if (status !== 'APPROVED' && status !== 'NEEDS_WORK' && status !== 'UNAPPROVED')
+        return refused(400, 'A review status is required.')
+      pr.reviewers = [
+        ...pr.reviewers.filter(([name]) => name !== ME.displayName),
+        [ME.displayName, status],
+      ]
+      pr.version = (pr.version ?? 0) + 1
+      pr.updated = 0
+      return HttpResponse.json({
+        user: ME,
+        role: 'REVIEWER',
+        approved: status === 'APPROVED',
+        status,
+      })
+    }),
+    http.get(`${prUrl}/merge`, ({ params }) => {
+      const pr = find(params)
+      if (!pr) return new HttpResponse(null, { status: 404 })
+      const vetoes = [
+        pr.reviewers.some(([, r]) => r === 'NEEDS_WORK') && {
+          summaryMessage: 'Needs work',
+          detailedMessage: 'A reviewer has marked this pull request as needing work.',
+        },
+        !pr.reviewers.some(([, r]) => r === 'APPROVED') && {
+          summaryMessage: 'Not enough approvals',
+          detailedMessage: 'You need 1 more approval before this pull request can be merged.',
+        },
+        builds(pr).some(([, b]) => b !== 'SUCCESSFUL') && {
+          summaryMessage: 'Builds not passing',
+          detailedMessage: 'This pull request needs a successful build before it can be merged.',
+        },
+      ].filter(Boolean)
+      const conflicted = pr.merge === 'CONFLICTED'
+      return HttpResponse.json({
+        canMerge: pr.state === 'OPEN' && !conflicted && vetoes.length === 0,
+        conflicted,
+        outcome: pr.merge,
+        vetoes,
+      })
+    }),
+    http.post(`${prUrl}/merge`, ({ params, request }) => {
+      const pr = find(params)
+      if (!pr) return new HttpResponse(null, { status: 404 })
+      if (new URL(request.url).searchParams.get('version') !== String(pr.version ?? 0))
+        return refused(409, 'The pull request has been updated since you last viewed it.')
+      pr.state = 'MERGED'
+      pr.updated = 0
+      pr.version = (pr.version ?? 0) + 1
+      return HttpResponse.json(prJson(pr, Date.now()))
+    }),
+  ]
 }

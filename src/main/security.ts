@@ -3,6 +3,8 @@
  * wires them into Electron.
  */
 import type { App, WebContents } from 'electron'
+import type { Settings } from '@shared/settings'
+import { DEMO_ORIGIN } from './demo/origin'
 
 export const WEB_PREFERENCES = {
   contextIsolation: true,
@@ -131,5 +133,32 @@ export function installSecurity(app: App, deps: SecurityDeps): void {
       if (!allowed) deps.onBlocked('permission', permission)
       cb(allowed)
     })
+  })
+}
+
+/**
+ * Hosts links may open in the browser (SPEC 5): the user's list, the configured services, the
+ * demo fixtures' host in demo mode, and local dev servers (P1 "Start dev server" URL).
+ * Shared by `app:openExternal` and notification clicks.
+ */
+export function linkHosts(settings: Settings, demo: boolean): string[] {
+  return [
+    ...settings.links.allowedHosts,
+    ...serviceHosts(settings),
+    ...(demo ? [new URL(DEMO_ORIGIN).hostname] : []),
+    'localhost',
+    '127.0.0.1',
+    '[::1]',
+  ]
+}
+
+/** Hosts of the services configured in Settings (links to them may be opened). */
+function serviceHosts(settings: Settings): string[] {
+  return [settings.jira.baseUrl, settings.bitbucket.baseUrl].flatMap((url) => {
+    try {
+      return url ? [new URL(url).hostname] : []
+    } catch {
+      return []
+    }
   })
 }

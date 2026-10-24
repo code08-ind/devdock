@@ -28,13 +28,14 @@ export async function requestJson(
   http: HttpClient,
   target: RestTarget,
   url: string,
-  opts: { body?: unknown } = {},
+  opts: { method?: 'GET' | 'POST' | 'PUT'; body?: unknown } = {},
 ): Promise<RestResponse> {
   const headers: Record<string, string> = { Accept: 'application/json' }
   if (target.authorization) headers.Authorization = target.authorization
   if (opts.body !== undefined) headers['Content-Type'] = 'application/json'
   const request = new Request(url, {
-    method: opts.body === undefined ? 'GET' : 'POST',
+    // A body means POST unless told otherwise; actions without one (Cloud approve) name it.
+    method: opts.method ?? (opts.body === undefined ? 'GET' : 'POST'),
     headers,
     body: opts.body === undefined ? undefined : JSON.stringify(opts.body),
     signal: AbortSignal.timeout(target.timeoutMs),

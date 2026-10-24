@@ -1,4 +1,11 @@
-import { prKey, type BuildStatus, type PrList, type PrRef, type RepoRef } from '@shared/bitbucket'
+import {
+  prKey,
+  type BuildStatus,
+  type PrAction,
+  type PrList,
+  type PrRef,
+  type RepoRef,
+} from '@shared/bitbucket'
 import { CLOUD_API, CLOUD_WEB, isCloudHost } from '@shared/prlink'
 import { obj, text, type JsonObject } from '../json'
 import { ServiceError, type ServiceHints } from '../service-error'
@@ -12,7 +19,7 @@ import {
   toBuildStatus,
   voteCounts,
   type BitbucketAdapter,
-  type Get,
+  type Call,
   type Me,
   type PrBase,
 } from './adapter'
@@ -55,7 +62,7 @@ export class CloudAdapter implements BitbucketAdapter {
   private readonly page: ReturnType<typeof page>
 
   constructor(
-    private readonly get: Get,
+    private readonly call: Call,
     private readonly apiRoot: string,
     private readonly repos: () => Promise<RepoRef[]>,
   ) {
@@ -63,7 +70,7 @@ export class CloudAdapter implements BitbucketAdapter {
   }
 
   async myself(): Promise<Me> {
-    const { status, body } = await this.get(`${this.apiRoot}/user`)
+    const { status, body } = await this.call(`${this.apiRoot}/user`)
     const o = obj(body)
     const id = text(o.uuid)
     // It goes into a BBQL query string: `{` hex and dashes `}` only.
@@ -102,7 +109,7 @@ export class CloudAdapter implements BitbucketAdapter {
         // A registered repo the token can't see shouldn't hide the others.
         orEmpty(
           collect(
-            this.get,
+            this.call,
             `${this.repoUrl(owner, repo)}/pullrequests?${params}`,
             this.page,
             (raw) => normalise(raw, owner, repo),
@@ -116,8 +123,8 @@ export class CloudAdapter implements BitbucketAdapter {
   async pr(ref: PrRef): Promise<PrBase> {
     const url = `${this.repoUrl(ref.owner, ref.repo)}/pullrequests/${ref.id}`
     const [{ body }, comments] = await Promise.all([
-      this.get(url),
-      collect(this.get, `${url}/comments?pagelen=100`, this.page, obj, 5),
+      this.call(url),
+      collect(this.call, `${url}/comments?pagelen=100`, this.page, obj, 5),
     ])
     const pr = normalise(body, ref.owner, ref.repo)
     // Unresolved threads: top-level, not deleted, no resolution.
@@ -125,10 +132,23 @@ export class CloudAdapter implements BitbucketAdapter {
     return { ...pr, unresolvedComments: unresolved }
   }
 
+  /** Cloud's merge takes no version: the target check in BitbucketClient.act is the last one. */
+  async act(ref: PrRef, action: PrAction): Promise<void> {
+    const url = `${this.repoUrl(ref.owner, ref.repo)}/pullrequests/${ref.id}`
+    if (action === 'merge') {
+      // No strategy named: the repository's default merge strategy applies.
+      await this.call(`${url}/merge`, { method: 'POST', body: {} })
+    } else {
+      await this.call(`${url}/${action === 'approve' ? 'approve' : 'request-changes'}`, {
+        method: 'POST',
+      })
+    }
+  }
+
   async builds(pr: PrBase): Promise<BuildStatus[]> {
     if (!pr.sourceCommit) return []
     const url = `${this.repoUrl(pr.ref.owner, pr.ref.repo)}/commit/${encodeURIComponent(pr.sourceCommit)}/statuses?pagelen=100`
-    const statuses = await orEmpty(collect(this.get, url, this.page, toBuildStatus))
+    const statuses = await orEmpty(collect(this.call, url, this.page, toBuildStatus))
     return latestPerKey(statuses)
   }
 

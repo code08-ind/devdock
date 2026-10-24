@@ -17,6 +17,7 @@ const TYPE_LABELS: Record<NotificationType, string> = {
   'pr-comment': 'New PR comment',
   'pr-approval': 'PR approved',
   'pr-needs-work': 'PR marked needs work',
+  'pr-closed': 'Watched PR merged or declined',
   'job-finished': 'Watched job finished',
 }
 

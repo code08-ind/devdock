@@ -2,6 +2,7 @@ import {
   MERGED_WINDOW_DAYS,
   prKey,
   type BuildStatus,
+  type PrAction,
   type PrList,
   type PrRef,
 } from '@shared/bitbucket'
@@ -17,7 +18,7 @@ import {
   toBuildStatus,
   voteCounts,
   type BitbucketAdapter,
-  type Get,
+  type Call,
   type Me,
   type PrBase,
 } from './adapter'
@@ -53,7 +54,7 @@ export class DataCenterAdapter implements BitbucketAdapter {
   private readonly api: string
 
   constructor(
-    private readonly get: Get,
+    private readonly call: Call,
     private readonly baseUrl: string,
   ) {
     this.api = `${baseUrl}/rest/api/1.0`
@@ -61,7 +62,7 @@ export class DataCenterAdapter implements BitbucketAdapter {
 
   /** DC has no "myself": any authenticated response names the user in `X-AUSERNAME`. */
   async myself(): Promise<Me> {
-    const { status, headers } = await this.get(`${this.api}/application-properties`)
+    const { status, headers } = await this.call(`${this.api}/application-properties`)
     const name = headers.get('x-ausername')
     if (!name) {
       throw new ServiceError(
@@ -70,13 +71,21 @@ export class DataCenterAdapter implements BitbucketAdapter {
         { status },
       )
     }
-    // The display name is a nicety: a user page we can't see still leaves the name.
-    const [user = {}] = await orEmpty(
-      this.get(`${this.api}/users/${encodeURIComponent(name)}`).then(({ body }) => [obj(body)]),
-    )
+    // The display name is a nicety: a user page we can't see still leaves the name. The name
+    // is server-sent and goes into a path, so an odd one (`..`) skips the lookup.
+    const lookup = safeSlug(name)
+    const [user = {}] = lookup
+      ? await orEmpty(
+          this.call(`${this.api}/users/${encodeURIComponent(lookup)}`).then(({ body }) => [
+            obj(body),
+          ]),
+        )
+      : []
     return {
       status,
       id: name,
+      // Goes into a URL path (votes): checked like any server-sent path segment.
+      slug: safeSlug(text(user.slug)) ?? safeSlug(name) ?? undefined,
       user: { displayName: text(user.displayName) ?? name, account: text(user.name) ?? name },
     }
   }
@@ -91,27 +100,74 @@ export class DataCenterAdapter implements BitbucketAdapter {
     // `closedSince` is a duration in seconds; the date filter below is the exact cut.
     if (list === 'merged') params.set('closedSince', String(MERGED_WINDOW_DAYS * 86_400))
     const url = `${this.api}/dashboard/pull-requests?${params}`
-    const prs = await collect(this.get, url, pager(url), normalise)
+    const prs = await collect(this.call, url, pager(url), normalise)
     return list === 'merged'
       ? prs.filter((p) => p.closedAt !== null && Date.parse(p.closedAt) >= since.getTime())
       : prs
   }
 
   async pr(ref: PrRef): Promise<PrBase> {
-    const url = `${this.api}/projects/${encodeURIComponent(ref.owner)}/repos/${encodeURIComponent(ref.repo)}/pull-requests/${ref.id}`
+    const url = this.prUrl(ref)
     const activitiesUrl = `${url}/activities?limit=100`
     const [{ body }, activities] = await Promise.all([
-      this.get(url),
-      collect(this.get, activitiesUrl, pager(activitiesUrl), obj, 5),
+      this.call(url),
+      collect(this.call, activitiesUrl, pager(activitiesUrl), obj, 5),
     ])
     return { ...normalise(body), unresolvedComments: unresolved(activities) }
+  }
+
+  async act(ref: PrRef, action: PrAction, me: Me, targetBranch: string): Promise<void> {
+    const url = this.prUrl(ref)
+    if (action !== 'merge') {
+      const slug = me.slug
+      if (!slug) throw badResponse('a user slug DevDock can use')
+      const status = action === 'approve' ? 'APPROVED' : 'NEEDS_WORK'
+      await this.call(`${url}/participants/${encodeURIComponent(slug)}`, {
+        method: 'PUT',
+        body: { user: { name: slug }, approved: action === 'approve', status },
+      })
+      return
+    }
+    // Merge checks (approvals, builds, tasks) answer here, in the server's own words.
+    const [{ body: check }, { body: current }] = await Promise.all([
+      this.call(`${url}/merge`),
+      this.call(url),
+    ])
+    const verdict = obj(check)
+    if (verdict.canMerge !== true) {
+      const vetoes = (Array.isArray(verdict.vetoes) ? verdict.vetoes : []).flatMap(
+        (v) => text(obj(v).detailedMessage) ?? text(obj(v).summaryMessage) ?? [],
+      )
+      const why = verdict.conflicted === true ? ['It has merge conflicts.', ...vetoes] : vetoes
+      throw new ServiceError(
+        'conflict',
+        `Bitbucket won't merge this pull request yet. ${why.join(' ') || 'It gave no reason.'}`,
+      )
+    }
+    // The version guards against merging a PR that changes after this read, so the target
+    // checked is the one in the same read (it may have been retargeted since the first).
+    const fresh = obj(current)
+    if (text(obj(fresh.toRef).displayId) !== targetBranch) {
+      throw new ServiceError(
+        'conflict',
+        `Not merged: the target branch changed to "${text(obj(fresh.toRef).displayId) ?? '?'}".`,
+      )
+    }
+    const version = fresh.version
+    if (!Number.isInteger(version)) throw badResponse('the pull request version')
+    // A JSON body (even empty) spares the XSRF check DC applies to form-like POSTs.
+    await this.call(`${url}/merge?version=${String(version)}`, { method: 'POST', body: {} })
   }
 
   async builds(pr: PrBase): Promise<BuildStatus[]> {
     if (!pr.sourceCommit) return []
     const url = `${this.baseUrl}/rest/build-status/1.0/commits/${encodeURIComponent(pr.sourceCommit)}?limit=100`
-    const statuses = await orEmpty(collect(this.get, url, pager(url), toBuildStatus))
+    const statuses = await orEmpty(collect(this.call, url, pager(url), toBuildStatus))
     return latestPerKey(statuses)
+  }
+
+  private prUrl(ref: PrRef): string {
+    return `${this.api}/projects/${encodeURIComponent(ref.owner)}/repos/${encodeURIComponent(ref.repo)}/pull-requests/${ref.id}`
   }
 }
 
@@ -173,6 +229,11 @@ export function normalise(raw: unknown): PrBase {
     closedAt: state === 'open' ? null : (iso(o.closedDate) ?? iso(o.updatedDate)),
     sourceCommit: text(obj(o.fromRef).latestCommit),
   }
+}
+
+/** A user slug or name usable as one URL path segment; null otherwise. */
+function safeSlug(value: string | null): string | null {
+  return value && /^[A-Za-z0-9_@~+-][A-Za-z0-9._@~+-]{0,254}$/.test(value) ? value : null
 }
 
 /** DC timestamps are epoch milliseconds. */

@@ -129,3 +129,37 @@ describe('SettingsStore', () => {
     expect(() => b.import('nope')).toThrow('not valid JSON')
   })
 })
+
+describe('notification types added later', () => {
+  it('a file written before pr-closed existed keeps its choices; the new type defaults to on', () => {
+    const r = migrate({
+      version: SETTINGS_VERSION,
+      appearance: { theme: 'dark' },
+      notifications: {
+        types: {
+          'build-finished': true,
+          'pr-comment': false,
+          'pr-approval': true,
+          'pr-needs-work': true,
+          'job-finished': false,
+        },
+      },
+    })
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    expect(r.settings.appearance.theme).toBe('dark') // not reset
+    expect(r.settings.notifications.types).toEqual({
+      'build-finished': true,
+      'pr-comment': false,
+      'pr-approval': true,
+      'pr-needs-work': true,
+      'pr-closed': true,
+      'job-finished': false,
+    })
+    expect(defaultSettings().notifications.types['pr-closed']).toBe(true)
+    // Unknown types are still refused.
+    expect(
+      migrate({ version: SETTINGS_VERSION, notifications: { types: { nope: true } } }).ok,
+    ).toBe(false)
+  })
+})

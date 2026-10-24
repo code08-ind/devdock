@@ -11,5 +11,5 @@ export const coreHandlers: RequestHandler[] = [
 
 /** Every adapter's demo fixtures. Adapters added in later phases register theirs here. */
 export function demoHandlers(): RequestHandler[] {
-  return [...coreHandlers, ...jiraHandlers, ...bitbucketHandlers]
+  return [...coreHandlers, ...jiraHandlers, ...bitbucketHandlers()]
 }

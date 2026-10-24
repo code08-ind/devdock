@@ -3,6 +3,7 @@ import {
   summariseBuilds,
   type BitbucketConnection,
   type BitbucketFlavor,
+  type PrAction,
   type PrList,
   type PrRef,
   type PullRequest,
@@ -10,7 +11,8 @@ import {
 } from '@shared/bitbucket'
 import type { HttpClient } from '../http'
 import { requestJson } from '../rest'
-import type { BitbucketAdapter, Me, PrBase } from './adapter'
+import { serverMessage, type BitbucketAdapter, type Call, type Me, type PrBase } from './adapter'
+import { ServiceError } from '../service-error'
 import { CloudAdapter, cloudApiRoot, cloudAuthorization, cloudHints } from './cloud'
 import { DataCenterAdapter, dcHints } from './datacenter'
 
@@ -46,10 +48,10 @@ export class BitbucketClient {
       hints: cloud ? cloudHints : dcHints,
       timeoutMs,
     }
-    const get = (url: string) => requestJson(http, target, url)
+    const call: Call = (url, opts) => requestJson(http, target, url, opts)
     this.adapter = cloud
-      ? new CloudAdapter(get, cloudApiRoot(config.baseUrl), cloudRepos)
-      : new DataCenterAdapter(get, config.baseUrl)
+      ? new CloudAdapter(call, cloudApiRoot(config.baseUrl), cloudRepos)
+      : new DataCenterAdapter(call, config.baseUrl)
   }
 
   /** "Test connection": who the credentials authenticate as. Always asks the server. */
@@ -72,6 +74,30 @@ export class BitbucketClient {
     return this.withBuilds(await this.adapter.pr(ref))
   }
 
+  /**
+   * One PR action, against the PR as it is now: it must still be open, and a merge must name
+   * its current target branch exactly (SPEC 6.3: typed by the user). Returns the PR afterwards
+   * and who acted (the watcher leaves that person's own vote out of its notifications).
+   */
+  async act(ref: PrRef, action: PrAction, typedTarget: string | undefined): Promise<ActionResult> {
+    const before = await this.adapter.pr(ref)
+    if (before.state !== 'open') {
+      throw new PrActionError(`This pull request is already ${before.state}.`)
+    }
+    if (action === 'merge' && typedTarget?.trim() !== before.targetBranch) {
+      throw new PrActionError(
+        `Not merged: the target branch is "${before.targetBranch}", and "${typedTarget ?? ''}" was typed.`,
+      )
+    }
+    const me = await this.myself()
+    try {
+      await this.adapter.act(ref, action, me, before.targetBranch)
+    } catch (err) {
+      throw withServerWords(err)
+    }
+    return { pr: await this.pr(ref), actor: me.user.displayName }
+  }
+
   private async withBuilds(pr: PrBase): Promise<PullRequest> {
     return { ...pr, build: summariseBuilds(await this.adapter.builds(pr)) }
   }
@@ -84,6 +110,30 @@ export class BitbucketClient {
     })
     return this.me
   }
+}
+
+export interface ActionResult {
+  pr: PullRequest
+  /** Display name of the signed-in user, as it appears in `pr.reviewers`. */
+  actor: string
+}
+
+/** A PR action refused before anything was sent (closed PR, wrong typed branch). */
+export class PrActionError extends Error {
+  override readonly name = 'PrActionError'
+}
+
+/** Appends what Bitbucket said to a refused request (4xx), e.g. "You are not permitted to…". */
+function withServerWords(err: unknown): unknown {
+  if (!(err instanceof ServiceError) || !err.status || err.status >= 500) return err
+  const said = serverMessage(err.details)
+  if (!said) return err
+  // Read from `details`, which ServiceError has already redacted.
+  return new ServiceError(err.kind, `${err.message} Bitbucket said: “${said}”`, {
+    status: err.status,
+    retryAfterSec: err.retryAfterSec,
+    details: err.details,
+  })
 }
 
 /** `Promise.all(items.map(fn))` with at most `limit` calls running; keeps the order. */

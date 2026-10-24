@@ -2,16 +2,18 @@
 import type { View } from '@shared/channels'
 import type { ErrorCode, Res } from '@shared/ipc'
 import type { ActionRequest, OpenTarget, RepoOutputEvent } from '@shared/repos'
-import type { RepoConfig, Settings } from '@shared/settings'
+import type { RepoConfig } from '@shared/settings'
 import { DEMO_ORIGIN } from './demo/handlers'
 import { IpcError, type HandlerMap } from './ipc/registry'
-import { checkExternalUrl } from './security'
+import { checkExternalUrl, linkHosts } from './security'
 import type { GitActions } from './services/git/actions'
 import { GitError, type GitErrorKind } from './services/git/errors'
 import type { GitRunner } from './services/git/exec'
 import { repoStatus } from './services/git/repo'
 import type { HttpClient } from './services/http'
+import { PrActionError } from './services/bitbucket/client'
 import type { BitbucketService } from './services/bitbucket/service'
+import { WatchError, type PrWatcher } from './services/bitbucket/watcher'
 import type { JiraService } from './services/jira/service'
 import { StartWorkError, type StartWorkService } from './services/startwork'
 import type { NotificationService } from './services/notifications'
@@ -50,6 +52,7 @@ export interface HandlerDeps {
   devServers: DevServerManager
   jira: JiraService
   bitbucket: BitbucketService
+  prWatcher: PrWatcher
   startWork: StartWorkService
   /** Brings up the main window's action dialog (from the palette window). */
   requestRepoAction: (event: { id: string; request: ActionRequest }) => void
@@ -86,6 +89,7 @@ const SERVICE_CODES: Record<ServiceErrorKind, ErrorCode> = {
   auth: 'SERVICE_AUTH',
   forbidden: 'SERVICE_FORBIDDEN',
   not_found: 'NOT_FOUND',
+  conflict: 'CONFLICT',
   rate_limited: 'RATE_LIMITED',
   server: 'SERVICE_FAILED',
   bad_response: 'SERVICE_FAILED',
@@ -108,6 +112,23 @@ async function withService<T>(fn: () => Promise<T>): Promise<T> {
       throw new IpcError('SECRETS_UNAVAILABLE', err.message)
     throw err
   }
+}
+
+/** Watch requests: a bad link is a bad payload; another site or a full list is a precondition. */
+function withWatch<T>(fn: () => Promise<T> | T): Promise<T> {
+  return withService(async () => {
+    try {
+      return await fn()
+    } catch (err) {
+      if (err instanceof WatchError) {
+        throw new IpcError(
+          err.kind === 'invalid' ? 'INVALID_PAYLOAD' : 'PRECONDITION_FAILED',
+          err.message,
+        )
+      }
+      throw err
+    }
+  })
 }
 
 /** Start work touches Jira, git and the file system: map each kind of failure. */
@@ -144,18 +165,7 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
   return {
     'app:info': () => ({ ...deps.versions(), shortcut: deps.shortcut.status() }),
     'app:openExternal': async ({ url }) => {
-      // Local dev servers (P1 "Start dev server" URL) are always allowed besides the list.
-      const settings = deps.settings.get()
-      // SPEC 5: configured services' hosts + the user's list; local dev servers (P1) too.
-      const hosts = [
-        ...settings.links.allowedHosts,
-        ...serviceHosts(settings),
-        // Demo-mode links point at the demo fixtures' host.
-        ...(deps.http.demo ? [new URL(DEMO_ORIGIN).hostname] : []),
-        'localhost',
-        '127.0.0.1',
-        '[::1]',
-      ]
+      const hosts = linkHosts(deps.settings.get(), deps.http.demo)
       const verdict = checkExternalUrl(url, hosts)
       if (!verdict.ok) throw new IpcError('NOT_ALLOWED', verdict.reason)
       await deps.openExternal(verdict.url)
@@ -240,6 +250,27 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
     'bitbucket:testConnection': () => withService(() => deps.bitbucket.testConnection()),
     'bitbucket:list': ({ list }) => withService(() => deps.bitbucket.list(list)),
     'bitbucket:pr': (ref) => withService(() => deps.bitbucket.pr(ref)),
+    'bitbucket:action': (request) =>
+      withService(async () => {
+        // SPEC 6.3: off by default. Checked here, whatever the renderer showed or sent.
+        if (!deps.settings.get().features.prActions) {
+          throw new IpcError(
+            'NOT_ALLOWED',
+            'PR actions are turned off. Turn them on in Settings → Bitbucket (only if your role permits).',
+          )
+        }
+        try {
+          const result = await deps.bitbucket.act(request)
+          deps.prWatcher.acknowledge(result)
+          return result.pr
+        } catch (err) {
+          if (err instanceof PrActionError) throw new IpcError('PRECONDITION_FAILED', err.message)
+          throw err
+        }
+      }),
+    'watch:list': () => deps.prWatcher.list(),
+    'watch:add': ({ link }) => withWatch(() => deps.prWatcher.add(link)),
+    'watch:remove': ({ key }) => deps.prWatcher.remove(key),
     'startwork:plan': (request) => withStartWork(() => deps.startWork.plan(request)),
     'startwork:run': (request) =>
       withStartWork(() =>
@@ -253,15 +284,4 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
         deps.requestRepoAction({ id, request })
       }),
   }
-}
-
-/** Hosts of the services configured in Settings (links to them may be opened). */
-function serviceHosts(settings: Settings): string[] {
-  return [settings.jira.baseUrl, settings.bitbucket.baseUrl].flatMap((url) => {
-    try {
-      return url ? [new URL(url).hostname] : []
-    } catch {
-      return []
-    }
-  })
 }

@@ -13,6 +13,8 @@ export const NOTIFICATION_TYPES = [
   'pr-comment',
   'pr-approval',
   'pr-needs-work',
+  /** A watched PR was merged or declined (P3-B). */
+  'pr-closed',
   'job-finished',
 ] as const
 
@@ -65,6 +67,9 @@ export const RepoConfigSchema = z.object({
 })
 export type RepoConfig = z.infer<typeof RepoConfigSchema>
 
+const allTypesOn = () =>
+  Object.fromEntries(NOTIFICATION_TYPES.map((t) => [t, true])) as Record<NotificationType, boolean>
+
 const hhmm = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Use HH:MM (24h)')
 const host = z
   .string()
@@ -101,14 +106,14 @@ export const SettingsSchema = z.object({
     .prefault({}),
   notifications: z
     .object({
+      // zod records over an enum need every key: a type added later (pr-closed) is missing
+      // from older files, and must default to on rather than reset every setting on load.
       types: z
-        .record(z.enum(NOTIFICATION_TYPES), z.boolean())
-        .default(
-          Object.fromEntries(NOTIFICATION_TYPES.map((t) => [t, true])) as Record<
-            NotificationType,
-            boolean
-          >,
-        ),
+        .preprocess(
+          (v) => (v && typeof v === 'object' && !Array.isArray(v) ? { ...allTypesOn(), ...v } : v),
+          z.record(z.enum(NOTIFICATION_TYPES), z.boolean()),
+        )
+        .default(allTypesOn),
       quietHours: z
         .object({
           enabled: z.boolean().default(false),

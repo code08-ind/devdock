@@ -1,16 +1,17 @@
 import type {
   BitbucketConnection,
   BitbucketDetection,
+  PrActionRequest,
   PrList,
   PrRef,
   PullRequest,
   RepoRef,
 } from '@shared/bitbucket'
-import { CLOUD_WEB, cloudRepoFromRemote } from '@shared/prlink'
+import { CLOUD_WEB, cloudRepoFromRemote, isCloudHost } from '@shared/prlink'
 import type { Settings } from '@shared/settings'
 import type { HttpClient } from '../http'
 import { ServiceError } from '../service-error'
-import { BitbucketClient, type BitbucketConfig } from './client'
+import { BitbucketClient, type ActionResult, type BitbucketConfig } from './client'
 import { detectBitbucket } from './detect'
 
 export interface BitbucketServiceDeps {
@@ -21,6 +22,16 @@ export interface BitbucketServiceDeps {
   repoRemotes: () => Promise<string[]>
   /** Site used while demo mode is on (the MSW fixtures). */
   demo: { config: BitbucketConfig }
+}
+
+/**
+ * One spelling per site: origin (default port dropped) + context path, lower case, no
+ * trailing `/`. Every bitbucket.org host is Cloud's one site.
+ */
+export function siteKey(baseUrl: string): string {
+  const url = new URL(baseUrl)
+  if (isCloudHost(url.hostname)) return CLOUD_WEB
+  return `${url.origin}${url.pathname.replace(/\/+$/, '')}`.toLowerCase()
 }
 
 /** Bitbucket for the app: config from Settings + the `bitbucket.token` secret, or the demo fixtures. */
@@ -45,6 +56,22 @@ export class BitbucketService {
 
   async pr(ref: PrRef): Promise<PullRequest> {
     return this.client().pr(ref)
+  }
+
+  /** The handler has already checked `features.prActions` and the confirmation. */
+  async act(request: PrActionRequest): Promise<ActionResult> {
+    return this.client().act(request.ref, request.action, request.targetBranch)
+  }
+
+  /**
+   * The site PRs are read from, lower case: the demo server, bitbucket.org or the DC URL.
+   * Watched links must belong to it. Doesn't need a token (null when no DC URL is set).
+   */
+  site(): string | null {
+    if (this.deps.http.demo) return siteKey(this.deps.demo.config.baseUrl)
+    const { flavor, baseUrl } = this.deps.settings().bitbucket
+    if (flavor === 'cloud') return siteKey(baseUrl || CLOUD_WEB)
+    return baseUrl ? siteKey(baseUrl) : null
   }
 
   private client(): BitbucketClient {

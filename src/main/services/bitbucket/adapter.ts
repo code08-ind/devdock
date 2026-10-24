@@ -4,11 +4,12 @@ import {
   type BitbucketUser,
   type BuildState,
   type BuildStatus,
+  type PrAction,
   type PrList,
   type PrRef,
   type PullRequest,
 } from '@shared/bitbucket'
-import { obj, text } from '../json'
+import { obj, text, type JsonObject } from '../json'
 import type { RestResponse } from '../rest'
 import { ServiceError } from '../service-error'
 
@@ -21,10 +22,15 @@ export interface Me {
   user: BitbucketUser
   /** Cloud account UUID / Data Center user name. */
   id: string
+  /** Data Center user slug (the participants URL uses it); Cloud leaves it out. */
+  slug?: string
 }
 
-/** GET relative to nothing: adapters build absolute URLs. */
-export type Get = (url: string) => Promise<RestResponse>
+/** One request to an absolute URL (adapters build them); GET unless `opts` say otherwise. */
+export type Call = (
+  url: string,
+  opts?: { method?: 'POST' | 'PUT'; body?: unknown },
+) => Promise<RestResponse>
 
 /** What differs between Bitbucket Cloud and Data Center; BitbucketClient does the rest. */
 export interface BitbucketAdapter {
@@ -35,11 +41,16 @@ export interface BitbucketAdapter {
   pr(ref: PrRef): Promise<PrBase>
   /** Build statuses posted against the PR's head commit (by Jenkins and friends). */
   builds(pr: PrBase): Promise<BuildStatus[]>
+  /**
+   * Approve, needs work / request changes, or merge into `targetBranch` (already checked by
+   * BitbucketClient.act; an adapter that re-reads the PR checks it again).
+   */
+  act(ref: PrRef, action: PrAction, me: Me, targetBranch: string): Promise<void>
 }
 
 /** Follows paged responses; each flavour supplies how to find the next page. */
 export async function collect<T>(
-  get: Get,
+  call: Call,
   first: string,
   parse: (body: unknown) => { values: unknown[]; next: string | null },
   map: (raw: unknown) => T,
@@ -48,7 +59,7 @@ export async function collect<T>(
   const out: T[] = []
   let url: string | null = first
   for (let page = 0; url && page < maxPages; page++) {
-    const { values, next } = parse((await get(url)).body)
+    const { values, next } = parse((await call(url)).body)
     out.push(...values.map(map))
     url = next
   }
@@ -119,4 +130,23 @@ export async function orEmpty<T>(p: Promise<T[]>): Promise<T[]> {
     }
     throw err
   }
+}
+
+/**
+ * The server's own words from an error body (SPEC 6.3: permission errors shown verbatim):
+ * Data Center `{errors:[{message}]}`, Cloud `{error:{message}}`. Null for anything else.
+ */
+export function serverMessage(details: string | undefined): string | null {
+  if (!details) return null
+  let body: JsonObject
+  try {
+    body = obj(JSON.parse(details))
+  } catch {
+    return null
+  }
+  const dc = Array.isArray(body.errors)
+    ? body.errors.flatMap((e) => text(obj(e).message) ?? [])
+    : []
+  const said = dc.length ? dc.join(' ') : text(obj(body.error).message)
+  return said?.trim() || null
 }
