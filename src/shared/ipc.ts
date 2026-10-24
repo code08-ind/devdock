@@ -178,6 +178,7 @@ export const contract = {
   'watch:list': { req: none, res: z.array(WatchItemSchema) },
   'watch:add': { req: z.object({ link: z.string().min(1).max(2000) }), res: WatchItemSchema },
   'watch:remove': { req: z.object({ key: z.string().min(1).max(400) }), res: none },
+  'watch:request': { req: z.object({ link: z.string().min(1).max(2000) }), res: none },
   /** Read-only: branch name, commands, brief path + .gitignore check, agent and message. */
   'startwork:plan': { req: StartWorkRequestSchema, res: StartWorkPlanSchema },
   'startwork:run': { req: StartWorkRunSchema, res: StartWorkResultSchema },
@@ -240,5 +241,6 @@ export interface EventPayloads {
   'devserver:changed': DevServerState[]
   'devserver:output': DevServerOutputEvent
   'watch:changed': WatchItem[]
+  'watch:requested': { link: string }
 }
 export type EventPayload<E extends EventChannel> = EventPayloads[E]

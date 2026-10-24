@@ -1,12 +1,13 @@
 import type { View } from '@shared/channels'
+import { parsePrLink } from '@shared/prlink'
 import type { ActionRequest, OpenTarget } from '@shared/repos'
 import { THEMES, type SettingsPatch, type Theme } from '@shared/settings'
 
-/** One palette entry. Later phases add argument commands (`watch <link>`, `kill <port>`). */
+/** One palette entry. Argument commands (`watch <link>`) come from `queryCommands`. */
 export interface Command {
   id: string
   title: string
-  group: 'Go to' | 'Repos' | 'Appearance' | 'Notifications' | 'App'
+  group: 'Go to' | 'Repos' | 'Pull requests' | 'Appearance' | 'Notifications' | 'App'
   keywords?: string[]
   shortcut?: string
   run: () => unknown
@@ -51,6 +52,8 @@ export interface CommandContext {
   requestAction: (id: string, request: ActionRequest) => unknown
   openRepo: (id: string, target: OpenTarget) => unknown
   openLabels: Record<OpenTarget, string>
+  /** Watches a PR link (the main window shows PRs and reports the result there). */
+  watch: (link: string) => unknown
 }
 
 const REPO_ACTIONS: { key: string; label: string; request: ActionRequest; keywords: string[] }[] = [
@@ -117,6 +120,13 @@ export function buildCommands(ctx: CommandContext, views: readonly View[]): Comm
   return [
     ...go,
     ...repoCommands(ctx),
+    {
+      id: 'pr:watch',
+      title: 'Watch a pull request…',
+      group: 'Pull requests',
+      keywords: ['watch', 'bitbucket', 'link', 'pr', 'paste'],
+      run: () => ctx.goto('prs'),
+    },
     ...themes,
     ctx.paused
       ? {
@@ -153,6 +163,41 @@ export function buildCommands(ctx: CommandContext, views: readonly View[]): Comm
       run: ctx.openLogs,
     },
     { id: 'app:quit', title: 'Quit DevDock', group: 'App', keywords: ['exit'], run: ctx.quit },
+  ]
+}
+
+/**
+ * Commands made from what is typed (SPEC 6.1 "some take arguments, e.g. `watch <PR link>`"):
+ * `watch <link>`, or a pull request link pasted on its own. Checked with the same parser as main.
+ */
+export function queryCommands(
+  query: string,
+  ctx: Pick<CommandContext, 'watch' | 'goto'>,
+): Command[] {
+  const text = query.trim()
+  const argument = /^watch\s+(\S+)$/i.exec(text)?.[1]
+  const link = argument ?? text
+  const parsed = link ? parsePrLink(link) : null
+  if (!parsed) {
+    // `watch <something>` that isn't a link: say so (a bare non-link is just a search).
+    return argument
+      ? [
+          {
+            id: 'pr:watch-invalid',
+            title: `Not a pull request link: open Pull requests to paste one`,
+            group: 'Pull requests',
+            run: () => ctx.goto('prs'),
+          },
+        ]
+      : []
+  }
+  return [
+    {
+      id: 'pr:watch-link',
+      title: `Watch pull request ${parsed.ref.repo} #${parsed.ref.id}`,
+      group: 'Pull requests',
+      run: () => ctx.watch(link),
+    },
   ]
 }
 

@@ -57,6 +57,8 @@ export const INVOKE_CHANNELS = [
   /** Watch the PR behind a pasted link (palette `watch <link>` or the Watch field). */
   'watch:add',
   'watch:remove',
+  /** Palette window → main window: show PRs and watch this link there (result as a toast). */
+  'watch:request',
   'startwork:plan',
   'startwork:run',
 ] as const
@@ -75,6 +77,7 @@ export const EVENT_CHANNELS = [
   'devserver:output',
   /** The watch list or a watched PR's snapshot changed. */
   'watch:changed',
+  'watch:requested',
 ] as const
 
 export type InvokeChannel = (typeof INVOKE_CHANNELS)[number]

@@ -1,15 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { VIEWS, type View } from '@shared/channels'
 import type { ActionRequest } from '@shared/repos'
+import { useAddWatch } from '../../lib/bitbucket'
 import { useBridgeEvent, useSettings } from '../../lib/devdock'
 import { hasMod } from '../../lib/keyboard'
+import { useAction } from '../../lib/useAction'
 import { useRepos } from '../../lib/repos'
 import { Button } from '../../ui/Button'
 import { useModal } from '../../ui/Dialog'
-import { EmptyState } from '../../ui/Feedback'
+import { EmptyState, useToast } from '../../ui/Feedback'
 import { CommandPalette } from '../palette/CommandPalette'
 import { VIEW_LABELS } from '../palette/commands'
 import { useCommands } from '../palette/useCommands'
+import { prLabel } from '../prs/PrBits'
+import { PrsPage } from '../prs/PrsPage'
 import { ActionDialog } from '../repos/ActionDialog'
 import { ReposPage } from '../repos/ReposPage'
 import { SettingsPage } from '../settings/SettingsPage'
@@ -31,6 +35,7 @@ function ViewBody({
   if (view === 'repos') return <ReposPage />
   if (view === 'today') return <TodayPage onView={onView} />
   if (view === 'tickets') return <TicketsPage onView={onView} />
+  if (view === 'prs') return <PrsPage onView={onView} />
   return (
     <EmptyState
       icon={VIEW_ICONS[view]}
@@ -76,7 +81,20 @@ export function App() {
     setView('repos')
     setRequested({ id, request })
   }, [])
-  const commands = useCommands(setView, requestAction)
+  // `watch <link>` from either palette: show PRs and report the result here (toast).
+  const { run } = useAction()
+  const toast = useToast()
+  const addWatch = useAddWatch().mutateAsync
+  const watchLink = useCallback(
+    (link: string) => {
+      setView('prs')
+      void run(addWatch(link)).then((r) => {
+        if (r.ok) toast(`Watching ${prLabel(r.value.pr)}`)
+      })
+    },
+    [run, toast, addWatch],
+  )
+  const { commands, forQuery } = useCommands(setView, requestAction, watchLink)
   const main = useRef<HTMLElement>(null)
 
   useBridgeEvent('nav:goto', setView)
@@ -86,6 +104,8 @@ export function App() {
     [requestAction],
   )
   useBridgeEvent('repos:actionRequested', onActionRequested)
+  const onWatchRequested = useCallback(({ link }: { link: string }) => watchLink(link), [watchLink])
+  useBridgeEvent('watch:requested', onWatchRequested)
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -132,7 +152,11 @@ export function App() {
         />
       ) : null}
       <PaletteOverlay open={paletteOpen} onClose={() => setPaletteOpen(false)}>
-        <CommandPalette commands={commands} onClose={() => setPaletteOpen(false)} />
+        <CommandPalette
+          commands={commands}
+          forQuery={forQuery}
+          onClose={() => setPaletteOpen(false)}
+        />
       </PaletteOverlay>
     </div>
   )

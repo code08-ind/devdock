@@ -119,6 +119,7 @@ export async function handlerSetup(
     openRepo,
     emitOutput: vi.fn((e: RepoOutputEvent) => void output.push(e)),
     requestRepoAction: vi.fn(),
+    requestWatch: vi.fn(),
     devServers: new DevServerManager({ onChange: vi.fn(), onOutput: vi.fn() }),
     jira,
     bitbucket,

@@ -595,3 +595,110 @@
   margin: 0;
   overflow-wrap: anywhere;
 }
+
+/* ---- Pull requests (SPEC 6.3) + Today --------------------------------------------------- */
+.prs {
+  display: grid;
+  gap: var(--space-4);
+  max-width: 960px;
+}
+.prs-list {
+  display: grid;
+  gap: var(--space-2);
+}
+.watch-field .inline-form .input {
+  flex: 1;
+}
+.pr-list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: var(--border-w) solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+.pr-row {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--row-py) var(--space-3);
+}
+.pr-row + .pr-row {
+  border-top: var(--border-w) solid var(--border);
+}
+.pr-row-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+  font-size: var(--fs-sm);
+}
+.pr-row-head .spacer {
+  flex: 1;
+}
+.pr-ref {
+  font-weight: var(--fw-semibold);
+}
+.pr-title {
+  margin: 0;
+  font-size: var(--fs-base);
+  font-weight: var(--fw-medium);
+  overflow-wrap: anywhere;
+}
+.pr-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  margin: 0;
+  font-size: var(--fs-sm);
+}
+.pr-branches {
+  overflow-wrap: anywhere;
+}
+.pr-row > .button-row {
+  padding-top: var(--space-1);
+}
+.pr-watch-note,
+.pr-watch-error {
+  margin: 0;
+  font-size: var(--fs-sm);
+}
+.pr-watch-error {
+  color: var(--danger);
+}
+.today {
+  display: grid;
+  gap: var(--space-5);
+}
+.today-setup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+.today-setup p {
+  margin: 0;
+}
+.today-rows {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: var(--border-w) solid var(--border);
+  border-radius: var(--radius-md);
+}
+.today-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+  padding: var(--row-py) var(--space-3);
+}
+.today-row + .today-row {
+  border-top: var(--border-w) solid var(--border);
+}
+.today-row-text {
+  flex: 1;
+  min-width: 12em;
+  overflow-wrap: anywhere;
+}

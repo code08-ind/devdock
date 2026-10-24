@@ -6,6 +6,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 import { useEffect } from 'react'
+import type { WatchItem } from '@shared/bitbucket'
 import type { EventChannel } from '@shared/channels'
 import type { ErrorCode, EventPayload, IpcEnvelope } from '@shared/ipc'
 import type { Settings, SettingsPatch } from '@shared/settings'
@@ -21,6 +22,10 @@ export class DevDockError extends Error {
     this.name = 'DevDockError'
   }
 }
+
+/** A service that isn't set up yet: views show the way to Settings, not an error. */
+export const isNotConfigured = (err: unknown): err is DevDockError =>
+  err instanceof DevDockError && err.code === 'NOT_CONFIGURED'
 
 /** Turns an IPC envelope into a value or a thrown DevDockError. */
 export async function unwrap<T>(call: Promise<IpcEnvelope<T>>): Promise<T> {
@@ -63,6 +68,8 @@ export const keys = {
   pause: ['notifications', 'state'],
   repoStatusAll: ['repos', 'status'],
   repoStatus: (id: string) => ['repos', 'status', id] as const,
+  /** Watched PRs (lib/bitbucket.ts); here so main's `watch:changed` can update it. */
+  watches: ['watches'],
 } as const
 
 export function useBridgeEvent<E extends EventChannel>(
@@ -101,7 +108,10 @@ const onRepoChanged = ({ id }: { id: string }) => {
   void queryClient.invalidateQueries({ queryKey: keys.repoStatus(id) })
 }
 
+const onWatchesChanged = (items: WatchItem[]) => queryClient.setQueryData(keys.watches, items)
+
 export function useMainEvents(): void {
+  useBridgeEvent('watch:changed', onWatchesChanged)
   useBridgeEvent('settings:changed', onSettingsChanged)
   useBridgeEvent('notifications:changed', onNotificationsChanged)
   useBridgeEvent('repos:changed', onRepoChanged)

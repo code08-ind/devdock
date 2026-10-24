@@ -14,8 +14,8 @@ Contract docs: `docs/SPEC.md`, `docs/UI-THEMES.md`, `docs/BUILD-PROMPTS.md` (pha
 
 | Field        | Value                                                         |
 | ------------ | ------------------------------------------------------------- |
-| Phase        | P3 — Bitbucket PRs: P3-A committed (4b83a2c); **P3-B done** (watcher, scheduler, PR actions — uncommitted). |
-| Next step    | User review/commit of P3-B, then **P3-C — Renderer** (PRs view, Today with PRs, Settings → Bitbucket, palette `watch <link>`, action confirmations; `P3.D4`) |
+| Phase        | **Phase 3 done** — P3-A (4b83a2c), P3-B (25f5999) committed; P3-C (renderer) done, uncommitted. |
+| Next step    | User review → commit P3-C → push + read CI → **Phase 4 (Jenkins builds and watchers)**, split into sub-phases |
 | Blockers     | None                                                          |
 | Last updated | 2026-10-24                                                    |
 
@@ -291,11 +291,11 @@ Done criteria:
 - [x] `P3.01` Cloud 2.0 + DC 1.0 adapters → one PR model; base-URL Detect probe — `services/bitbucket/{adapter,client,cloud,datacenter,detect,service}.ts`, `shared/bitbucket.ts`, IPC `bitbucket:detect`/`testConnection`; Settings UI is P3-C
 - [x] `P3.02` PR link parser (both shapes, `/overview` `/diff`, query strings, project vs user repos) — `shared/prlink.ts` (`tests/unit/prlink.test.ts`, 43 cases incl. context path, port, `~user`, rejects)
 - [x] `P3.03` Lists: My PRs, Reviewing, Recently merged — `bitbucket:list` (Cloud: per registered repo BBQL; DC: dashboard); UI is P3-C
-- [~] `P3.04` PR card + build status API — model + build statuses done (`bitbucket:list`/`bitbucket:pr`); the card itself is P3-C
-- [~] `P3.05` Watch list (palette `watch <link>`, paste field), state-change detection, notifications, persisted state — main done: `services/bitbucket/watcher.ts`, IPC `watch:list/add/remove` + `watch:changed`, `userData/watches.json`, new type `pr-closed`; palette + Watch field are P3-C
+- [x] `P3.04` PR card + build status API — model + build statuses (`bitbucket:list`/`bitbucket:pr`); card = `features/prs/PrRow.tsx` (+ `PrBits.tsx`)
+- [x] `P3.05` Watch list (palette `watch <link>`, paste field), state-change detection, notifications, persisted state — Watch field + palette `watch <link>` / pasted link (P3-C); main: `services/bitbucket/watcher.ts`, IPC `watch:list/add/remove` + `watch:changed`, `userData/watches.json`, new type `pr-closed`; palette + Watch field are P3-C
 - [x] `P3.06` Scheduler: 60s fg / 3 min bg, backoff + jitter, `Retry-After` — `services/scheduler.ts`, wired in `index.ts` (focus via `browser-window-focus/blur`, Settings → polling); `tests/unit/scheduler.test.ts` (8)
-- [~] `P3.07` PR actions behind Settings switch (off default), merge needs typed target branch, handler re-checks — main done: IPC `bitbucket:action` (switch checked in the handler, `confirmed: true`, typed target re-checked on a fresh read, DC merge vetoes/version, server words verbatim); confirmation dialogs + switch UI are P3-C
-- [~] `P3.08` Demo-mode Today view with PRs — DC demo fixtures done (`src/main/demo/bitbucket.ts`: 4 mine in mixed states, 2 reviewing, 2 merged); Today view is P3-C
+- [x] `P3.07` PR actions behind Settings switch (off default), merge needs typed target branch, handler re-checks — UI: switch behind a warning, `PrActionDialog` (typed merge); main: IPC `bitbucket:action` (switch checked in the handler, `confirmed: true`, typed target re-checked on a fresh read, DC merge vetoes/version, server words verbatim); confirmation dialogs + switch UI are P3-C
+- [x] `P3.08` Demo-mode Today view with PRs — `features/today/TodayPage.tsx` (my PRs, watched, in-progress tickets, repos) on the DC demo fixtures (4 mine in mixed states, 2 reviewing, 2 merged)
 
 ### Sub-phases (pause points)
 
@@ -317,7 +317,13 @@ Done criteria:
   change detection → notifications), `P3.06` scheduler (60 s / 3 min focus-aware, backoff + jitter,
   `Retry-After` from `ServiceError.retryAfterSec`), `P3.07` approve / needs-work / merge behind
   `features.prActions`, handler re-checks, merge needs the typed target branch. Done: `P3.D2`, `P3.D3`.
-- [ ] **P3-C — Renderer**: PRs view (3 lists, cards), Today with PRs, Settings → Bitbucket (flavor, URL, Detect,
+- [x] **P3-C — Renderer** (done 2026-10-25). Evidence: `npm run lint` exit 0; `npm test` → 32 files, 561 passed,
+  1 skipped; `npm run e2e` → 26 passed, 1 skipped (new `tests/e2e/prs.spec.ts`, 5); `npm run dist` exit 0 (arm64 +
+  x64 dmg). `code-review` (Standards + Spec) run; fixed: Watched actions by role, "N comments in all" for list
+  totals, Watch-field server errors with Details, `watch <not a link>` hint, watch toggle double-submit +
+  `useRemoveWatch`, no live region on stored watch errors, one `ACTION_COPY` map, shared `isNotConfigured` /
+  `useWatchedKeys`, toast when PR actions turn off; Watched-role fix mutation-checked in e2e. Deferred items in
+  DECISIONS P3-C. Original scope: PRs view (3 lists, cards), Today with PRs, Settings → Bitbucket (flavor, URL, Detect,
   user name, Test connection, PR-actions switch + warning), palette `watch <link>` + Watch field, action
   confirmations. Done: `P3.D4` screenshot.
 
@@ -326,7 +332,7 @@ Done criteria:
 - [x] `P3.D1` Adapter tests both flavours incl. pagination — Evidence: `tests/unit/bitbucket-client.test.ts`: Cloud (Basic/Bearer auth, BBQL per list, `next` followed only on the API origin, 10-page cap, per-repo 403/404 skip vs 401 fail, unresolved threads, SUPERSEDED, no builds) and DC (`X-AUSERNAME`, dashboard params, `start=nextPageStart` until `isLastPage`, 7-day merged cut, `threadResolved`, `~user` repos, 401/403/500/429 `Retry-After`/HTML page), Detect (Cloud host, DC probe without credentials, login-protected DC, not-Bitbucket, certificate); payloads in `tests/fixtures/bitbucket.ts`
 - [x] `P3.D2` Watcher snapshot tests: exact notifications, no duplicates on restart — Evidence: `tests/unit/pr-watcher.test.ts` "a sequence of snapshots produces exactly the expected notifications" (8 polls: build pass/fail incl. new commit between polls, approvals/needs-work by name, comments up/down, merged; nothing on unchanged polls; merged → no more polling), "no duplicates after a restart" (new `PrWatcher` on the same file), "saves the new snapshot before notifying"; demo: `bitbucket-actions.test.ts` running build on #88 passes → exactly one notification
 - [x] `P3.D3` Actions off → handler rejects approve/merge called directly (test) — Evidence: `tests/unit/bitbucket-actions.test.ts` "with PR actions off, the handler rejects approve, needs work and merge called directly" (`dispatch('bitbucket:action')` → `NOT_ALLOWED`, zero requests reach the demo server); mutation-checked
-- [ ] `P3.D4` Screenshot: Today with PRs in mixed states — Evidence:
+- [x] `P3.D4` Screenshot: Today with PRs in mixed states — Evidence: `docs/screenshots/p3-today.png`, `p3-today-dark.png` (passing/2 approvals, failing/needs work, building/conflicts, no builds), `p3-merge-confirm.png`; written by `DEVDOCK_SCREENSHOTS=1 npx playwright test prs`; asserted in `prs.spec.ts` "P3.D4: Today shows my PRs in mixed states" 
 
 ---
 
@@ -405,3 +411,4 @@ Done criteria:
 | 2026-10-23 | P2 close | Committed P2-C (8a19f13) and pushed P2-A/B/C. CI run 39908837385: macOS + Windows green — lint, unit/integration (startwork incl.), e2e 21 passed + 1 skipped on each (tickets.spec Start work ran on Windows), dist. Phase 2 closed; user paused before Phase 3. | Phase 3 (`P3.01`) |
 | 2026-10-24 | P3-A  | Split Phase 3 into P3-A/B/C. Bitbucket core: Cloud 2.0 + DC 1.0 adapters, one PR model with build statuses, Detect, link parser, 3 lists, settings `bitbucket`, IPC `bitbucket:*`, DC demo fixtures; Jira moved onto shared `rest.ts`. code-review run; 9 fixes (6 mutation-checked). lint/test/e2e green. Not committed. | User review → commit → P3-B |
 | 2026-10-24 | P3-B  | Committed P3-A (4b83a2c, local) after re-running lint/test. Watcher (persisted snapshots → notifications, new `pr-closed` type with old settings files filled in), focus-aware Scheduler (jitter, exponential backoff, `Retry-After`), PR actions behind `features.prActions` (handler check, typed merge target, DC vetoes/version, server words verbatim), 409 `conflict` kind, stateful demo, IPC `watch:*` + `bitbucket:action`, notification clicks use the full link allowlist. code-review run; 7 fixes, all mutation-checked. lint/test/e2e green. Not committed. | User review → commit → P3-C |
+| 2026-10-25 | P3-C  | Committed P3-B (25f5999, local) on the user's go-ahead. Renderer: PRs view (4 lists, PR rows, Watch field), action dialogs (typed merge, server words), Settings → Bitbucket (Detect, Test connection, PR-actions switch behind a warning; shared ServiceBits), Today (my PRs, watched, in-progress tickets, repos), palette `watch <link>` in both windows (`watch:request` hand-off). code-review run; 11 fixes. lint/test/e2e/dist green. Phase 3 Done criteria all met. Not committed. | User review → commit/push/CI → Phase 4 |

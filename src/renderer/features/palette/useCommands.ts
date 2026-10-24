@@ -6,7 +6,7 @@ import { modLabel } from '../../lib/keyboard'
 import { OPEN_LABELS, useOpenRepo, useRepos } from '../../lib/repos'
 import { useAction } from '../../lib/useAction'
 import { THEME_LABELS } from '../../ui/appearance'
-import { buildCommands, type Command } from './commands'
+import { buildCommands, queryCommands, type Command } from './commands'
 
 /**
  * The live command registry for either window. `goto` and `requestAction` differ per window:
@@ -15,7 +15,8 @@ import { buildCommands, type Command } from './commands'
 export function useCommands(
   goto: (view: View) => void,
   requestAction: (id: string, request: ActionRequest) => void,
-): Command[] {
+  watch: (link: string) => void,
+): { commands: Command[]; forQuery: (query: string) => Command[] } {
   const { run } = useAction()
   const notifications = useNotificationActions()
   const update = useUpdateSettingsAction()
@@ -24,8 +25,9 @@ export function useCommands(
   const paused = usePauseState().data?.pausedUntil != null
   const repos = useRepos()
 
-  if (!settings) return []
-  return buildCommands(
+  const forQuery = (query: string) => queryCommands(query, { watch, goto })
+  if (!settings) return { commands: [], forQuery }
+  const commands = buildCommands(
     {
       goto,
       viewShortcut: (i) => modLabel(String(i + 1)),
@@ -43,7 +45,9 @@ export function useCommands(
       requestAction,
       openRepo,
       openLabels: OPEN_LABELS,
+      watch,
     },
     VIEWS,
   )
+  return { commands, forQuery }
 }

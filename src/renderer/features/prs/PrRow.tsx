@@ -1,0 +1,97 @@
+import { useState, type ReactNode } from 'react'
+import { Eye, EyeOff, ExternalLink } from 'lucide-react'
+import type { PrAction, PullRequest } from '@shared/bitbucket'
+import { useAddWatch, useRemoveWatch } from '../../lib/bitbucket'
+import { bridge, unwrap } from '../../lib/devdock'
+import { useAction } from '../../lib/useAction'
+import { Button, IconButton } from '../../ui/Button'
+import { AgeOf, BuildPill, ReviewState, StatePill, prLabel } from './PrBits'
+import { ACTION_COPY } from './actions'
+import { PrActionDialog } from './PrActionDialog'
+
+/**
+ * One PR (SPEC 6.3 card): title, source → target, build, reviews, open threads, conflicts,
+ * age and the link. `actions` is empty unless PR actions are on in Settings.
+ */
+export function PrRow({
+  pr,
+  watchKey,
+  actions = [],
+  showAuthor = false,
+  children,
+}: {
+  pr: PullRequest
+  /** The watch key when this PR is watched; undefined when not. */
+  watchKey: string | undefined
+  actions?: readonly PrAction[]
+  showAuthor?: boolean
+  /** Extra lines under the row (a watch's last check or error). */
+  children?: ReactNode
+}) {
+  const { run, pending } = useAction()
+  const addWatch = useAddWatch()
+  const removeWatch = useRemoveWatch()
+  const [acting, setActing] = useState<PrAction | null>(null)
+  const label = prLabel(pr)
+
+  const toggleWatch = () =>
+    watchKey
+      ? void run(removeWatch.mutateAsync(watchKey), `Stopped watching ${label}`)
+      : void run(addWatch.mutateAsync(pr.url), `Watching ${label}`)
+
+  return (
+    <li className="pr-row">
+      <div className="pr-row-head">
+        <span className="mono pr-ref">{label}</span>
+        <StatePill pr={pr} />
+        <BuildPill pr={pr} />
+        <ReviewState pr={pr} />
+        <span className="spacer" />
+        <IconButton
+          label={watchKey ? `Stop watching ${label}` : `Watch ${label}`}
+          icon={
+            watchKey ? (
+              <EyeOff size={16} aria-hidden="true" />
+            ) : (
+              <Eye size={16} aria-hidden="true" />
+            )
+          }
+          // One toggle at a time: a double click mustn't send a second add/remove.
+          disabled={pending}
+          onClick={toggleWatch}
+        />
+        <IconButton
+          label={`Open ${label} in Bitbucket`}
+          icon={<ExternalLink size={16} aria-hidden="true" />}
+          onClick={() => void run(unwrap(bridge.app.openExternal({ url: pr.url })))}
+        />
+      </div>
+      <h3 className="pr-title">{pr.title}</h3>
+      <p className="pr-meta">
+        <span className="mono pr-branches">
+          {pr.sourceBranch} → {pr.targetBranch}
+        </span>
+        <AgeOf pr={pr} />
+        {showAuthor ? <span className="muted">by {pr.author}</span> : null}
+      </p>
+      {actions.length ? (
+        <div className="button-row">
+          {actions.map((a) => (
+            <Button
+              key={a}
+              size="sm"
+              variant={a === 'merge' ? 'secondary' : 'ghost'}
+              icon={ACTION_COPY[a].icon}
+              aria-label={`${ACTION_COPY[a].verb} ${label}`}
+              onClick={() => setActing(a)}
+            >
+              {ACTION_COPY[a].button}
+            </Button>
+          ))}
+        </div>
+      ) : null}
+      {children}
+      {acting ? <PrActionDialog pr={pr} action={acting} onClose={() => setActing(null)} /> : null}
+    </li>
+  )
+}

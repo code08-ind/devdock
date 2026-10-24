@@ -9,16 +9,18 @@ const close = () => void bridge.palette.close()
 const goto = (view: View) => void bridge.app.showView({ view })
 const requestAction = (id: string, request: ActionRequest) =>
   void bridge.repos.requestAction({ id, request })
+// This window hides after a command, so the main window watches it and reports the result.
+const watch = (link: string) => void bridge.watch.request({ link })
 
 /** The global-shortcut palette window. It is hidden, not destroyed, so reset on each show. */
 export function PaletteWindow() {
   const [resetKey, setResetKey] = useState(0)
   const onShown = useCallback(() => setResetKey((k) => k + 1), [])
   useBridgeEvent('palette:shown', onShown)
-  const commands = useCommands(goto, requestAction)
+  const { commands, forQuery } = useCommands(goto, requestAction, watch)
   return (
     <div className="palette-window">
-      <CommandPalette key={resetKey} commands={commands} onClose={close} />
+      <CommandPalette key={resetKey} commands={commands} forQuery={forQuery} onClose={close} />
     </div>
   )
 }

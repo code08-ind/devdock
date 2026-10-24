@@ -1,14 +1,15 @@
 import { useState } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { PlugZap, Trash2 } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
+import { Trash2 } from 'lucide-react'
 import { DEFAULT_JQL, type JiraFlavor } from '@shared/jira'
 import type { Settings } from '@shared/settings'
 import { bridge, unwrap, useUpdateSettings } from '../../lib/devdock'
 import { BRIEF_LOCATION_OPTIONS, jiraKeys } from '../../lib/jira'
 import { Button, IconButton } from '../../ui/Button'
-import { ErrorNotice, StatusPill, useToast } from '../../ui/Feedback'
-import { Field, Input, SegmentedControl, Textarea, Toggle } from '../../ui/Field'
+import { ErrorNotice, useToast } from '../../ui/Feedback'
+import { Field, Input, SegmentedControl, Toggle } from '../../ui/Field'
 import { Section } from './Section'
+import { TestConnection, TextSetting } from './ServiceBits'
 
 const FLAVORS: { value: JiraFlavor; label: string }[] = [
   { value: 'cloud', label: 'Jira Cloud' },
@@ -70,6 +71,7 @@ export function JiraSection({ settings }: { settings: Settings }) {
         // A new site/flavour/email makes an old result meaningless: start over.
         key={`${jira.flavor}|${jira.baseUrl}|${jira.email}`}
         demo={settings.general.demoMode}
+        test={() => unwrap(bridge.jira.testConnection())}
       />
 
       <TextSetting
@@ -106,104 +108,6 @@ export function JiraSection({ settings }: { settings: Settings }) {
       />
       {update.error ? <ErrorNotice error={update.error} /> : null}
     </Section>
-  )
-}
-
-function TextSetting({
-  label,
-  hint,
-  value,
-  onSave,
-  multiline = false,
-  inputMode,
-  validate,
-}: {
-  label: string
-  hint?: string
-  value: string
-  onSave: (v: string) => void
-  multiline?: boolean
-  inputMode?: 'numeric'
-  /** An error message for the draft, or null when it can be saved. */
-  validate?: (draft: string) => string | null
-}) {
-  const [draft, setDraft] = useState(value)
-  // Follow changes made elsewhere (import, Clear all data, the other window): otherwise a stale
-  // draft could be saved back over them.
-  const [shown, setShown] = useState(value)
-  if (value !== shown) {
-    setShown(value)
-    setDraft(value)
-  }
-  const error = validate?.(draft.trim()) ?? null
-  return (
-    <Field label={label} hint={hint} error={error}>
-      {({ id, describedBy }) => (
-        <form
-          className="inline-form"
-          onSubmit={(e) => {
-            e.preventDefault()
-            if (!error) onSave(draft.trim())
-          }}
-        >
-          {multiline ? (
-            <Textarea
-              id={id}
-              aria-describedby={describedBy}
-              mono
-              rows={2}
-              value={draft}
-              spellCheck={false}
-              onChange={(e) => setDraft(e.target.value)}
-            />
-          ) : (
-            <Input
-              id={id}
-              aria-describedby={describedBy}
-              value={draft}
-              inputMode={inputMode}
-              spellCheck={false}
-              onChange={(e) => setDraft(e.target.value)}
-            />
-          )}
-          <Button type="submit" disabled={draft.trim() === value || error !== null}>
-            Save
-          </Button>
-        </form>
-      )}
-    </Field>
-  )
-}
-
-function TestConnection({ demo }: { demo: boolean }) {
-  const test = useMutation({ mutationFn: () => unwrap(bridge.jira.testConnection()) })
-  return (
-    <div className="stack">
-      <div className="button-row">
-        <Button
-          icon={<PlugZap size={16} aria-hidden="true" />}
-          disabled={test.isPending}
-          onClick={() => test.mutate()}
-        >
-          Test connection
-        </Button>
-        {demo ? <span className="muted">Demo mode is on: this tests the demo site.</span> : null}
-      </div>
-      {test.isPending ? (
-        <p className="muted" role="status">
-          Connecting…
-        </p>
-      ) : null}
-      {test.data ? (
-        <div role="status">
-          <StatusPill tone="success">
-            Connected (HTTP {test.data.status}) as {test.data.user.displayName}
-            {test.data.user.account ? ` (${test.data.user.account})` : ''}
-          </StatusPill>
-        </div>
-      ) : null}
-      {test.error ? <ErrorNotice error={test.error} /> : null}
-    </div>
   )
 }
 

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { RefreshCw, Ticket } from 'lucide-react'
 import type { View } from '@shared/channels'
-import { DevDockError, useSettings } from '../../lib/devdock'
+import { isNotConfigured, useSettings } from '../../lib/devdock'
 import { jiraKeys, listChoices, useJiraList } from '../../lib/jira'
 import { Button, IconButton } from '../../ui/Button'
 import { EmptyState, ErrorNotice } from '../../ui/Feedback'
@@ -22,7 +22,6 @@ export function TicketsPage({ onView }: { onView: (v: View) => void }) {
 
   if (!settings || !choice) return null
 
-  const notConfigured = list.error instanceof DevDockError && list.error.code === 'NOT_CONFIGURED'
   const issues = list.data ?? []
   const selectedKey = issues.some((i) => i.key === selected) ? selected : null
 
@@ -52,10 +51,10 @@ export function TicketsPage({ onView }: { onView: (v: View) => void }) {
           />
         </div>
 
-        {notConfigured ? (
+        {isNotConfigured(list.error) ? (
           <EmptyState
             icon={<Ticket size={18} aria-hidden="true" />}
-            title={(list.error as Error).message}
+            title={list.error.message}
             action={<Button onClick={() => onView('settings')}>Open Settings</Button>}
           />
         ) : list.error ? (

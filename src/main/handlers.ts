@@ -54,6 +54,8 @@ export interface HandlerDeps {
   bitbucket: BitbucketService
   prWatcher: PrWatcher
   startWork: StartWorkService
+  /** Shows PRs in the main window and hands it a link to watch (from the palette window). */
+  requestWatch: (link: string) => void
   /** Brings up the main window's action dialog (from the palette window). */
   requestRepoAction: (event: { id: string; request: ActionRequest }) => void
 }
@@ -271,6 +273,7 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
     'watch:list': () => deps.prWatcher.list(),
     'watch:add': ({ link }) => withWatch(() => deps.prWatcher.add(link)),
     'watch:remove': ({ key }) => deps.prWatcher.remove(key),
+    'watch:request': ({ link }) => deps.requestWatch(link),
     'startwork:plan': (request) => withStartWork(() => deps.startWork.plan(request)),
     'startwork:run': (request) =>
       withStartWork(() =>

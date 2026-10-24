@@ -296,6 +296,10 @@ function start(): void {
         writeClipboard: (text) => clipboard.writeText(text),
         openEditor: (repo) => openRepo(repo, 'editor'),
       }),
+      requestWatch: (link) => {
+        showView('prs')
+        mainWindow?.webContents.send('watch:requested', { link })
+      },
       requestRepoAction: (event) => {
         showView('repos')
         mainWindow?.webContents.send('repos:actionRequested', event)

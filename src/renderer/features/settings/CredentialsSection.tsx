@@ -11,7 +11,7 @@ import { Field, Input } from '../../ui/Field'
 import { Section } from './Section'
 
 const SECRET_LABELS: Record<SecretKey, string> = {
-  'bitbucket.token': 'Bitbucket access token',
+  'bitbucket.token': 'Bitbucket API token, app password or HTTP access token',
   'jenkins.token': 'Jenkins API token',
   'jira.token': 'Jira API token or personal access token',
 }

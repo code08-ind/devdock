@@ -3,15 +3,21 @@ import { Search } from 'lucide-react'
 import { Kbd } from '../../ui/Text'
 import { filterCommands, type Command } from './commands'
 
+/** No commands from the query (the default). */
+const NONE = () => []
+
 /**
  * Searchable command list (combobox + listbox). Used as an overlay in the main window
  * (Cmd/Ctrl+K) and as the whole page of the palette window (global shortcut).
  */
 export function CommandPalette({
   commands,
+  forQuery = NONE,
   onClose,
 }: {
   commands: readonly Command[]
+  /** Commands built from the typed text, listed first (e.g. `watch <link>`). */
+  forQuery?: (query: string) => Command[]
   onClose: () => void
 }) {
   const [query, setQuery] = useState('')
@@ -19,7 +25,7 @@ export function CommandPalette({
   const input = useRef<HTMLInputElement>(null)
   const listId = useId()
   const deferred = useDeferredValue(query)
-  const results = filterCommands(commands, deferred)
+  const results = [...forQuery(deferred), ...filterCommands(commands, deferred)]
   const current = Math.min(active, Math.max(results.length - 1, 0))
 
   // Callers remount (via `key`) to reset; focus the search box on every mount.

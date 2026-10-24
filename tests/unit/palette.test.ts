@@ -3,6 +3,7 @@ import { VIEWS } from '../../src/shared/channels'
 import {
   buildCommands,
   filterCommands,
+  queryCommands,
   type CommandContext,
 } from '../../src/renderer/features/palette/commands'
 
@@ -22,6 +23,7 @@ const ctx = (over: Partial<CommandContext> = {}): CommandContext => ({
   requestAction: vi.fn(),
   openRepo: vi.fn(),
   openLabels: { editor: 'Open in VS Code', terminal: 'Open terminal', files: 'Reveal in Finder' },
+  watch: vi.fn(),
   ...over,
 })
 
@@ -109,5 +111,42 @@ describe('filterCommands', () => {
   })
   it('is case-insensitive', () => {
     expect(ids('LOGS')).toEqual(['app:logs'])
+  })
+})
+
+describe('watch <PR link> (SPEC 6.1 argument command)', () => {
+  const DC = 'https://bitbucket.example.com/projects/WEB/repos/web-app/pull-requests/42/overview'
+  it('`watch <link>` and a bare pasted link both offer to watch that PR', () => {
+    for (const query of [`watch ${DC}`, `  WATCH   ${DC} `, DC]) {
+      const c = ctx()
+      const [cmd, ...rest] = queryCommands(query, c)
+      expect(rest).toEqual([])
+      expect(cmd).toMatchObject({ title: 'Watch pull request web-app #42', group: 'Pull requests' })
+      void cmd!.run()
+      expect(c.watch).toHaveBeenCalledWith(DC)
+    }
+  })
+
+  it('offers nothing for searches that are not links; `watch <not a link>` says so', () => {
+    for (const query of ['', 'watch', 'https://github.com/a/b/pull/1', 'watch x y', 'theme']) {
+      expect(queryCommands(query, ctx())).toEqual([])
+    }
+    const c = ctx()
+    const [hint, ...rest] = queryCommands('watch https://github.com/a/b/pull/1', c)
+    expect(rest).toEqual([])
+    expect(hint).toMatchObject({ id: 'pr:watch-invalid', title: /Not a pull request link/ })
+    void hint!.run()
+    expect(c.goto).toHaveBeenCalledWith('prs')
+    expect(c.watch).not.toHaveBeenCalled()
+  })
+
+  it('"watch" alone still finds the Watch a pull request entry (it opens Pull requests)', () => {
+    const c = ctx()
+    const [first] = filterCommands(buildCommands(c, VIEWS), 'watch')
+    expect(first).toMatchObject({ id: 'pr:watch' })
+    void first!.run()
+    expect(c.goto).toHaveBeenCalledWith('prs')
+    // With a link typed, the static entry no longer matches: only the argument command shows.
+    expect(filterCommands(buildCommands(c, VIEWS), `watch ${DC}`)).toEqual([])
   })
 })

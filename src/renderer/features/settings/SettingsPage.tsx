@@ -3,6 +3,7 @@ import { useSettings, useUpdateSettings } from '../../lib/devdock'
 import { DENSITY_LABELS, THEME_LABELS } from '../../ui/appearance'
 import { ErrorNotice } from '../../ui/Feedback'
 import { Field, SegmentedControl, Select, Toggle } from '../../ui/Field'
+import { BitbucketSection } from './BitbucketSection'
 import { CredentialsSection } from './CredentialsSection'
 import { DataSection } from './DataSection'
 import { GeneralSection } from './GeneralSection'
@@ -71,6 +72,7 @@ export function SettingsPage() {
       <DemoSection settings={settings} />
       <GeneralSection settings={settings} />
       <GitSection settings={settings} />
+      <BitbucketSection settings={settings} />
       <JiraSection settings={settings} />
       <NotificationsSection settings={settings} />
       <CredentialsSection />
