@@ -14,8 +14,8 @@ Contract docs: `docs/SPEC.md`, `docs/UI-THEMES.md`, `docs/BUILD-PROMPTS.md` (pha
 
 | Field        | Value                                                         |
 | ------------ | ------------------------------------------------------------- |
-| Phase        | **Phase 3 done** — P3-A (4b83a2c), P3-B (25f5999) committed; P3-C (renderer) done, uncommitted. |
-| Next step    | User review → commit P3-C → push + read CI → **Phase 4 (Jenkins builds and watchers)**, split into sub-phases |
+| Phase        | **Phase 3 closed** — P3-A (4b83a2c), P3-B (25f5999), P3-C (ca32b02) pushed; CI 40121991825 green on macOS + Windows. User paused; Phase 4 starts next session. |
+| Next step    | **Phase 4 — Jenkins builds and watchers** (`docs/BUILD-PROMPTS.md`): split into sub-phases first; reuse `services/scheduler.ts`, `settings/ServiceBits.tsx`, the tray dot deferred from P3-B |
 | Blockers     | None                                                          |
 | Last updated | 2026-10-24                                                    |
 
@@ -412,3 +412,4 @@ Done criteria:
 | 2026-10-24 | P3-A  | Split Phase 3 into P3-A/B/C. Bitbucket core: Cloud 2.0 + DC 1.0 adapters, one PR model with build statuses, Detect, link parser, 3 lists, settings `bitbucket`, IPC `bitbucket:*`, DC demo fixtures; Jira moved onto shared `rest.ts`. code-review run; 9 fixes (6 mutation-checked). lint/test/e2e green. Not committed. | User review → commit → P3-B |
 | 2026-10-24 | P3-B  | Committed P3-A (4b83a2c, local) after re-running lint/test. Watcher (persisted snapshots → notifications, new `pr-closed` type with old settings files filled in), focus-aware Scheduler (jitter, exponential backoff, `Retry-After`), PR actions behind `features.prActions` (handler check, typed merge target, DC vetoes/version, server words verbatim), 409 `conflict` kind, stateful demo, IPC `watch:*` + `bitbucket:action`, notification clicks use the full link allowlist. code-review run; 7 fixes, all mutation-checked. lint/test/e2e green. Not committed. | User review → commit → P3-C |
 | 2026-10-25 | P3-C  | Committed P3-B (25f5999, local) on the user's go-ahead. Renderer: PRs view (4 lists, PR rows, Watch field), action dialogs (typed merge, server words), Settings → Bitbucket (Detect, Test connection, PR-actions switch behind a warning; shared ServiceBits), Today (my PRs, watched, in-progress tickets, repos), palette `watch <link>` in both windows (`watch:request` hand-off). code-review run; 11 fixes. lint/test/e2e/dist green. Phase 3 Done criteria all met. Not committed. | User review → commit/push/CI → Phase 4 |
+| 2026-10-25 | P3 close | Committed P3-C (ca32b02), pushed P3-A/B/C. CI run 40121991825: macOS + Windows green — lint/format/typecheck, unit, e2e (incl. prs.spec), package. Phase 3 closed; user paused before Phase 4. | Phase 4 |
