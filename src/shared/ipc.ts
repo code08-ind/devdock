@@ -26,8 +26,14 @@ import {
   BranchesResultSchema,
   BuildDetailSchema,
   BuildRefSchema,
+  BuildWatchRequestSchema,
+  BuildWatchSchema,
   ConsoleChunkSchema,
   JenkinsConnectionSchema,
+  JobPathSchema,
+  ParameterDefinitionSchema,
+  TriggerRequestSchema,
+  type BuildWatch,
 } from './jenkins'
 import {
   IssueKeySchema,
@@ -66,6 +72,7 @@ export const NotificationRecordSchema = z.object({
   title: z.string(),
   body: z.string(),
   url: z.string().optional(),
+  view: z.enum(VIEWS).optional(),
   at: z.number(),
   shown: z.boolean(),
   suppressedReason: z.enum(['type-off', 'quiet-hours', 'paused']).optional(),
@@ -199,6 +206,23 @@ export const contract = {
     }),
     res: ConsoleChunkSchema,
   },
+  'jenkins:parameters': {
+    req: z.object({ job: JobPathSchema }),
+    res: z.array(ParameterDefinitionSchema),
+  },
+  /** Returns Jenkins' queue item link (null if it didn't say). */
+  'jenkins:trigger': {
+    req: TriggerRequestSchema,
+    res: z.object({ queueUrl: z.string().nullable() }),
+  },
+  'buildwatch:list': { req: none, res: z.array(BuildWatchSchema) },
+  'buildwatch:add': { req: BuildWatchRequestSchema, res: BuildWatchSchema },
+  'buildwatch:addPr': {
+    req: z.object({ link: z.string().min(1).max(2000) }),
+    res: BuildWatchSchema,
+  },
+  'buildwatch:remove': { req: z.object({ key: z.string().min(1).max(1200) }), res: none },
+  'buildwatch:clearFinished': { req: none, res: none },
   /** Read-only: branch name, commands, brief path + .gitignore check, agent and message. */
   'startwork:plan': { req: StartWorkRequestSchema, res: StartWorkPlanSchema },
   'startwork:run': { req: StartWorkRunSchema, res: StartWorkResultSchema },
@@ -262,5 +286,6 @@ export interface EventPayloads {
   'devserver:output': DevServerOutputEvent
   'watch:changed': WatchItem[]
   'watch:requested': { link: string }
+  'buildwatch:changed': BuildWatch[]
 }
 export type EventPayload<E extends EventChannel> = EventPayloads[E]

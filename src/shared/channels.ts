@@ -65,6 +65,17 @@ export const INVOKE_CHANNELS = [
   'jenkins:build',
   /** Console from a byte offset (progressive text). */
   'jenkins:console',
+  /** "Build with parameters": the job's parameter definitions. */
+  'jenkins:parameters',
+  /** Queue a build. Rejected unless `features.jobTriggers`, allow-listed and not protected. */
+  'jenkins:trigger',
+  'buildwatch:list',
+  /** Watch a build, a job's next build, or the deploy job for a branch. */
+  'buildwatch:add',
+  /** Watch PR pipeline: from a PR link to the Jenkins build that runs it. */
+  'buildwatch:addPr',
+  'buildwatch:remove',
+  'buildwatch:clearFinished',
   'startwork:plan',
   'startwork:run',
 ] as const
@@ -84,6 +95,8 @@ export const EVENT_CHANNELS = [
   /** The watch list or a watched PR's snapshot changed. */
   'watch:changed',
   'watch:requested',
+  /** The build watch list or a watched build changed. */
+  'buildwatch:changed',
 ] as const
 
 export type InvokeChannel = (typeof INVOKE_CHANNELS)[number]

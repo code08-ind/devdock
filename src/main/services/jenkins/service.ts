@@ -5,20 +5,24 @@ import type {
   BuildDetail,
   BuildRef,
   ConsoleChunk,
+  JenkinsBuild,
   JenkinsConnection,
   JobPath,
+  ParameterDefinition,
 } from '@shared/jenkins'
 import type { Settings } from '@shared/settings'
 import type { HttpClient } from '../http'
 import { ServiceError } from '../service-error'
 import { mapLimit } from '../async'
-import { JenkinsClient, type JenkinsConfig } from './client'
+import { JenkinsClient, type JenkinsConfig, type RecentBuild } from './client'
 import { myBuilds, resolvePrJob, type MyWork, type PrJobResolution } from './resolve'
 
 export interface JenkinsDemo {
   config: JenkinsConfig
   /** Stands in for Settings → Jenkins → jobs while demo mode is on. */
   jobs: JobPath[]
+  /** Stands in for Settings → Jenkins → deploy job. */
+  deployJob: JobPath
 }
 
 export interface JenkinsServiceDeps {
@@ -57,6 +61,39 @@ export class JenkinsService {
 
   async build(ref: BuildRef): Promise<BuildDetail> {
     return this.client().build(ref)
+  }
+
+  async buildInfo(ref: BuildRef): Promise<JenkinsBuild> {
+    return this.client().buildInfo(ref)
+  }
+
+  async recentBuilds(job: JobPath): Promise<RecentBuild[]> {
+    return this.client().recentBuilds(job)
+  }
+
+  async parameters(job: JobPath): Promise<ParameterDefinition[]> {
+    return this.client().parameters(job)
+  }
+
+  /** The handler has already checked the switch, the allow-list and the protected patterns. */
+  async trigger(job: JobPath, parameters: Record<string, string>): Promise<string | null> {
+    return this.client().trigger(job, parameters)
+  }
+
+  /** Settings → Jenkins → deploy job (the demo's in demo mode); null when none is set. */
+  deployJob(): JobPath | null {
+    return this.deps.http.demo
+      ? this.deps.demo.deployJob
+      : this.deps.settings().jenkins.deployJob || null
+  }
+
+  /**
+   * The site builds are read from, lower case (origin + context path). Watches belong to one.
+   * Throws `not_configured` like every other call when Jenkins isn't set up.
+   */
+  site(): string {
+    const url = new URL(this.config().baseUrl)
+    return `${url.origin}${url.pathname.replace(/\/+$/, '')}`.toLowerCase()
   }
 
   async console(ref: BuildRef, start: number): Promise<ConsoleChunk> {

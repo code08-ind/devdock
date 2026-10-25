@@ -38,6 +38,9 @@ export function displayName(name: string): string {
   }
 }
 
+/** `web-app › feature/DD-1` for `web-app/feature%2FDD-1`: how a job is named to people. */
+export const jobLabel = (path: JobPath) => path.split('/').map(displayName).join(' › ')
+
 const hostKey = (url: URL) =>
   `${url.hostname.toLowerCase()}:${url.port || (url.protocol === 'http:' ? '80' : '443')}`
 
@@ -217,3 +220,76 @@ export const JenkinsConnectionSchema = z.object({
   version: z.string().nullable(),
 })
 export type JenkinsConnection = z.infer<typeof JenkinsConnectionSchema>
+
+/** A job's build parameters (for "Build with parameters"); secrets have no default shown. */
+export const ParameterDefinitionSchema = z.object({
+  name: z.string(),
+  type: z.enum(['string', 'text', 'boolean', 'choice', 'password', 'other']),
+  /** As text; '' for password parameters. */
+  defaultValue: z.string(),
+  choices: z.array(z.string()),
+  description: z.string(),
+})
+export type ParameterDefinition = z.infer<typeof ParameterDefinitionSchema>
+
+/** A parameter name Jenkins accepts (also keeps it a plain form field). */
+const PARAMETER_NAME = /^[A-Za-z_][A-Za-z0-9_.-]{0,99}$/
+
+/** SPEC 6.4 trigger; off unless `features.jobTriggers`, the job allow-listed and not protected. */
+export const TriggerRequestSchema = z.object({
+  job: JobPathSchema,
+  parameters: z
+    .record(z.string().regex(PARAMETER_NAME, 'Not a parameter name'), z.string().max(4000))
+    .refine((p) => Object.keys(p).length <= 50, 'At most 50 parameters'),
+  /** The renderer's confirmation (job, branch, parameters) was accepted (SPEC 7). */
+  confirmed: z.literal(true),
+})
+export type TriggerRequest = z.infer<typeof TriggerRequestSchema>
+
+/**
+ * Job paths compare ignoring case (Jenkins item names are case-insensitive on lookup), so the
+ * allow-list and watch keys agree with whatever spelling the user typed.
+ */
+export const sameJob = (a: JobPath, b: JobPath) => a.toLowerCase() === b.toLowerCase()
+
+/** SPEC 6.4 watches: one build, a job's next build, or the deploy job's next build for a branch. */
+export const BUILD_WATCH_KINDS = ['build', 'job', 'deploy'] as const
+export type BuildWatchKind = (typeof BUILD_WATCH_KINDS)[number]
+
+/** Most build watches at once (polling stays bounded, as for PR watches). */
+export const MAX_BUILD_WATCHES = 50
+
+export const BuildWatchSchema = z.object({
+  key: z.string(),
+  kind: z.enum(BUILD_WATCH_KINDS),
+  /** Checked again on load: it goes into request URLs. */
+  job: JobPathSchema,
+  /** Jenkins site (lower case); polled only while Settings point at it. */
+  site: z.string(),
+  /** The build being followed; null while waiting for one to start. */
+  number: z.number().int().nullable(),
+  /** While waiting: only builds numbered above this count. */
+  after: z.number().int().nullable(),
+  /** Deploy watches: the branch whose deploy is followed. */
+  branch: z.string().nullable(),
+  /** What the user asked to watch, e.g. "web-app #412 pipeline"; null = the job path. */
+  label: z.string().nullable(),
+  /** Watch PR pipeline: the PR's key, so the tray lists that PR once. */
+  pr: z.string().nullable(),
+  addedAt: z.number(),
+  checkedAt: z.number().nullable(),
+  /** Last snapshot of the followed build. */
+  build: JenkinsBuildSchema.nullable(),
+  /** Finished (and notified): no longer polled. */
+  done: z.boolean(),
+  error: z.string().nullable(),
+})
+export type BuildWatch = z.infer<typeof BuildWatchSchema>
+
+export const BuildWatchRequestSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('build'), job: JobPathSchema, number: z.number().int().positive() }),
+  z.object({ kind: z.literal('job'), job: JobPathSchema }),
+  /** Follows Settings → Jenkins → deploy job for this branch (SPEC 6.4 deploy watcher). */
+  z.object({ kind: z.literal('deploy'), branch: z.string().trim().min(1).max(255) }),
+])
+export type BuildWatchRequest = z.infer<typeof BuildWatchRequestSchema>

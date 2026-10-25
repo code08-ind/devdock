@@ -3,6 +3,7 @@ import { dirname } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
 import { NotificationRecordSchema, type NotificationRecord } from '@shared/ipc'
+import type { View } from '@shared/channels'
 import type { NotificationType, Settings } from '@shared/settings'
 import { log } from './logger'
 
@@ -43,6 +44,8 @@ export interface NotifyInput {
   title: string
   body: string
   url?: string
+  /** Opened on click instead of `url` (the item lives in DevDock, e.g. a watched build). */
+  view?: View
 }
 
 export interface NativeNotifier {

@@ -12,6 +12,7 @@ import { DEMO_ORIGIN } from './origin'
 export const DEMO_JENKINS: JenkinsDemo = {
   config: { baseUrl: `${DEMO_ORIGIN}/jenkins`, username: 'dev', token: 'demo' },
   jobs: ['web-app', 'design-system'],
+  deployJob: 'apps/deploy-dev',
 }
 
 const BASE = DEMO_JENKINS.config.baseUrl
@@ -48,7 +49,15 @@ const DEPLOY_STAGES: [string, number][] = [
 const UNIT_TESTS = 3
 const BUILD = 4
 
-const JOBS: { path: string; kind: Kind; builds?: DemoBuild[] }[] = [
+interface DemoJob {
+  path: string
+  kind: Kind
+  builds?: DemoBuild[]
+  /** String parameters ("Build with parameters"). */
+  params?: { name: string; defaultValue: string }[]
+}
+
+const JOBS: DemoJob[] = [
   { path: 'web-app', kind: 'multibranch' },
   {
     path: 'web-app/develop',
@@ -150,25 +159,36 @@ const JOBS: { path: string; kind: Kind; builds?: DemoBuild[] }[] = [
   {
     path: 'apps/deploy-dev',
     kind: 'freestyle',
+    params: [{ name: 'BRANCH', defaultValue: 'develop' }],
     builds: [
       {
         number: 57,
         result: 'SUCCESS',
         agoMin: 45,
-        cause: 'Started by timer',
+        cause: 'timer',
         params: { BRANCH: 'develop' },
+      },
+      // My branch's deploy, running when the demo starts (the deploy watcher follows it).
+      {
+        number: 58,
+        result: 'SUCCESS',
+        agoMin: 1,
+        runSec: 150,
+        cause: 'user Demo Developer',
+        params: { BRANCH: 'feature/button-loading' },
       },
     ],
   },
   {
     path: 'apps/deploy-prod',
     kind: 'freestyle',
+    params: [{ name: 'BRANCH', defaultValue: 'main' }],
     builds: [
       {
         number: 19,
         result: 'SUCCESS',
         agoMin: 2900,
-        cause: 'Started by user Release Manager',
+        cause: 'user Release Manager',
         params: { BRANCH: 'main' },
       },
     ],
@@ -189,7 +209,7 @@ interface Line {
 }
 
 /** What a build looks like `elapsedSec` after it started. */
-function timeline(job: (typeof JOBS)[number], build: DemoBuild, elapsedSec: number) {
+function timeline(job: DemoJob, build: DemoBuild, elapsedSec: number) {
   const stages = job.kind === 'freestyle' ? DEPLOY_STAGES : STAGES
   const planned = stages.reduce((sum, [, s]) => sum + s, 0)
   // A running build is stretched to end at its finish time.
@@ -297,14 +317,30 @@ const authed = (request: Request) => /^Basic .+/.test(request.headers.get('autho
  */
 export function jenkinsHandlers(): RequestHandler[] {
   const startedAt = Date.now()
-  const jobs = new Map(JOBS.map((j) => [j.path, j]))
+  // Triggers add builds, so each set of handlers has its own copy.
+  const all: DemoJob[] = structuredClone(JOBS)
+  const jobs = new Map(all.map((j) => [j.path, j]))
   const children = (path: string) =>
-    JOBS.filter(
-      (j) => j.path.startsWith(`${path}/`) && !j.path.slice(path.length + 1).includes('/'),
-    )
-  const roots = () => JOBS.filter((j) => !j.path.includes('/'))
+    all.filter((j) => j.path.startsWith(`${path}/`) && !j.path.slice(path.length + 1).includes('/'))
+  const roots = () => all.filter((j) => !j.path.includes('/'))
+  let queued = 400
+  /** `/job/a/job/b/rest…` → the job and what follows it. */
+  const route = (url: URL) => {
+    const parts = url.pathname.slice(BASE_PATH.length + 1).split('/')
+    const names: string[] = []
+    let i = 0
+    while (parts[i] === 'job' && parts[i + 1]) {
+      names.push(decodeURIComponent(parts[i + 1]!))
+      i += 2
+    }
+    return {
+      rest: parts.join('/'),
+      job: jobs.get(names.join('/')),
+      tail: parts.slice(i).filter(Boolean),
+    }
+  }
 
-  const buildJson = (job: (typeof JOBS)[number], build: DemoBuild) => {
+  const buildJson = (job: DemoJob, build: DemoBuild) => {
     const started = startedAt - build.agoMin * MIN
     const elapsed = (Date.now() - started) / 1000
     const t = timeline(job, build, elapsed)
@@ -336,13 +372,29 @@ export function jenkinsHandlers(): RequestHandler[] {
       ],
     }
   }
-  const lastOf = (job: (typeof JOBS)[number]) => job.builds?.at(-1)
-  const jobJson = (job: (typeof JOBS)[number]): Record<string, unknown> => {
+  const lastOf = (job: DemoJob) => job.builds?.at(-1)
+  const jobJson = (job: DemoJob): Record<string, unknown> => {
     const last = lastOf(job)
     return {
       _class: CLASS[job.kind],
       name: job.path.split('/').pop(),
-      ...(job.builds ? { lastBuild: last ? buildJson(job, last) : null } : {}),
+      ...(job.builds
+        ? {
+            lastBuild: last ? buildJson(job, last) : null,
+            builds: [...job.builds].reverse().map((b) => buildJson(job, b)),
+            property: [
+              {
+                parameterDefinitions: (job.params ?? []).map((p) => ({
+                  _class: 'hudson.model.StringParameterDefinition',
+                  name: p.name,
+                  type: 'StringParameterDefinition',
+                  description: 'Branch to deploy',
+                  defaultParameterValue: { name: p.name, value: p.defaultValue },
+                })),
+              },
+            ],
+          }
+        : {}),
       ...(job.builds ? {} : { jobs: children(job.path).map(jobJson) }),
     }
   }
@@ -352,8 +404,7 @@ export function jenkinsHandlers(): RequestHandler[] {
     http.get(`${BASE}/*`, ({ request }) => {
       if (!authed(request)) return new HttpResponse(null, { status: 401 })
       const url = new URL(request.url)
-      const parts = url.pathname.slice(BASE_PATH.length + 1).split('/')
-      const rest = parts.join('/')
+      const { rest, job, tail } = route(url)
       if (rest === 'me/api/json') {
         return HttpResponse.json(
           { id: 'dev', fullName: 'Demo Developer' },
@@ -365,15 +416,7 @@ export function jenkinsHandlers(): RequestHandler[] {
       }
       if (rest === 'api/json') return HttpResponse.json({ jobs: roots().map(jobJson) })
 
-      const names: string[] = []
-      let i = 0
-      while (parts[i] === 'job' && parts[i + 1]) {
-        names.push(decodeURIComponent(parts[i + 1]!))
-        i += 2
-      }
-      const job = jobs.get(names.join('/'))
       if (!job) return notFound()
-      const tail = parts.slice(i).filter(Boolean)
       if (tail.length === 2 && tail[0] === 'api' && tail[1] === 'json') {
         return HttpResponse.json(jobJson(job))
       }
@@ -408,6 +451,35 @@ export function jenkinsHandlers(): RequestHandler[] {
         })
       }
       return notFound()
+    }),
+    // Trigger: needs the crumb, like a CSRF-protected Jenkins. The new build runs for 60 s.
+    http.post(`${BASE}/*`, async ({ request }) => {
+      if (!authed(request)) return new HttpResponse(null, { status: 401 })
+      if (request.headers.get('Jenkins-Crumb') !== 'demo-crumb') {
+        return new HttpResponse('<html>No valid crumb was included in the request</html>', {
+          status: 403,
+        })
+      }
+      const { job, tail } = route(new URL(request.url))
+      const action = tail.join('/')
+      if (!job?.builds || (action !== 'build' && action !== 'buildWithParameters')) {
+        return notFound()
+      }
+      const form =
+        action === 'buildWithParameters' ? new URLSearchParams(await request.text()) : null
+      const sinceStartMin = (Date.now() - startedAt) / MIN
+      job.builds.push({
+        number: (job.builds.at(-1)?.number ?? 0) + 1,
+        result: 'SUCCESS',
+        agoMin: -sinceStartMin,
+        runSec: sinceStartMin * 60 + 60,
+        cause: 'user Demo Developer',
+        ...(form ? { params: Object.fromEntries(form) } : {}),
+      })
+      return new HttpResponse(null, {
+        status: 201,
+        headers: { Location: `${BASE}/queue/item/${++queued}/` },
+      })
     }),
   ]
 }

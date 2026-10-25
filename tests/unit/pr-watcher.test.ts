@@ -10,7 +10,8 @@ import {
   type PullRequest,
 } from '../../src/shared/bitbucket'
 import type { NotifyInput } from '../../src/main/services/notifications'
-import { PrWatcher, WatchError, prChanges } from '../../src/main/services/bitbucket/watcher'
+import { PrWatcher, prChanges } from '../../src/main/services/bitbucket/watcher'
+import { WatchError } from '../../src/main/services/watch'
 import { ServiceError } from '../../src/main/services/service-error'
 
 vi.mock('electron', () => ({ ipcMain: { handle: vi.fn() } }))

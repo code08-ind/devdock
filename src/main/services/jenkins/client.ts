@@ -9,6 +9,7 @@ import {
   type JenkinsBuild,
   type JenkinsConnection,
   type JobPath,
+  type ParameterDefinition,
 } from '@shared/jenkins'
 import type { HttpClient } from '../http'
 import { num, obj, text } from '../json'
@@ -16,6 +17,9 @@ import { readJson, send, type RestTarget } from '../rest'
 import { ServiceError, type ServiceHints } from '../service-error'
 import { consoleChunk } from './console'
 import { buildActions, buildState, buildTimes, parseStages } from './wfapi'
+
+/** A build with its parameters, as the build lists give it. */
+export type RecentBuild = { build: JenkinsBuild; parameters: BuildDetail['parameters'] }
 
 export interface JenkinsConfig {
   baseUrl: string
@@ -120,6 +124,16 @@ export class JenkinsClient {
     return out
   }
 
+  /** One build's state and times (what a watcher polls). */
+  async buildInfo({ job, number }: BuildRef): Promise<JenkinsBuild> {
+    return this.toBuild(
+      job,
+      await this.json(
+        `${jobUrl(this.base, job)}/${number}/api/json?tree=number,result,building,timestamp,duration,estimatedDuration`,
+      ),
+    )
+  }
+
   /** One build with its stages (null when `wfapi` isn't there), parameters and causes. */
   async build({ job, number }: BuildRef): Promise<BuildDetail> {
     const url = `${jobUrl(this.base, job)}/${number}`
@@ -131,6 +145,39 @@ export class JenkinsClient {
       stages: await this.stages(url),
       ...buildActions(raw),
     }
+  }
+
+  /** A job's newest builds, newest first, with their parameters (deploy watcher, job watch). */
+  async recentBuilds(job: JobPath, limit = 10): Promise<RecentBuild[]> {
+    const node = obj(
+      await this.json(
+        `${jobUrl(this.base, job)}/api/json?tree=builds[number,result,building,timestamp,duration,estimatedDuration,actions[parameters[_class,name,value]]]{0,${limit}}`,
+      ),
+    )
+    // Folders and multibranch jobs have no builds of their own: watching one would wait forever.
+    if (!Array.isArray(node.builds)) {
+      throw new ServiceError(
+        'bad_response',
+        `${job} has no builds of its own (a folder or multibranch job?). Pick one of its branch jobs.`,
+      )
+    }
+    return node.builds
+      .filter((b) => num(obj(b).number) !== null)
+      .map((b) => ({ build: this.toBuild(job, b), parameters: buildActions(b).parameters }))
+  }
+
+  /** "Build with parameters": the job's parameter definitions ([] when it takes none). */
+  async parameters(job: JobPath): Promise<ParameterDefinition[]> {
+    const node = obj(
+      await this.json(
+        `${jobUrl(this.base, job)}/api/json?tree=property[parameterDefinitions[_class,name,type,description,choices,defaultParameterValue[value]]]`,
+      ),
+    )
+    const properties = Array.isArray(node.property) ? node.property : []
+    return properties.flatMap((p) => {
+      const defs = obj(p).parameterDefinitions
+      return (Array.isArray(defs) ? defs : []).flatMap((raw) => parameterDefinition(raw) ?? [])
+    })
   }
 
   /** The console from byte `start` (SPEC 6.4 console tail). */
@@ -236,6 +283,34 @@ export class JenkinsClient {
       throw new ServiceError('bad_response', "Jenkins' crumb issuer gave an unusable answer.")
     }
     return { field, value, cookie: sessionCookie(res.headers) }
+  }
+}
+
+const PARAMETER_TYPES: Record<string, ParameterDefinition['type']> = {
+  StringParameterDefinition: 'string',
+  TextParameterDefinition: 'text',
+  BooleanParameterDefinition: 'boolean',
+  ChoiceParameterDefinition: 'choice',
+  PasswordParameterDefinition: 'password',
+}
+
+function parameterDefinition(raw: unknown): ParameterDefinition | null {
+  const d = obj(raw)
+  const name = text(d.name)
+  if (!name) return null
+  const type = PARAMETER_TYPES[text(d.type) ?? ''] ?? 'other'
+  const value = obj(d.defaultParameterValue).value
+  return {
+    name,
+    type,
+    defaultValue:
+      type === 'password' || value === undefined || value === null
+        ? ''
+        : typeof value === 'string'
+          ? value
+          : JSON.stringify(value),
+    choices: Array.isArray(d.choices) ? d.choices.flatMap((c) => text(c) ?? []) : [],
+    description: text(d.description) ?? '',
   }
 }
 

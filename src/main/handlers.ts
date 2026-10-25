@@ -13,8 +13,11 @@ import { repoStatus } from './services/git/repo'
 import type { HttpClient } from './services/http'
 import { PrActionError } from './services/bitbucket/client'
 import type { BitbucketService } from './services/bitbucket/service'
-import { WatchError, type PrWatcher } from './services/bitbucket/watcher'
+import type { PrWatcher } from './services/bitbucket/watcher'
+import { WatchError } from './services/watch'
+import { isProtectedJob, sameJob } from '@shared/jenkins'
 import type { JenkinsService } from './services/jenkins/service'
+import type { BuildWatcher } from './services/jenkins/watcher'
 import type { JiraService } from './services/jira/service'
 import { StartWorkError, type StartWorkService } from './services/startwork'
 import type { NotificationService } from './services/notifications'
@@ -55,6 +58,7 @@ export interface HandlerDeps {
   bitbucket: BitbucketService
   prWatcher: PrWatcher
   jenkins: JenkinsService
+  buildWatcher: BuildWatcher
   startWork: StartWorkService
   /** Shows PRs in the main window and hands it a link to watch (from the palette window). */
   requestWatch: (link: string) => void
@@ -280,6 +284,37 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
     'jenkins:branches': () => withService(() => deps.jenkins.branches()),
     'jenkins:build': (ref) => withService(() => deps.jenkins.build(ref)),
     'jenkins:console': ({ start, ...ref }) => withService(() => deps.jenkins.console(ref, start)),
+    'jenkins:parameters': ({ job }) => withService(() => deps.jenkins.parameters(job)),
+    'jenkins:trigger': ({ job, parameters }) =>
+      withService(async () => {
+        // SPEC 6.4: checked here, whatever the renderer showed or sent. Protected wins over
+        // the allow-list: those jobs can never be triggered from DevDock.
+        const { features, jenkins } = deps.settings.get()
+        if (isProtectedJob(job, jenkins.protectedPatterns)) {
+          throw new IpcError(
+            'NOT_ALLOWED',
+            `${job} matches a protected pattern (${jenkins.protectedPatterns.join(', ')}), so DevDock never triggers it. Run it from Jenkins if your role permits.`,
+          )
+        }
+        if (!features.jobTriggers) {
+          throw new IpcError(
+            'NOT_ALLOWED',
+            'Job triggers are turned off. Turn them on in Settings → Jenkins (only if your role permits).',
+          )
+        }
+        if (!features.allowedJobs.some((allowed) => sameJob(allowed, job))) {
+          throw new IpcError(
+            'NOT_ALLOWED',
+            `${job} isn't on the list of jobs DevDock may trigger. Add it in Settings → Jenkins.`,
+          )
+        }
+        return { queueUrl: await deps.jenkins.trigger(job, parameters) }
+      }),
+    'buildwatch:list': () => deps.buildWatcher.list(),
+    'buildwatch:add': (request) => withWatch(() => deps.buildWatcher.add(request)),
+    'buildwatch:addPr': ({ link }) => withWatch(() => deps.buildWatcher.addPr(link)),
+    'buildwatch:remove': ({ key }) => deps.buildWatcher.remove(key),
+    'buildwatch:clearFinished': () => deps.buildWatcher.clearFinished(),
     'startwork:plan': (request) => withStartWork(() => deps.startWork.plan(request)),
     'startwork:run': (request) =>
       withStartWork(() =>

@@ -92,15 +92,21 @@ describe('handlers', () => {
 describe('tray menu', () => {
   const click = (items: ReturnType<typeof trayMenuTemplate>, id: string) =>
     (items.find((i) => i.id === id)?.click as (() => void) | undefined)?.()
-  const actions = { open: vi.fn(), pause: vi.fn(), resume: vi.fn(), quit: vi.fn() }
+  const actions = {
+    open: vi.fn(),
+    showBuilds: vi.fn(),
+    pause: vi.fn(),
+    resume: vi.fn(),
+    quit: vi.fn(),
+  }
   it('offers Open, Pause 1h and Quit', () => {
-    const items = trayMenuTemplate({ pausedUntil: null }, actions)
+    const items = trayMenuTemplate({ pausedUntil: null, watched: [] }, actions)
     expect(items.map((i) => i.id).filter(Boolean)).toEqual(['open', 'pause', 'quit'])
     click(items, 'pause')
     expect(actions.pause).toHaveBeenCalledWith(60)
   })
   it('offers Resume while paused', () => {
-    const items = trayMenuTemplate({ pausedUntil: Date.now() + 60_000 }, actions)
+    const items = trayMenuTemplate({ pausedUntil: Date.now() + 60_000, watched: [] }, actions)
     expect(items.some((i) => i.id === 'resume')).toBe(true)
     expect(items.some((i) => i.id === 'pause')).toBe(false)
   })

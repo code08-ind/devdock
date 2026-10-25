@@ -65,6 +65,12 @@ interface TestHook {
   togglePalette(): void
   isPaletteVisible(): boolean
   shortcutStatus(): { ok: boolean; accelerator: string; reason?: string }
+  trayStatus(): 'green' | 'red' | 'grey' | null
+  trayState(): {
+    pausedUntil: number | null
+    watched: { label: string; state: string; finishedAt: number | null }[]
+  }
+  pollBuilds(): Promise<void>
 }
 
 export function callHook<K extends keyof TestHook>(

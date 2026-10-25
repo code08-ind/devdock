@@ -109,6 +109,15 @@ describe('Jenkins client: job tree and last build per branch', () => {
     expect(http.paths()).not.toContain('/jenkins/job/deep/job/a/job/b/api/json')
   })
 
+  it('recent builds: a folder or multibranch job (no builds of its own) is refused', async () => {
+    const http = new ScriptedHttp([at('/job/web-app/api/json', () => json(jenkins.webApp))])
+    const err = await failure(client(http).recentBuilds('web-app'))
+    expect(err).toMatchObject({
+      kind: 'bad_response',
+      message: expect.stringMatching(/folder or multibranch/),
+    })
+  })
+
   it('a wrong job path is a 404 with the base-URL hint', async () => {
     const http = new ScriptedHttp([
       at('/job/nope/api/json', () => new Response('', { status: 404 })),

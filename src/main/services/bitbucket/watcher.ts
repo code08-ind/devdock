@@ -1,14 +1,4 @@
 import {
-  copyFileSync,
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  renameSync,
-  writeFileSync,
-} from 'node:fs'
-import { dirname } from 'node:path'
-import { z } from 'zod'
-import {
   MAX_WATCHES,
   WatchItemSchema,
   isLive,
@@ -17,21 +7,18 @@ import {
   type PullRequest,
   type WatchItem,
 } from '@shared/bitbucket'
-import { parsePrLink } from '@shared/prlink'
-import { log } from '../logger'
+import { loadItems, saveItems } from '../json-file'
+import { WatchError, prRefFromLink } from '../watch'
 import type { NotifyInput } from '../notifications'
 import { ServiceError } from '../service-error'
 import { voteCounts } from './adapter'
 import type { ActionResult } from './client'
-import { siteKey } from './service'
 
 /**
  * SPEC 6.3 "Paste a PR link … adds the PR to Watched, and notifies on state changes".
  * Each poll compares a PR with the last snapshot; the snapshot is saved before notifying, so a
  * restart (or a crash mid-poll) never repeats a notification.
  */
-
-const FileSchema = z.object({ version: z.literal(1), items: z.array(WatchItemSchema) })
 
 export interface PrWatcherDeps {
   file: string
@@ -40,19 +27,6 @@ export interface PrWatcherDeps {
   /** The list changed (added, removed, polled): tell the renderer. */
   onChange: () => void
   now?: () => number
-}
-
-export type WatchErrorKind = 'invalid' | 'other-site' | 'limit'
-
-/** A watch refused before Bitbucket was asked. */
-export class WatchError extends Error {
-  override readonly name = 'WatchError'
-  constructor(
-    readonly kind: WatchErrorKind,
-    message: string,
-  ) {
-    super(message)
-  }
 }
 
 const OTHER_SITE =
@@ -77,18 +51,8 @@ export class PrWatcher {
    * later changes are measured against, and a wrong link or missing access fails here.
    */
   async add(link: string): Promise<WatchItem> {
-    const parsed = parsePrLink(link)
-    if (!parsed) throw new WatchError('invalid', "That isn't a Bitbucket pull request link.")
-    const site = this.deps.bitbucket.site()
-    if (siteKey(parsed.baseUrl) !== site) {
-      throw new WatchError(
-        'other-site',
-        site
-          ? `That link is on ${parsed.baseUrl}, but DevDock reads pull requests from ${site}. Change it in Settings → Bitbucket.`
-          : 'Set the Bitbucket server URL in Settings → Bitbucket first.',
-      )
-    }
-    const key = prKey(parsed.ref)
+    const { ref, site } = prRefFromLink(link, this.deps.bitbucket.site())
+    const key = prKey(ref)
     const existing = this.find(key)
     if (existing) return existing
     if (this.items.length >= MAX_WATCHES) {
@@ -97,7 +61,7 @@ export class PrWatcher {
         `You can watch up to ${MAX_WATCHES} pull requests; remove one first.`,
       )
     }
-    const pr = await this.deps.bitbucket.pr(parsed.ref)
+    const pr = await this.deps.bitbucket.pr(ref)
     // The same link may have been added while the PR was being read.
     const raced = this.find(key)
     if (raced) return raced
@@ -204,28 +168,11 @@ export class PrWatcher {
   }
 
   private load(): WatchItem[] {
-    const { file } = this.deps
-    if (!existsSync(file)) return []
-    try {
-      return FileSchema.parse(JSON.parse(readFileSync(file, 'utf8'))).items
-    } catch (err) {
-      // Kept aside rather than overwritten by the next save.
-      log.warn('watch list unreadable, starting empty (copy kept as .unreadable)', err)
-      try {
-        copyFileSync(file, `${file}.unreadable`)
-      } catch {
-        // Nothing more to do; the warning is logged.
-      }
-      return []
-    }
+    return loadItems(this.deps.file, WatchItemSchema, 'watch list')
   }
 
   private save(): void {
-    const { file } = this.deps
-    mkdirSync(dirname(file), { recursive: true })
-    const tmp = `${file}.tmp`
-    writeFileSync(tmp, JSON.stringify({ version: 1, items: this.items }), 'utf8')
-    renameSync(tmp, file)
+    saveItems(this.deps.file, this.items)
     this.deps.onChange()
   }
 }

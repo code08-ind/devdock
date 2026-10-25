@@ -34,6 +34,7 @@ import { PrWatcher } from './services/bitbucket/watcher'
 import { Scheduler } from './services/scheduler'
 import { collectMyWork } from './services/jenkins/mine'
 import { JenkinsService } from './services/jenkins/service'
+import { BuildWatcher } from './services/jenkins/watcher'
 import { JiraService } from './services/jira/service'
 import { StartWorkService } from './services/startwork'
 import { DevServerManager } from './services/process/devserver'
@@ -48,7 +49,7 @@ import { NotificationService, type NativeNotifier } from './services/notificatio
 import { SecretStore } from './services/secrets'
 import { SettingsStore } from './services/settings'
 import { ShortcutService } from './services/shortcut'
-import { createTray, type TrayHandle } from './tray'
+import { createTray, watchedForTray, type TrayHandle } from './tray'
 import { createMainWindow, createPaletteWindow, DEV_RENDERER_URL, showPalette } from './windows'
 
 // Test-only switches. Ignored in packaged builds, so a shipped app can't be put in test mode.
@@ -175,7 +176,8 @@ function start(): void {
     file: join(userData, 'notifications.json'),
     getPrefs: () => store.get().notifications,
     native: electronNotifier(),
-    onClick: (n) => (n.url ? openExternalSafe(n.url) : showMain()),
+    // SPEC 6.1 "Clicking a notification opens the item": in DevDock when it lives there.
+    onClick: (n) => (n.view ? showView(n.view) : n.url ? openExternalSafe(n.url) : showMain()),
     onChange: notificationsChanged,
   })
   const shortcut = new ShortcutService(globalShortcut, togglePalette)
@@ -224,7 +226,10 @@ function start(): void {
     file: join(userData, 'watches.json'),
     bitbucket,
     notify: (n) => notifications.notify(n),
-    onChange: () => broadcast('watch:changed', prWatcher.list()),
+    onChange: () => {
+      broadcast('watch:changed', prWatcher.list())
+      tray?.refresh()
+    },
   })
   const jenkins = new JenkinsService({
     http,
@@ -233,15 +238,28 @@ function start(): void {
     myWork: () => collectMyWork(git, store.get().repos, () => bitbucket.list('mine')),
     demo: DEMO_JENKINS,
   })
-  // SPEC 6.3: 60 s while a DevDock window has focus, 3 min otherwise (Settings → Polling).
-  const prPolling = new Scheduler({
-    name: 'pr watcher',
-    run: () => prWatcher.poll(),
-    intervalsMs: () => {
-      const { foregroundSec, backgroundSec } = store.get().polling
-      return { foreground: foregroundSec * 1000, background: backgroundSec * 1000 }
+  const buildWatcher = new BuildWatcher({
+    file: join(userData, 'build-watches.json'),
+    jenkins,
+    bitbucket,
+    notify: (n) => notifications.notify(n),
+    onChange: () => {
+      broadcast('buildwatch:changed', buildWatcher.list())
+      tray?.refresh()
     },
   })
+  // SPEC 6.3: 60 s while a DevDock window has focus, 3 min otherwise (Settings → Polling).
+  const intervalsMs = () => {
+    const { foregroundSec, backgroundSec } = store.get().polling
+    return { foreground: foregroundSec * 1000, background: backgroundSec * 1000 }
+  }
+  const prPolling = new Scheduler({ name: 'pr watcher', run: () => prWatcher.poll(), intervalsMs })
+  const buildPolling = new Scheduler({
+    name: 'build watcher',
+    run: () => buildWatcher.poll(),
+    intervalsMs,
+  })
+  const pollers = [prPolling, buildPolling]
   const openRepo = async (repo: RepoConfig, target: OpenTarget): Promise<void> => {
     if (target === 'files') {
       const error = await shell.openPath(repo.path)
@@ -297,6 +315,7 @@ function start(): void {
       bitbucket,
       prWatcher,
       jenkins,
+      buildWatcher,
       startWork: new StartWorkService({
         jira,
         actions,
@@ -328,14 +347,20 @@ function start(): void {
   if (!registered.ok) log.warn(`palette shortcut not registered: ${registered.reason}`)
   applyLoginItem(store.get())
 
-  let bitbucketSignature = JSON.stringify([store.get().bitbucket, store.get().general.demoMode])
+  const signatures = (s: Settings) => [
+    JSON.stringify([s.bitbucket, s.general.demoMode]),
+    JSON.stringify([s.jenkins, s.general.demoMode]),
+  ]
+  let lastSignatures = signatures(store.get())
   store.onChange((s) => {
     broadcast('settings:changed', s)
     // New intervals apply now; a new site or demo toggle is worth a check straight away.
-    const signature = JSON.stringify([s.bitbucket, s.general.demoMode])
-    if (signature !== bitbucketSignature) void prPolling.runNow()
-    else prPolling.reschedule()
-    bitbucketSignature = signature
+    const next = signatures(s)
+    pollers.forEach((poller, i) => {
+      if (next[i] !== lastSignatures[i]) void poller.runNow()
+      else poller.reschedule()
+    })
+    lastSignatures = next
     void watcher.sync(s.repos)
     applyLoginItem(s)
     // settings:update/import/reset can name a shortcut that is taken or reserved. Keep the
@@ -362,18 +387,28 @@ function start(): void {
 
   // Focus moves between our windows as blur-then-focus; read the result after both.
   const focusChanged = (): void => {
-    setImmediate(() => prPolling.setFocused(BrowserWindow.getFocusedWindow() !== null))
+    setImmediate(() => {
+      const focused = BrowserWindow.getFocusedWindow() !== null
+      pollers.forEach((p) => p.setFocused(focused))
+    })
   }
   app.on('browser-window-focus', focusChanged)
   app.on('browser-window-blur', focusChanged)
-  prPolling.setFocused(mainWindow.isFocused())
-  prPolling.start()
+  for (const poller of pollers) {
+    poller.setFocused(mainWindow.isFocused())
+    poller.start()
+  }
 
   const trayDir = app.isPackaged
     ? join(process.resourcesPath, 'tray')
     : join(app.getAppPath(), 'build', 'tray')
-  tray = createTray(trayDir, () => ({ pausedUntil: notifications.getPausedUntil() }), {
+  const trayState = () => ({
+    pausedUntil: notifications.getPausedUntil(),
+    watched: watchedForTray(buildWatcher.list(), prWatcher.list()),
+  })
+  tray = createTray(trayDir, trayState, {
     open: showMain,
+    showBuilds: () => showView('builds'),
     pause: (minutes) => notifications.pause(minutes),
     resume: () => notifications.resume(),
     quit,
@@ -388,6 +423,9 @@ function start(): void {
         showView,
         isPaletteVisible: () => paletteWindow?.isVisible() ?? false,
         shortcutStatus: () => shortcut.status(),
+        trayStatus: () => tray?.status() ?? null,
+        trayState,
+        pollBuilds: () => buildPolling.runNow(),
       },
     })
   }
@@ -403,7 +441,7 @@ function start(): void {
     })
   })
   app.on('will-quit', () => {
-    prPolling.stop()
+    pollers.forEach((p) => p.stop())
     watcher.dispose()
     shortcut.dispose()
     tray?.destroy()

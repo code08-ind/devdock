@@ -50,6 +50,7 @@ export async function handlerSetup(
   const { PrWatcher } = await import('../../src/main/services/bitbucket/watcher')
   const { JenkinsService } = await import('../../src/main/services/jenkins/service')
   const { DEMO_JENKINS } = await import('../../src/main/demo/jenkins')
+  const { BuildWatcher } = await import('../../src/main/services/jenkins/watcher')
 
   const dir = mkdtempSync(join(tmpdir(), 'devdock-handlers-'))
   const settings = new SettingsStore(join(dir, 'settings.json'))
@@ -93,6 +94,13 @@ export async function handlerSetup(
     repoRemotes: async () => [],
     demo: DEMO_BITBUCKET,
   })
+  const jenkins = new JenkinsService({
+    http,
+    settings: () => settings.get(),
+    token: () => secrets.get('jenkins.token'),
+    myWork: async () => ({ branches: [], prs: [] }),
+    demo: DEMO_JENKINS,
+  })
   const deps: TestDeps = {
     settings,
     secrets,
@@ -131,12 +139,13 @@ export async function handlerSetup(
       notify: (n) => notifications.notify(n),
       onChange: vi.fn(),
     }),
-    jenkins: new JenkinsService({
-      http,
-      settings: () => settings.get(),
-      token: () => secrets.get('jenkins.token'),
-      myWork: async () => ({ branches: [], prs: [] }),
-      demo: DEMO_JENKINS,
+    jenkins,
+    buildWatcher: new BuildWatcher({
+      file: join(dir, 'build-watches.json'),
+      jenkins,
+      bitbucket,
+      notify: (n) => notifications.notify(n),
+      onChange: vi.fn(),
     }),
     writeClipboard,
     startWork: new StartWorkService({
