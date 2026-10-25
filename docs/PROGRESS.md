@@ -14,8 +14,8 @@ Contract docs: `docs/SPEC.md`, `docs/UI-THEMES.md`, `docs/BUILD-PROMPTS.md` (pha
 
 | Field        | Value                                                         |
 | ------------ | ------------------------------------------------------------- |
-| Phase        | **Phase 4 — P4-A (dc4ef43), P4-B (43efc86) committed; P4-C done**, not committed. All Phase 4 Done criteria met. |
-| Next step    | User review → commit P4-C → push → read CI (macOS + Windows) → close Phase 4 → **Phase 5** (Utilities and standup). Was: **P4-C** renderer: Builds view (My branches, stages, console tail auto-scroll/search/copy), watch buttons + palette, trigger confirmation (hidden for protected), Settings → Jenkins, `P4.D2` e2e (hooks `trayStatus` / `pollBuilds` exist) |
+| Phase        | **Phase 4 closed** — P4-A (dc4ef43), P4-B (43efc86), P4-C (0d06d55) pushed; CI 40172300911 green on macOS + Windows. User paused; Phase 5 starts next session. |
+| Next step    | **Phase 5 — Utilities and standup** (`docs/BUILD-PROMPTS.md`): split into sub-phases first; reuse `services/json-file.ts`, `settings/ServiceBits.tsx`, the Builds/PRs row patterns |
 | Blockers     | None                                                          |
 | Last updated | 2026-10-25                                                    |
 
@@ -449,3 +449,4 @@ Done criteria:
 | 2026-10-25 | P4-A  | Split Phase 4 into P4-A/B/C. Jenkins core: shared job-path model + `jobFromUrl` + `isProtectedJob`, client (Basic, crumb + 403 retry, tree walk, last build, wfapi stages + fallback, progressive console, trigger), My branches matching, PR→job resolution, settings `jenkins`, demo Jenkins (running builds pass/fail on a clock), IPC `jenkins:testConnection/branches/build/console`; `rest.ts` exposes `send`/`readJson`. code-review run; 7 fixes, mutation-checked. lint/test/e2e green. Not committed. | User review → commit → P4-B |
 | 2026-10-25 | P4-B  | Committed P4-A (dc4ef43) on the user's "sure". Build watcher (build / job / deploy-for-my-branch, persisted, one `job-finished` notification each, failed stage named), Watch PR pipeline, trigger handler (protected → switch → allow-list, before any request), `jenkins:parameters`, second scheduler, tray dot painted on the icon + watched items in the menu, shared watch-list file helper, demo triggers + deploy build. lint/test/e2e green; 16 mutations checked. code-review then run (after agents first failed to launch); 11 fixes, mutation-checked; lint/test/e2e green (e2e 27). Not committed. | User review → commit → P4-C |
 | 2026-10-25 | P4-C  | Committed P4-B (43efc86) on the user's "Sure". Builds view, console tail, trigger dialog, Settings → Jenkins, Today watched builds, palette `pipeline <link>`, demo speed for e2e, P4.D2 e2e (green + red). code-review run; 9 fixes. lint/test/e2e/dist green. Phase 4 Done criteria all met. Not committed. | User review → commit/push/CI → Phase 5 |
+| 2026-10-25 | P4 close | Committed P4-C (0d06d55), pushed P4-A/B/C. CI run 40172300911: macOS + Windows green — lint/format/typecheck, unit (41 files), e2e 30 passed on each (incl. builds.spec P4.D2), package. Phase 4 closed. | Phase 5 |
