@@ -9,6 +9,10 @@ export const INVOKE_CHANNELS = [
   'app:openLogsFolder',
   'app:showView',
   'app:quit',
+  /** P6.04: versions and proxy; the redacted report; saving it where the user picks. */
+  'diagnostics:info',
+  'diagnostics:export',
+  'diagnostics:save',
   'settings:get',
   'settings:update',
   'settings:export',

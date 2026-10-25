@@ -14,8 +14,8 @@ Contract docs: `docs/SPEC.md`, `docs/UI-THEMES.md`, `docs/BUILD-PROMPTS.md` (pha
 
 | Field        | Value                                                         |
 | ------------ | ------------------------------------------------------------- |
-| Phase        | **Phase 6 — P6-B done** (palette completeness). P6-F committed (35e07d1), CI green. P6-B not committed. |
-| Next step    | Owner review → commit P6-B → P6-C (diagnostics, performance) → P6-D (small packages, CHANGELOG, README, QA) |
+| Phase        | **Phase 6 — P6-C done** (diagnostics, proxy override, performance). P6-B committed (50c2411), CI green. P6-C not committed. |
+| Next step    | Owner review → commit P6-C → P6-D (small packages, CHANGELOG, README, QA) |
 | Blockers     | None                                                          |
 | Last updated | 2026-10-25                                                    |
 
@@ -438,7 +438,7 @@ Done criteria:
 
 - [x] **P6-A — Home, look, UI audit** — Home launcher, flat DevToys-style cards in every theme, window 1240×820, switch/select fixes, audit fixes, only the content pane scrolls, views use the full width (DECISIONS P6-A). code-review run (Standards + Spec); fixes applied. Evidence: `npm run lint` exit 0; `npm test` → 51 files, 736 passed, 1 skipped; `npm run e2e` → 40 passed, 2 skipped (opt-in audit and screenshot specs); audit screenshots (14 screens × 7 looks) reviewed.
 - [x] **P6-B — Palette completeness** (P6.01) — code-review run (Standards + Spec); fixes applied. Evidence: `npm run lint` exit 0; `npm test` → 55 files, 768 passed, 1 skipped; `npm run e2e` → 45 passed, 2 skipped.
-- [ ] **P6-C — Diagnostics + performance** (P6.04, P6.05)
+- [x] **P6-C — Diagnostics + performance** (P6.04, P6.05) — code-review run (Standards + Spec); fixes applied (incl. the SPEC 5 manual proxy override). Evidence: `npm run lint` exit 0; `npm test` → 56 files, 774 passed, 1 skipped (one run had 2 real-git flakes, DECISIONS P6-C); `npm run e2e` → 46 passed, 3 skipped (opt-in audit, screenshots, perf).
 - [x] **P6-E — Menu-bar / tray panel** (owner request 2026-10-25; P6.08–P6.10) — code-review run (Standards + Spec); fixes applied. Evidence: `npm run lint` exit 0; `npm test` → 52 files, 744 passed, 1 skipped; `npm run e2e` → 42 passed, 2 skipped (opt-in audit and screenshot specs); panel screenshots in every look reviewed.
 - [x] **P6-F — Agent lessons + workflow options** (owner request 2026-10-25; P6.11–P6.13) — code-review run (Standards + Spec); fixes applied. Evidence: `npm run lint` exit 0; `npm test` → 55 files, 760 passed, 1 skipped; `npm run e2e` → 43 passed, 2 skipped; Lessons tab screenshots reviewed.
 - [ ] **P6-D — Packaging (small), CHANGELOG, README, QA** (P6.06, P6.07, P6.14, Done)
@@ -446,8 +446,8 @@ Done criteria:
 - [x] `P6.01` Palette registry: title, keywords, arg parsers (`watch`, `branch`, `kill`, `open`), enabled reason, recents first — Evidence: `tests/unit/palette.test.ts` (disabled reasons, ranking, `branch`/`open` parsers, recents, dev server confirm, PR/build commands), `tests/e2e/palette.spec.ts` (recents, `open`, `branch` in both windows, disabled reason announced). Not yet: build trigger/deploy, baseline server, PR actions from the palette window (DECISIONS P6-B).
 - [x] `P6.02` Empty / loading / error states everywhere + "error with Details" pattern — sweep of every view and panel; repo status errors and the allowed-hosts field gained Details (shared `ErrorDetails`). Evidence: `tests/renderer/feedback-ui.test.ts` (fails with Details removed).
 - [x] `P6.03` Font 12 + 18 in every theme; keyboard-only pass on every screen — Evidence: `tests/e2e/a11y.spec.ts`: 5 themes × 12/18px × 8 views (no sideways overflow, window never scrolls); Tab round on 8 views + PRs Reviewing, 4 Utilities tabs, Tickets details, palette and Start work dialog — every stop visible with the theme's focus colour, focus trapped in dialogs, Escape closes and returns focus (fails with the ring removed or recoloured).
-- [ ] `P6.04` Diagnostics screen (versions, proxy, Test all connections, redacted export)
-- [ ] `P6.05` Perf check: 5 repos + 10 watches in demo — idle CPU/memory
+- [x] `P6.04` Diagnostics screen (versions, proxy, Test all connections, redacted export) — Evidence: `tests/unit/diagnostics.test.ts` (redaction everywhere, Windows/UNC paths, short names, proxy rules, recorded tests, credentials yes/no), `tests/e2e/diagnostics.spec.ts` (versions, Test all connections in demo, manual proxy changes the route, export without home path, includes the tests).
+- [x] `P6.05` Perf check: 5 repos + 10 watches in demo — idle CPU/memory — Evidence: `DEVDOCK_PERF=1 npx playwright test perf` → CPU avg 0.34 % (max 1.3 %), memory 614 MB summed working sets (per-process in DECISIONS P6-C); panel window now lazy (was 753 MB).
 - [ ] `P6.06` Packaging: icons, version + CHANGELOG, unsigned-app README section
 - [ ] `P6.07` README: features + demo screenshots, per-service setup + scopes, security model, shortcuts
 - [x] `P6.08` Panel window: left-click on the menu-bar (macOS) / tray (Windows) icon opens a small frameless panel anchored to the icon (below the menu bar on macOS, above the taskbar on Windows, kept on screen), hides on blur or Escape; right-click keeps the native menu; Open DevDock at the bottom — Evidence: `tests/unit/panel-position.test.ts` (8: macOS menu bar, Windows bottom/top/left/right taskbars, second display, auto-hide, no bounds, tiny screen); `tests/e2e/panel.spec.ts` (Escape hides; reopens).
@@ -506,3 +506,5 @@ Done criteria:
 | 2026-10-25 | P6-F | Agent lessons: Utilities → Lessons gathers reviewers' comments on my PRs (grouped, this repo first), I tick/edit, DevDock appends to docs/ai/LESSONS.md (safe write, no links out). Start work's message and TICKET.md point the agent there and ask it to add what it learned (per-run ticks, defaults in Settings → Workflow); dev server / VS Code follow-ups. code-review run; fixes applied. Not built yet: watch build after push, move ticket on PR, pre-push check. lint/test/e2e green. Not committed. | Owner review → commit → P6-B |
 | 2026-10-25 | P6-F close | Committed P6-F (35e07d1) and pushed; CI 40200926773 green on macOS (5m35s) and Windows (9m45s). | P6-B |
 | 2026-10-25 | P6-B | Palette: disabled reasons (shown, announced, ranked last), recents first, `branch <KEY>` (Start work preview, both windows), `open <name>`, dev server start/stop (stop confirms), Start work per issue, stop watching PRs/builds, clear finished, PR actions via their dialog. Fixed a ⌘K/Esc/⌘K close race. code-review run; fixes applied. lint/test/e2e green. Not committed. | Owner review → commit → P6-C |
+| 2026-10-25 | P6-B close | Committed P6-B (50c2411) and pushed; CI 40202281625 green on macOS and Windows. | P6-C |
+| 2026-10-25 | P6-C | Settings → Diagnostics: versions, proxy in use, manual proxy override (SPEC 5), Test all connections, redacted export (+ Save as file). Perf check: CPU 0.34 % avg, 614 MB summed working sets; panel window lazy (−130 MB). code-review run; fixes applied. lint/test/e2e green (one flaky unit run noted). Not committed. | Owner review → commit → P6-D |

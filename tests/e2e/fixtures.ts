@@ -68,7 +68,7 @@ interface TestHook {
   togglePalette(): void
   isPaletteVisible(): boolean
   /** Opens or hides the menu-bar panel as a tray click would; it stays up when unfocused. */
-  togglePanel(): void
+  togglePanel(): Promise<void>
   isPanelVisible(): boolean
   shortcutStatus(): { ok: boolean; accelerator: string; reason?: string }
   trayStatus(): 'green' | 'red' | 'grey' | null

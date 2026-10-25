@@ -2,6 +2,8 @@
  * App lifecycle: single instance, services, windows, tray, global shortcut and IPC.
  * Services are plain classes with injected Electron adapters (see ./services).
  */
+import { writeFile } from 'node:fs/promises'
+import { homedir, userInfo } from 'node:os'
 import { join } from 'node:path'
 import type { OpenTarget } from '@shared/repos'
 import type { RepoConfig } from '@shared/settings'
@@ -14,6 +16,7 @@ import {
   net,
   Notification,
   safeStorage,
+  session,
   shell,
   type IpcMainInvokeEvent,
   type Rectangle,
@@ -50,6 +53,8 @@ import { RepoService } from './services/repos'
 import { registerIpc } from './ipc/registry'
 import { checkExternalUrl, installSecurity, isAppUrl, linkHosts } from './security'
 import { DemoHttpClient, RealHttpClient, SwitchingHttpClient } from './services/http'
+import { proxyRules } from '@shared/diagnostics'
+import { DiagnosticsService } from './services/diagnostics'
 import { initLogger, log } from './services/logger'
 import { NotificationService, type NativeNotifier } from './services/notifications'
 import { SecretStore } from './services/secrets'
@@ -146,17 +151,41 @@ function togglePalette(): void {
   else openPalette()
 }
 
+/**
+ * The panel window, made on the first tray click (P6.05: a hidden renderer costs ~130 MB, and
+ * many people never open the panel). Resolves once its page has loaded.
+ */
+let panelLoaded: Promise<BrowserWindow> | null = null
+function ensurePanel(): Promise<BrowserWindow> {
+  // A second click while the first is still loading waits for the same load.
+  if (panelLoaded && panelWindow && !panelWindow.isDestroyed()) return panelLoaded
+  const win = createPanelWindow()
+  panelWindow = win
+  // Like other menu-bar panels: clicking anywhere else dismisses it.
+  win.on('blur', () => {
+    if (E2E && panelPinned) return
+    panelHiddenAt = Date.now()
+    win.hide()
+  })
+  // Resolved whether the page loads or not (a failed load still shows the window, not a hang).
+  panelLoaded = new Promise((resolve) => {
+    win.webContents.once('did-finish-load', () => resolve(win))
+    win.webContents.once('did-fail-load', () => resolve(win))
+  })
+  return panelLoaded
+}
+
 /** Tray left click: show the panel by the icon, or hide it if it is showing. */
-function togglePanel(icon: Rectangle): void {
-  if (!panelWindow || panelWindow.isDestroyed()) return
-  if (panelWindow.isVisible()) {
+async function togglePanel(icon: Rectangle): Promise<void> {
+  if (panelWindow?.isVisible()) {
     panelWindow.hide()
     return
   }
   // The click that blurred (and so hid) the panel must not open it again straight away.
   if (Date.now() - panelHiddenAt < PANEL_REOPEN_GUARD_MS) return
-  showPanel(panelWindow, icon)
-  panelWindow.webContents.send('panel:shown', null)
+  const win = await ensurePanel()
+  showPanel(win, icon)
+  win.webContents.send('panel:shown', null)
 }
 
 function quit(): void {
@@ -186,6 +215,19 @@ function electronNotifier(): NativeNotifier {
       native.show()
     },
   }
+}
+
+/** SPEC 5: the system proxy (PAC, WPAD, OS settings) unless a manual one is set. */
+let appliedProxy = ''
+function applyProxy(s: Settings): void {
+  const { proxyMode, proxyServer } = s.network
+  const manual = proxyMode === 'manual' && proxyServer !== ''
+  const key = manual ? proxyRules(proxyServer) : 'system'
+  if (key === appliedProxy) return
+  appliedProxy = key
+  void session.defaultSession
+    .setProxy(manual ? { proxyRules: key } : { mode: 'system' })
+    .then(() => log.info(`proxy: ${manual ? 'manual' : 'system'}`))
 }
 
 function applyLoginItem(s: Settings): void {
@@ -329,6 +371,32 @@ function start(): void {
       shortcut,
       http,
       logsDir,
+      diagnostics: new DiagnosticsService({
+        versions: () => ({
+          app: app.getVersion(),
+          electron: process.versions.electron,
+          chrome: process.versions.chrome,
+          node: process.versions.node,
+          platform: process.platform,
+          arch: process.arch,
+        }),
+        run: runCommand,
+        resolveProxy: (url) => session.defaultSession.resolveProxy(url),
+        settings: () => store.get(),
+        credentials: async () => secrets.keys(),
+        logFile: join(logsDir, 'devdock.log'),
+        home: homedir(),
+        user: userInfo().username,
+      }),
+      saveText: async (defaultName, text) => {
+        const opts = { title: 'Save diagnostics', defaultPath: defaultName }
+        const r = mainWindow
+          ? await dialog.showSaveDialog(mainWindow, opts)
+          : await dialog.showSaveDialog(opts)
+        if (r.canceled || !r.filePath) return null
+        await writeFile(r.filePath, text, 'utf8')
+        return r.filePath
+      },
       versions: () => ({
         version: app.getVersion(),
         electron: process.versions.electron,
@@ -421,6 +489,7 @@ function start(): void {
   const registered = shortcut.set(store.get().general.paletteShortcut)
   if (!registered.ok) log.warn(`palette shortcut not registered: ${registered.reason}`)
   applyLoginItem(store.get())
+  applyProxy(store.get())
 
   const signatures = (s: Settings) => [
     JSON.stringify([s.bitbucket, s.general.demoMode]),
@@ -438,6 +507,7 @@ function start(): void {
     lastSignatures = next
     void watcher.sync(s.repos)
     applyLoginItem(s)
+    applyProxy(s)
     // settings:update/import/reset can name a shortcut that is taken or reserved. Keep the
     // working one and write it back, so the settings file never disagrees with the OS.
     if (s.general.paletteShortcut === shortcut.active()) return
@@ -458,14 +528,8 @@ function start(): void {
       quit()
     }
   })
+  // The palette window is made now: the global shortcut must open it instantly.
   paletteWindow = createPaletteWindow()
-  panelWindow = createPanelWindow()
-  // Like other menu-bar panels: clicking anywhere else dismisses it.
-  panelWindow.on('blur', () => {
-    if (E2E && panelPinned) return
-    panelHiddenAt = Date.now()
-    panelWindow?.hide()
-  })
 
   // Focus moves between our windows as blur-then-focus; read the result after both.
   const focusChanged = (): void => {
@@ -490,7 +554,7 @@ function start(): void {
   })
   tray = createTray(trayDir, trayState, {
     open: showMain,
-    togglePanel,
+    togglePanel: (icon) => void togglePanel(icon),
     showBuilds: () => showView('builds'),
     pause: (minutes) => notifications.pause(minutes),
     resume: () => notifications.resume(),
@@ -509,7 +573,7 @@ function start(): void {
         togglePanel: (pin = true) => {
           // Test windows lose focus to each other; keep the panel up while a test drives it.
           panelPinned = pin
-          togglePanel({ x: 0, y: 0, width: 0, height: 0 })
+          return togglePanel({ x: 0, y: 0, width: 0, height: 0 })
         },
         isPanelVisible: () => panelWindow?.isVisible() ?? false,
         shortcutStatus: () => shortcut.status(),

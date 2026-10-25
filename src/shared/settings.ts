@@ -4,6 +4,7 @@ import { BITBUCKET_FLAVORS } from './bitbucket'
 import { DEFAULT_JQL, JIRA_FLAVORS, SavedQuerySchema } from './jira'
 import { DEFAULT_PROTECTED_JOBS, JobPathSchema } from './jenkins'
 import { MAX_QUICK_LINKS, QuickLinkSchema } from './links'
+import { ProxyServerSchema } from './diagnostics'
 import { DEFAULT_LESSONS_PATH, LessonsPathSchema } from './lessons'
 import { HolidaySchema } from './standup'
 
@@ -233,6 +234,13 @@ export const SettingsSchema = z.object({
     .prefault({}),
   /** SPEC 6.6 quick links launcher. */
   quickLinks: z.array(QuickLinkSchema).max(MAX_QUICK_LINKS).default([]),
+  /** SPEC 5: the system proxy (PAC, WPAD, OS settings), or a manual one. */
+  network: z
+    .object({
+      proxyMode: z.enum(['system', 'manual']).default('system'),
+      proxyServer: ProxyServerSchema.default(''),
+    })
+    .prefault({}),
   /** Workflow options the user ticks (P6-F, owner request): lessons and Start work follow-ups. */
   workflow: z
     .object({
@@ -293,6 +301,7 @@ export const SettingsPatchSchema = z.object({
   standup: patchOf(SettingsSchema.shape.standup),
   quickLinks: z.array(QuickLinkSchema).max(MAX_QUICK_LINKS).optional(),
   workflow: patchOf(SettingsSchema.shape.workflow),
+  network: patchOf(SettingsSchema.shape.network),
 })
 
 export type SettingsPatch = z.infer<typeof SettingsPatchSchema>

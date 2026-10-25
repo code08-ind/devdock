@@ -954,3 +954,26 @@
   display: grid;
   gap: var(--space-1);
 }
+
+/* ---- Diagnostics (P6.04) ----------------------------------------------------------------- */
+.diag-tests {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.diag-test {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-3);
+}
+.diag-service {
+  min-width: 6em;
+  font-weight: var(--fw-medium);
+}
+.diag-failure {
+  display: grid;
+  gap: var(--space-1);
+}

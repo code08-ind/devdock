@@ -51,6 +51,7 @@ import {
   LessonsStateSchema,
   ReviewCommentSchema,
 } from './lessons'
+import { DiagnosticsSchema } from './diagnostics'
 import { StandupDraftSchema } from './standup'
 import {
   CachePlanSchema,
@@ -122,6 +123,11 @@ export const contract = {
   'app:openLogsFolder': { req: none, res: none },
   'app:showView': { req: z.object({ view: z.enum(VIEWS) }), res: none },
   'app:quit': { req: none, res: none },
+  'diagnostics:info': { req: none, res: DiagnosticsSchema },
+  /** The redacted report (shown to copy). */
+  'diagnostics:export': { req: none, res: z.string() },
+  /** Writes the report where the user picks; null when they cancel. */
+  'diagnostics:save': { req: none, res: z.object({ path: z.string().nullable() }) },
 
   'settings:get': { req: none, res: SettingsSchema },
   'settings:update': { req: SettingsPatchSchema, res: SettingsSchema },

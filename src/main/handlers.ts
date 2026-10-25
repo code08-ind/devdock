@@ -1,4 +1,6 @@
 /** One handler per IPC channel in @shared/ipc `contract`. Electron-free: adapters are injected. */
+import type { ServiceName } from '@shared/diagnostics'
+import type { DiagnosticsService } from './services/diagnostics'
 import { LessonsError, type LessonsService } from './services/lessons'
 import type { View } from '@shared/channels'
 import type { ErrorCode, Req, Res } from '@shared/ipc'
@@ -50,6 +52,9 @@ export interface HandlerDeps {
   closePalette: () => void
   closePanel: () => void
   quit: () => void
+  diagnostics: DiagnosticsService
+  /** Asks where to save (native dialog) and writes the text there; null when cancelled. */
+  saveText: (defaultName: string, text: string) => Promise<string | null>
   repos: RepoService
   git: GitRunner
   actions: GitActions
@@ -271,6 +276,17 @@ function withSecrets<T>(fn: () => T): T {
 }
 
 export function createHandlers(deps: HandlerDeps): HandlerMap {
+  /** A Test connection, its outcome kept for the diagnostics report. */
+  const recorded = async <T>(service: ServiceName, test: () => Promise<T>): Promise<T> => {
+    try {
+      const result = await withService(test)
+      deps.diagnostics.recordTest(service, true, null)
+      return result
+    } catch (err) {
+      deps.diagnostics.recordTest(service, false, err instanceof IpcError ? err.code : 'INTERNAL')
+      throw err
+    }
+  }
   return {
     'app:info': () => ({ ...deps.versions(), shortcut: deps.shortcut.status() }),
     'app:openExternal': async ({ url }) => {
@@ -278,6 +294,20 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
       const verdict = checkExternalUrl(url, hosts)
       if (!verdict.ok) throw new IpcError('NOT_ALLOWED', verdict.reason)
       await deps.openExternal(verdict.url)
+    },
+    'diagnostics:info': () => deps.diagnostics.info(),
+    'diagnostics:export': () => deps.diagnostics.report(),
+    'diagnostics:save': async () => {
+      const text = await deps.diagnostics.report()
+      try {
+        return { path: await deps.saveText(deps.diagnostics.fileName(), text) }
+      } catch (err) {
+        throw new IpcError(
+          'INTERNAL',
+          "Couldn't save the report. Pick another folder, or copy it from the dialog.",
+          err instanceof Error ? err.message : String(err),
+        )
+      }
     },
     'app:openLogsFolder': async () => {
       const error = await deps.openPath(deps.logsDir)
@@ -353,11 +383,11 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
     'devserver:stop': ({ id, kind }) =>
       withGit(() => deps.devServers.stop(deps.repos.get(id).id, kind)),
     'devserver:log': ({ id, kind }) => deps.devServers.log(id, kind),
-    'jira:testConnection': () => withService(() => deps.jira.testConnection()),
+    'jira:testConnection': () => recorded('Jira', () => deps.jira.testConnection()),
     'jira:list': (request) => withService(() => deps.jira.list(request)),
     'jira:issue': ({ key }) => withService(() => deps.jira.issue(key)),
     'bitbucket:detect': ({ baseUrl }) => withService(() => deps.bitbucket.detect(baseUrl)),
-    'bitbucket:testConnection': () => withService(() => deps.bitbucket.testConnection()),
+    'bitbucket:testConnection': () => recorded('Bitbucket', () => deps.bitbucket.testConnection()),
     'bitbucket:list': ({ list }) => withService(() => deps.bitbucket.list(list)),
     'bitbucket:pr': (ref) => withService(() => deps.bitbucket.pr(ref)),
     'bitbucket:action': (request) =>
@@ -382,7 +412,7 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
     'watch:add': ({ link }) => withWatch(() => deps.prWatcher.add(link)),
     'watch:remove': ({ key }) => deps.prWatcher.remove(key),
     'watch:request': ({ link, pipeline }) => deps.requestWatch(link, pipeline ?? false),
-    'jenkins:testConnection': () => withService(() => deps.jenkins.testConnection()),
+    'jenkins:testConnection': () => recorded('Jenkins', () => deps.jenkins.testConnection()),
     'jenkins:branches': () => withService(() => deps.jenkins.branches()),
     'jenkins:build': (ref) => withService(() => deps.jenkins.build(ref)),
     'jenkins:console': ({ start, ...ref }) => withService(() => deps.jenkins.console(ref, start)),

@@ -6,6 +6,7 @@ import { Field, SegmentedControl, Select, Toggle } from '../../ui/Field'
 import { BitbucketSection } from './BitbucketSection'
 import { CredentialsSection } from './CredentialsSection'
 import { DataSection } from './DataSection'
+import { DiagnosticsSection } from './DiagnosticsSection'
 import { GeneralSection } from './GeneralSection'
 import { GitSection } from './GitSection'
 import { JenkinsSection } from './JenkinsSection'
@@ -82,6 +83,7 @@ export function SettingsPage() {
       <WorkflowSection settings={settings} />
       <NotificationsSection settings={settings} />
       <CredentialsSection />
+      <DiagnosticsSection settings={settings} />
       <DataSection settings={settings} />
     </div>
   )

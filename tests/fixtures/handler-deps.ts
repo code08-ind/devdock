@@ -48,6 +48,7 @@ export async function handlerSetup(
   const { DEMO_BITBUCKET } = await import('../../src/main/demo/bitbucket')
   const { StartWorkService } = await import('../../src/main/services/startwork')
   const { LessonsService } = await import('../../src/main/services/lessons')
+  const { DiagnosticsService } = await import('../../src/main/services/diagnostics')
   const { PrWatcher } = await import('../../src/main/services/bitbucket/watcher')
   const { JenkinsService } = await import('../../src/main/services/jenkins/service')
   const { DEMO_JENKINS } = await import('../../src/main/demo/jenkins')
@@ -129,6 +130,24 @@ export async function handlerSetup(
     openPalette: vi.fn(),
     closePalette: vi.fn(),
     closePanel: vi.fn(),
+    diagnostics: new DiagnosticsService({
+      versions: () => ({
+        app: '0.0.0',
+        electron: '0',
+        chrome: '0',
+        node: '0',
+        platform: 'test',
+        arch: 'x',
+      }),
+      run: async () => ({ stdout: 'git version 2.0.0\n', stderr: '', code: 0 }),
+      resolveProxy: async () => 'DIRECT',
+      settings: () => settings.get(),
+      credentials: async () => [],
+      logFile: join(dir, 'devdock.log'),
+      home: dir,
+      user: 'tester',
+    }),
+    saveText: vi.fn(async () => null),
     quit: vi.fn(),
     repos,
     git,

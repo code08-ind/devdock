@@ -352,6 +352,13 @@ export function buildCommands(ctx: CommandContext, views: readonly View[]): Comm
       run: () => ctx.update({ general: { demoMode: !ctx.demoMode } }),
     },
     {
+      id: 'app:diagnostics',
+      title: 'Show diagnostics',
+      group: 'App',
+      keywords: ['versions', 'proxy', 'test connections', 'export', 'support', 'debug'],
+      run: () => ctx.goto('settings'),
+    },
+    {
       id: 'app:logs',
       title: 'Open logs folder',
       group: 'App',
