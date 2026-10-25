@@ -1,4 +1,6 @@
+import type { PrAction } from '@shared/bitbucket'
 import type { View } from '@shared/channels'
+import { ISSUE_KEY } from '@shared/jira'
 import { parsePrLink } from '@shared/prlink'
 import type { ActionRequest, OpenTarget } from '@shared/repos'
 import { THEMES, type SettingsPatch, type Theme } from '@shared/settings'
@@ -22,6 +24,7 @@ export interface Command {
     | 'Repos'
     | 'Pull requests'
     | 'Builds'
+    | 'Tickets'
     | 'Utilities'
     | 'Quick links'
     | 'Appearance'
@@ -29,6 +32,8 @@ export interface Command {
     | 'App'
   keywords?: string[]
   shortcut?: string
+  /** Why it can't run now (shown in the list; picking it does nothing). */
+  disabled?: string
   run: () => unknown
 }
 
@@ -83,6 +88,32 @@ export interface CommandContext {
   /** SPEC 6.6 quick links: each is a palette command. */
   quickLinks: readonly QuickLink[]
   openLink: (url: string) => unknown
+  /** Each repo's dev server: running (or starting) or not, and whether it has a command. */
+  devServers: readonly { repoId: string; running: boolean }[]
+  /** Services set up (or demo mode): commands that need one say so when it isn't. */
+  configured: { bitbucket: boolean; jenkins: boolean; jira: boolean }
+  /**
+   * Asks before doing something that stops a process (SPEC 7). Windows that can't show a
+   * dialog leave it out, and the commands that need it aren't offered there.
+   */
+  confirm?: (request: ConfirmRequest) => unknown
+  /** PR actions the user turned on, per open PR (approve / needs work / merge). */
+  prActions: readonly { key: string; label: string; action: PrAction }[]
+  /** Opens the PR action's confirmation dialog; left out where it can't be shown. */
+  prAction?: (key: string, action: PrAction) => unknown
+  /** Watched builds, to stop watching; whether any have finished (to clear them). */
+  buildWatches: readonly { key: string; label: string }[]
+  finishedBuilds: boolean
+  unwatchBuild: (key: string) => unknown
+  clearFinishedBuilds: () => unknown
+  devServer: (repoId: string, start: boolean) => unknown
+  /** My open Jira issues (when loaded): Start work on each. */
+  issues: readonly { key: string; summary: string }[]
+  /** Opens Start work for an issue key (preview first, then the user starts it). */
+  startWork: (key: string) => unknown
+  /** Watched pull requests, to stop watching. */
+  watches: readonly { key: string; label: string }[]
+  unwatch: (key: string) => unknown
 }
 
 const UTILITY_COMMANDS: { tab: UtilityRequest['tab']; title: string; keywords: string[] }[] = [
@@ -137,6 +168,7 @@ function repoCommands(ctx: CommandContext): Command[] {
       keywords: ['git', ...a.keywords],
       run: () => ctx.requestAction(r.id, a.request),
     })),
+    ...devServerCommands(ctx, r),
     ...(['editor', 'terminal', 'files'] as const).map<Command>((target) => ({
       id: `repo:${r.id}:${target}`,
       title: `${ctx.openLabels[target]} — ${r.name}`,
@@ -145,6 +177,58 @@ function repoCommands(ctx: CommandContext): Command[] {
       run: () => ctx.openRepo(r.id, target),
     })),
   ])
+}
+
+/** A confirmation a command asks for before it runs. */
+export interface ConfirmRequest {
+  title: string
+  body: string
+  confirmLabel: string
+  run: () => unknown
+}
+
+const PR_ACTION_VERB: Record<PrAction, string> = {
+  approve: 'Approve',
+  needs_work: 'Mark needs work on',
+  merge: 'Merge',
+}
+
+/** Start work makes a branch in a registered repo. */
+const noRepoReason = (ctx: Pick<CommandContext, 'repos'>) =>
+  ctx.repos.length ? undefined : 'Add a repo first: Start work makes the branch there'
+
+/** Start or stop a repo's dev server (SPEC 7: every action from the palette). */
+function devServerCommands(ctx: CommandContext, r: { id: string; name: string }): Command[] {
+  const state = ctx.devServers.find((d) => d.repoId === r.id)
+  const confirm = ctx.confirm
+  if (state?.running) {
+    return confirm
+      ? [
+          {
+            id: `repo:${r.id}:devserver`,
+            title: `Stop dev server — ${r.name}…`,
+            group: 'Repos',
+            keywords: ['dev', 'server', 'npm', 'kill'],
+            run: () =>
+              confirm({
+                title: `Stop the dev server for ${r.name}?`,
+                body: 'DevDock stops the dev server and the processes it started.',
+                confirmLabel: 'Stop dev server',
+                run: () => ctx.devServer(r.id, false),
+              }),
+          },
+        ]
+      : []
+  }
+  return [
+    {
+      id: `repo:${r.id}:devserver`,
+      title: `Start dev server — ${r.name}`,
+      group: 'Repos',
+      keywords: ['dev', 'server', 'npm', 'run', 'vite'],
+      run: () => ctx.devServer(r.id, true),
+    },
+  ]
 }
 
 export function buildCommands(ctx: CommandContext, views: readonly View[]): Command[] {
@@ -171,6 +255,7 @@ export function buildCommands(ctx: CommandContext, views: readonly View[]): Comm
       title: 'Watch a pull request…',
       group: 'Pull requests',
       keywords: ['watch', 'bitbucket', 'link', 'pr', 'paste'],
+      disabled: ctx.configured.bitbucket ? undefined : 'Set up Bitbucket in Settings first',
       run: () => ctx.goto('prs'),
     },
     {
@@ -178,8 +263,43 @@ export function buildCommands(ctx: CommandContext, views: readonly View[]): Comm
       title: "Watch a pull request's pipeline…",
       group: 'Builds',
       keywords: ['jenkins', 'build', 'watch', 'pipeline', 'pr', 'paste'],
+      disabled: ctx.configured.jenkins ? undefined : 'Set up Jenkins in Settings first',
       run: () => ctx.goto('builds'),
     },
+    ...ctx.watches.map<Command>((w) => ({
+      id: `pr:unwatch:${w.key}`,
+      title: `Stop watching ${w.label}`,
+      group: 'Pull requests',
+      keywords: ['unwatch', 'watch', 'bitbucket'],
+      run: () => ctx.unwatch(w.key),
+    })),
+    ...(ctx.prAction
+      ? ctx.prActions.map<Command>((p) => ({
+          id: `pr:${p.action}:${p.key}`,
+          title: `${PR_ACTION_VERB[p.action]} ${p.label}…`,
+          group: 'Pull requests',
+          keywords: ['bitbucket', 'review', p.action.replace('_', ' ')],
+          run: () => ctx.prAction?.(p.key, p.action),
+        }))
+      : []),
+    ...ctx.buildWatches.map<Command>((w) => ({
+      id: `build:unwatch:${w.key}`,
+      title: `Stop watching ${w.label}`,
+      group: 'Builds',
+      keywords: ['jenkins', 'build', 'unwatch'],
+      run: () => ctx.unwatchBuild(w.key),
+    })),
+    ...(ctx.finishedBuilds
+      ? [
+          {
+            id: 'build:clear-finished',
+            title: 'Clear finished build watches',
+            group: 'Builds' as const,
+            keywords: ['jenkins', 'watch', 'done'],
+            run: ctx.clearFinishedBuilds,
+          },
+        ]
+      : []),
     ...UTILITY_COMMANDS.map<Command>((u) => ({
       id: `util:${u.tab}`,
       title: u.title,
@@ -194,6 +314,14 @@ export function buildCommands(ctx: CommandContext, views: readonly View[]): Comm
       // Matched lower-case (see score).
       keywords: [l.group, linkHost(l.url)].filter(Boolean).map((k) => k.toLowerCase()),
       run: () => ctx.openLink(l.url),
+    })),
+    ...ctx.issues.map<Command>((i) => ({
+      id: `ticket:start:${i.key}`,
+      title: `Start work on ${i.key}: ${i.summary}`,
+      group: 'Tickets',
+      keywords: ['jira', 'branch', 'ticket', 'issue', i.key.toLowerCase()],
+      disabled: noRepoReason(ctx),
+      run: () => ctx.startWork(i.key),
     })),
     ...themes,
     ctx.paused
@@ -241,9 +369,54 @@ export function buildCommands(ctx: CommandContext, views: readonly View[]): Comm
  */
 export function queryCommands(
   query: string,
-  ctx: Pick<CommandContext, 'watch' | 'goto' | 'utility'>,
+  ctx: Pick<
+    CommandContext,
+    'watch' | 'goto' | 'utility' | 'startWork' | 'quickLinks' | 'openLink' | 'repos' | 'configured'
+  >,
 ): Command[] {
   const text = query.trim()
+  // `branch NM-1234` (SPEC 6.1): Start work on that ticket — the preview, never straight away.
+  const branch = /^branch\s+(\S+)$/i.exec(text)
+  if (branch) {
+    const key = branch[1]!.toUpperCase()
+    return ISSUE_KEY.test(key)
+      ? [
+          {
+            id: 'ticket:branch',
+            title: `Start work on ${key}…`,
+            group: 'Tickets',
+            disabled: ctx.configured.jira ? noRepoReason(ctx) : 'Set up Jira in Settings first',
+            run: () => ctx.startWork(key),
+          },
+        ]
+      : [
+          {
+            id: 'ticket:branch-invalid',
+            title: `${branch[1]} isn't a Jira key (like NM-1234): open Tickets`,
+            group: 'Tickets',
+            run: () => ctx.goto('tickets'),
+          },
+        ]
+  }
+  // `open <link name>`: the quick links whose name matches, best first.
+  const open = /^open\s+(.+)$/i.exec(text)
+  if (open) {
+    const name = open[1]!.trim().toLowerCase()
+    return ctx.quickLinks
+      .filter((l) => l.name.toLowerCase().includes(name))
+      .sort(
+        (a, b) =>
+          Number(b.name.toLowerCase().startsWith(name)) -
+          Number(a.name.toLowerCase().startsWith(name)),
+      )
+      .map<Command>((l) => ({
+        // The registry's id, so a link opened this way shows up in recents.
+        id: `link:${l.id}`,
+        title: `Open ${l.name}`,
+        group: 'Quick links',
+        run: () => ctx.openLink(l.url),
+      }))
+  }
   // `kill 5173` (SPEC 6.1): opens the stop dialog for that port's process — never stops it here.
   const kill = /^kill\s+(\d{1,5})$/i.exec(text)
   if (kill) {
@@ -314,13 +487,38 @@ function score(c: Command, q: string): number {
   return i === q.length ? 1 : 0
 }
 
-/** Ranked matches; every whitespace-separated term must match. Ties keep registry order. */
+/** Ranked matches (runnable first); every whitespace-separated term must match. */
 export function filterCommands(commands: readonly Command[], query: string): Command[] {
   const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean)
   if (terms.length === 0) return [...commands]
-  return commands
-    .map((c, i) => ({ c, i, s: terms.reduce((sum, t) => sum + (score(c, t) || -Infinity), 0) }))
-    .filter((r) => r.s > 0)
-    .sort((a, b) => b.s - a.s || a.i - b.i)
-    .map((r) => r.c)
+  return (
+    commands
+      .map((c, i) => ({ c, i, s: terms.reduce((sum, t) => sum + (score(c, t) || -Infinity), 0) }))
+      .filter((r) => r.s > 0)
+      // A command that can run beats one that can't, then the better match, then registry order.
+      .sort((a, b) => Number(!!a.c.disabled) - Number(!!b.c.disabled) || b.s - a.s || a.i - b.i)
+      .map((r) => r.c)
+  )
+}
+
+/**
+ * Recent commands first (P6.01), most recent at the top; the rest keep their order. Only ids
+ * still in the registry count (a removed repo's commands drop out).
+ */
+export function withRecentFirst(
+  commands: readonly Command[],
+  recent: readonly string[],
+): Command[] {
+  const byId = new Map(commands.map((c) => [c.id, c]))
+  const first = recent.map((id) => byId.get(id)).filter((c): c is Command => c !== undefined)
+  const seen = new Set(first.map((c) => c.id))
+  return [...first, ...commands.filter((c) => !seen.has(c.id))]
+}
+
+/** How many recent commands are remembered. */
+export const RECENT_LIMIT = 8
+
+/** `recent` with `id` moved to the front, capped. */
+export function rememberRecent(recent: readonly string[], id: string): string[] {
+  return [id, ...recent.filter((r) => r !== id)].slice(0, RECENT_LIMIT)
 }

@@ -281,6 +281,7 @@ export const contract = {
   /** Writes only the lessons the user picked, inside the repo (local file, no remote). */
   'lessons:add': { req: LessonsAddSchema, res: LessonsAddResultSchema },
   'utilities:request': { req: UtilityRequestSchema, res: none },
+  'tickets:request': { req: z.object({ key: IssueKeySchema }), res: none },
   /** Read-only: branch name, commands, brief path + .gitignore check, agent and message. */
   'startwork:plan': { req: StartWorkRequestSchema, res: StartWorkPlanSchema },
   'startwork:run': { req: StartWorkRunSchema, res: StartWorkResultSchema },
@@ -349,5 +350,6 @@ export interface EventPayloads {
   'watch:requested': { link: string; pipeline?: boolean }
   'buildwatch:changed': BuildWatch[]
   'utilities:requested': z.infer<typeof UtilityRequestSchema>
+  'tickets:requested': { key: string }
 }
 export type EventPayload<E extends EventChannel> = EventPayloads[E]

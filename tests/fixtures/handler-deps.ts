@@ -139,6 +139,7 @@ export async function handlerSetup(
     requestRepoAction: vi.fn(),
     requestWatch: vi.fn(),
     requestUtility: vi.fn(),
+    requestTicket: vi.fn(),
     devServers: new DevServerManager({ onChange: vi.fn(), onOutput: vi.fn() }),
     jira,
     bitbucket,

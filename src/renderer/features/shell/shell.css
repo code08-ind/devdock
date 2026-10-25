@@ -237,6 +237,26 @@
 .palette-item.is-active .muted {
   color: var(--text);
 }
+.palette-refused:empty {
+  display: none;
+}
+.palette-refused {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: var(--border-w) solid var(--border);
+  color: var(--warning);
+  font-size: var(--fs-sm);
+}
+.palette-title {
+  display: grid;
+  min-width: 0;
+}
+.palette-reason {
+  font-size: var(--fs-sm);
+}
+.palette-item.is-disabled > .palette-title > span:first-child {
+  color: var(--text-muted);
+}
 .palette-meta {
   display: flex;
   align-items: center;

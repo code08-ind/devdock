@@ -18,11 +18,3 @@ export function PanelSection({ title, children }: { title: string; children: Rea
     </section>
   )
 }
-
-export function Loading({ what }: { what: string }) {
-  return (
-    <p className="muted" role="status">
-      Loading {what}…
-    </p>
-  )
-}

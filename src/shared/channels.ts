@@ -106,6 +106,8 @@ export const INVOKE_CHANNELS = [
   'lessons:add',
   /** Palette window → main window: show Utilities on a tab (`kill 5173` → that port). */
   'utilities:request',
+  /** Palette window → main window: Start work on a ticket (`branch NM-1234`). */
+  'tickets:request',
 ] as const
 
 /** Events pushed from main to renderer. */
@@ -128,6 +130,7 @@ export const EVENT_CHANNELS = [
   /** The build watch list or a watched build changed. */
   'buildwatch:changed',
   'utilities:requested',
+  'tickets:requested',
 ] as const
 
 export type InvokeChannel = (typeof INVOKE_CHANNELS)[number]

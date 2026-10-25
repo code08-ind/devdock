@@ -75,6 +75,8 @@ export interface HandlerDeps {
   requestWatch: (link: string, pipeline: boolean) => void
   /** Shows Utilities in the main window on a tab (from the palette window). */
   requestUtility: (request: Req<'utilities:request'>) => void
+  /** Shows the main window with Start work open for that issue. */
+  requestTicket: (key: string) => void
   /** Brings up the main window's action dialog (from the palette window). */
   requestRepoAction: (event: { id: string; request: ActionRequest }) => void
 }
@@ -423,6 +425,7 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
     'lessons:state': ({ repoId }) => withLessons(() => deps.lessons.state(repoId)),
     'lessons:add': ({ repoId, lessons }) => withLessons(() => deps.lessons.add(repoId, lessons)),
     'utilities:request': (request) => deps.requestUtility(request),
+    'tickets:request': ({ key }) => deps.requestTicket(key),
     'startwork:plan': (request) => withStartWork(() => deps.startWork.plan(request)),
     'startwork:run': (request) =>
       withStartWork(() =>

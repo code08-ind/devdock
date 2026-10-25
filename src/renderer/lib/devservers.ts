@@ -5,9 +5,14 @@ import { bridge, queryClient, unwrap } from './devdock'
 
 const LIST_KEY = ['devserver', 'list'] as const
 
-export function useDevServer(repoId: string, kind: ServerKind): DevServerState | undefined {
+/** Every dev and baseline server DevDock knows about, kept live by `devserver:changed`. */
+export function useDevServers(): DevServerState[] {
   const { data } = useQuery({ queryKey: LIST_KEY, queryFn: () => unwrap(bridge.devserver.list()) })
-  return data?.find((s) => s.repoId === repoId && s.kind === kind)
+  return data ?? []
+}
+
+export function useDevServer(repoId: string, kind: ServerKind): DevServerState | undefined {
+  return useDevServers().find((s) => s.repoId === repoId && s.kind === kind)
 }
 
 // ---- Logs: seeded from the main process, then streamed ----------------------------------------

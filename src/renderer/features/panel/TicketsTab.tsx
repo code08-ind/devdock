@@ -1,12 +1,12 @@
+import { Loading } from '../../ui/Feedback'
 import { useState } from 'react'
 import type { JiraIssue } from '@shared/jira'
-import { useJiraIssue, useJiraList } from '../../lib/jira'
+import { useJiraList } from '../../lib/jira'
 import { Button } from '../../ui/Button'
-import { ErrorNotice } from '../../ui/Feedback'
 import { StatusOf } from '../tickets/IssueBits'
-import { StartWorkDialog } from '../tickets/StartWorkDialog'
+import { StartWorkFor } from '../tickets/StartWorkFor'
 import { SetUp } from '../today/TodayPage'
-import { Loading, goto } from './bits'
+import { goto } from './bits'
 
 /** My open tickets, in progress first; each starts work in one click (then the preview). */
 export function TicketsTab() {
@@ -40,15 +40,9 @@ export function TicketList({ issues, label }: { issues: readonly JiraIssue[]; la
           </li>
         ))}
       </ul>
-      {starting ? <StartWork issueKey={starting} onClose={() => setStarting(null)} /> : null}
+      {starting ? (
+        <StartWorkFor issueKey={starting} onClose={() => setStarting(null)} onView={goto} />
+      ) : null}
     </>
   )
-}
-
-/** Start work needs the issue's details (description, Figma links) for the brief. */
-function StartWork({ issueKey, onClose }: { issueKey: string; onClose: () => void }) {
-  const issue = useJiraIssue(issueKey)
-  if (issue.error) return <ErrorNotice error={issue.error} />
-  if (!issue.data) return <Loading what={issueKey} />
-  return <StartWorkDialog issue={issue.data} onClose={onClose} onView={goto} />
 }

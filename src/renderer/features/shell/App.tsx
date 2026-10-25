@@ -13,6 +13,7 @@ import { EmptyState, useToast } from '../../ui/Feedback'
 import { watchLabel } from '../builds/BuildBits'
 import { BuildsPage } from '../builds/BuildsPage'
 import { CommandPalette } from '../palette/CommandPalette'
+import { useCommandDialogs } from '../palette/CommandDialogs'
 import { VIEW_LABELS } from '../palette/commands'
 import { useCommands } from '../palette/useCommands'
 import { prLabel } from '../prs/PrBits'
@@ -20,6 +21,7 @@ import { PrsPage } from '../prs/PrsPage'
 import { ActionDialog } from '../repos/ActionDialog'
 import { ReposPage } from '../repos/ReposPage'
 import { SettingsPage } from '../settings/SettingsPage'
+import { StartWorkFor } from '../tickets/StartWorkFor'
 import { TicketsPage } from '../tickets/TicketsPage'
 import { HomePage } from '../home/HomePage'
 import { TodayPage } from '../today/TodayPage'
@@ -85,7 +87,16 @@ function PaletteOverlay({
   const ref = useRef<HTMLDialogElement>(null)
   useModal(ref, open)
   return (
-    <dialog ref={ref} className="palette-dialog" aria-label="Command palette" onClose={onClose}>
+    <dialog
+      ref={ref}
+      className="palette-dialog"
+      aria-label="Command palette"
+      // The close event arrives a moment after closing: if the palette was opened again in
+      // between (a quick ⌘K, Esc, ⌘K), it must not close the new one.
+      onClose={() => {
+        if (!ref.current?.open) onClose()
+      }}
+    >
       {open ? children : null}
     </dialog>
   )
@@ -134,7 +145,20 @@ export function App() {
     },
     [run, toast, addWatch, watchPipeline],
   )
-  const { commands, forQuery } = useCommands(setView, requestAction, watchLink, openUtility)
+  // `branch <KEY>` (palette or palette window): Start work over whatever view is showing.
+  const [startKey, setStartKey] = useState<string | null>(null)
+  const onTicketRequested = useCallback(({ key }: { key: string }) => setStartKey(key), [])
+  useBridgeEvent('tickets:requested', onTicketRequested)
+  const commandDialogs = useCommandDialogs()
+  const { commands, forQuery } = useCommands({
+    confirm: commandDialogs.confirm,
+    prAction: commandDialogs.prAction,
+    goto: setView,
+    requestAction,
+    watch: watchLink,
+    utility: openUtility,
+    startWork: setStartKey,
+  })
   const main = useRef<HTMLElement>(null)
 
   useBridgeEvent('nav:goto', setView)
@@ -196,6 +220,10 @@ export function App() {
           onUtility={openUtility}
         />
       </main>
+      {startKey ? (
+        <StartWorkFor issueKey={startKey} onClose={() => setStartKey(null)} onView={setView} />
+      ) : null}
+      {commandDialogs.dialogs}
       {requested && requestedRepo ? (
         <ActionDialog
           key={`${requested.id}:${requested.request.action}`}

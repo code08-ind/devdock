@@ -1,3 +1,4 @@
+import { Loading } from '../../ui/Feedback'
 import { useState } from 'react'
 import { Code, Terminal } from 'lucide-react'
 import type { ActionRequest } from '@shared/repos'
@@ -8,7 +9,7 @@ import { ActionDialog } from '../repos/ActionDialog'
 import { DevServerPanel } from '../repos/DevServerPanel'
 import { RepoActionButton } from '../repos/RepoActionButton'
 import { RepoStatusError, RepoStatusLine } from '../repos/RepoStatusLine'
-import { Loading, goto } from './bits'
+import { goto } from './bits'
 
 export function ReposTab() {
   const repos = useRepos()

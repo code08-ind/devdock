@@ -1,3 +1,4 @@
+import { Loading } from '../../ui/Feedback'
 import { ArrowUpRight } from 'lucide-react'
 import { isLive } from '@shared/bitbucket'
 import { usePrList, useWatchedKeys, useWatches } from '../../lib/bitbucket'
@@ -7,7 +8,7 @@ import { IconButton } from '../../ui/Button'
 import { watchLabel } from '../builds/BuildBits'
 import { PrRow } from '../prs/PrRow'
 import { SetUp, WatchedBuildRow } from '../today/TodayPage'
-import { Loading, PanelSection, goto } from './bits'
+import { PanelSection, goto } from './bits'
 import { TicketList, inProgress } from './TicketsTab'
 
 /** The day at a glance: my PRs, other watched PRs, watched builds, tickets in progress. */

@@ -122,3 +122,8 @@ export function useMainEvents(): void {
   useBridgeEvent('notifications:changed', onNotificationsChanged)
   useBridgeEvent('repos:changed', onRepoChanged)
 }
+
+/** A service is set up (its URL is saved) or demo mode stands in for it. */
+export function isSetUp(settings: Settings, service: 'jira' | 'bitbucket' | 'jenkins'): boolean {
+  return settings.general.demoMode || settings[service].baseUrl !== ''
+}

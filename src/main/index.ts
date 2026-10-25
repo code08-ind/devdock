@@ -397,6 +397,10 @@ function start(): void {
         showView('utilities')
         mainWindow?.webContents.send('utilities:requested', request)
       },
+      requestTicket: (key) => {
+        showView('tickets')
+        mainWindow?.webContents.send('tickets:requested', { key })
+      },
       requestWatch: (link, pipeline) => {
         showView(pipeline ? 'builds' : 'prs')
         mainWindow?.webContents.send('watch:requested', { link, pipeline })

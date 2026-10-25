@@ -1,7 +1,8 @@
 import { useDeferredValue, useEffect, useId, useRef, useState } from 'react'
 import { Search } from 'lucide-react'
 import { Kbd } from '../../ui/Text'
-import { filterCommands, type Command } from './commands'
+import { filterCommands, withRecentFirst, type Command } from './commands'
+import { loadRecent, saveRecent } from './recents'
 
 /** No commands from the query (the default). */
 const NONE = () => []
@@ -25,7 +26,12 @@ export function CommandPalette({
   const input = useRef<HTMLInputElement>(null)
   const listId = useId()
   const deferred = useDeferredValue(query)
-  const results = [...forQuery(deferred), ...filterCommands(commands, deferred)]
+  // Read once per opening (callers remount it): what was run last is listed first.
+  const [recent] = useState(loadRecent)
+  const results = deferred.trim()
+    ? [...forQuery(deferred), ...filterCommands(commands, deferred)]
+    : withRecentFirst(commands, recent)
+  const recentIds = new Set(deferred.trim() ? [] : recent)
   const current = Math.min(active, Math.max(results.length - 1, 0))
 
   // Callers remount (via `key`) to reset; focus the search box on every mount.
@@ -33,8 +39,15 @@ export function CommandPalette({
     input.current?.focus()
   }, [])
 
+  // Said aloud (and shown) when a command that can't run is picked.
+  const [refused, setRefused] = useState<string | null>(null)
   const run = (c: Command | undefined) => {
     if (!c) return
+    if (c.disabled) {
+      setRefused(`${c.title}: ${c.disabled}`)
+      return
+    }
+    saveRecent(c.id)
     onClose()
     void c.run()
   }
@@ -75,11 +88,15 @@ export function CommandPalette({
           onChange={(e) => {
             setQuery(e.target.value)
             setActive(0)
+            setRefused(null)
           }}
           onKeyDown={onKeyDown}
         />
         <Kbd>Esc</Kbd>
       </div>
+      <p className="palette-refused" role="status">
+        {refused}
+      </p>
       <ul id={listId} role="listbox" aria-label="Commands" className="palette-list">
         {results.length === 0 ? (
           <li className="palette-empty muted" role="presentation">
@@ -94,12 +111,17 @@ export function CommandPalette({
               id={optionId(i)}
               role="option"
               aria-selected={i === current}
-              className={`palette-item${i === current ? ' is-active' : ''}`}
+              aria-disabled={c.disabled ? true : undefined}
+              className={`palette-item${i === current ? ' is-active' : ''}${c.disabled ? ' is-disabled' : ''}`}
               onMouseMove={() => i !== current && setActive(i)}
               onClick={() => run(c)}
             >
-              <span>{c.title}</span>
+              <span className="palette-title">
+                <span>{c.title}</span>
+                {c.disabled ? <span className="muted palette-reason">{c.disabled}</span> : null}
+              </span>
               <span className="palette-meta">
+                {recentIds.has(c.id) ? <span className="muted">Recent</span> : null}
                 {c.shortcut ? <Kbd>{c.shortcut}</Kbd> : null}
                 {c.group === 'Go to' ? null : <span className="muted">{c.group}</span>}
               </span>

@@ -4,6 +4,9 @@ import {
   buildCommands,
   filterCommands,
   queryCommands,
+  rememberRecent,
+  withRecentFirst,
+  RECENT_LIMIT,
   type CommandContext,
 } from '../../src/renderer/features/palette/commands'
 
@@ -27,6 +30,18 @@ const ctx = (over: Partial<CommandContext> = {}): CommandContext => ({
   utility: vi.fn(),
   quickLinks: [],
   openLink: vi.fn(),
+  devServers: [],
+  configured: { bitbucket: true, jenkins: true, jira: true },
+  prActions: [],
+  buildWatches: [],
+  finishedBuilds: false,
+  unwatchBuild: vi.fn(),
+  clearFinishedBuilds: vi.fn(),
+  devServer: vi.fn(),
+  issues: [],
+  startWork: vi.fn(),
+  watches: [],
+  unwatch: vi.fn(),
   ...over,
 })
 
@@ -72,6 +87,7 @@ describe('repo commands', () => {
       'New branch — web-app',
       'Push branch — web-app',
       'Sync fork — web-app',
+      'Start dev server — web-app',
       'Open in VS Code — web-app',
       'Open terminal — web-app',
       'Reveal in Finder — web-app',
@@ -221,5 +237,141 @@ describe('Utilities in the palette (SPEC 6.1 / 6.6)', () => {
     expect(c.utility).toHaveBeenCalledWith({ tab: 'standup' })
     void filterCommands(utils, 'review comments')[0]!.run()
     expect(c.utility).toHaveBeenCalledWith({ tab: 'lessons' })
+  })
+})
+
+describe('palette completeness (P6.01)', () => {
+  const repo = { id: 'r1', name: 'web-app' }
+
+  it('dev server per repo: Start; Stop asks first, and only where a dialog can show', () => {
+    const find = (c: CommandContext) =>
+      buildCommands(c, VIEWS).find((x) => x.id === 'repo:r1:devserver')
+    expect(find(ctx({ repos: [repo] }))!.title).toBe('Start dev server — web-app')
+    const running = [{ repoId: 'r1', running: true }]
+    // The palette window has no confirm: no Stop there.
+    expect(find(ctx({ repos: [repo], devServers: running }))).toBeUndefined()
+    const confirm = vi.fn()
+    const c = ctx({ repos: [repo], devServers: running, confirm })
+    const stop = find(c)!
+    expect(stop.title).toBe('Stop dev server — web-app…')
+    void stop.run()
+    expect(c.devServer).not.toHaveBeenCalled()
+    expect(confirm).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Stop the dev server for web-app?',
+        confirmLabel: 'Stop dev server',
+      }),
+    )
+    void (confirm.mock.calls[0]![0] as { run: () => void }).run()
+    expect(c.devServer).toHaveBeenCalledWith('r1', false)
+  })
+
+  it('PR actions (when turned on and a dialog can show) and build watches', () => {
+    const base = {
+      prActions: [{ key: 'k1', label: 'web-app #412', action: 'approve' as const }],
+      buildWatches: [{ key: 'b1', label: 'web-app › develop #230' }],
+      finishedBuilds: true,
+    }
+    expect(buildCommands(ctx(base), VIEWS).some((x) => x.id.startsWith('pr:approve'))).toBe(false)
+    const prAction = vi.fn()
+    const c = ctx({ ...base, prAction })
+    const all = buildCommands(c, VIEWS)
+    const approve = all.find((x) => x.id === 'pr:approve:k1')!
+    expect(approve.title).toBe('Approve web-app #412…')
+    void approve.run()
+    expect(prAction).toHaveBeenCalledWith('k1', 'approve')
+    void all.find((x) => x.id === 'build:unwatch:b1')!.run()
+    expect(c.unwatchBuild).toHaveBeenCalledWith('b1')
+    void all.find((x) => x.id === 'build:clear-finished')!.run()
+    expect(c.clearFinishedBuilds).toHaveBeenCalled()
+  })
+
+  it('says why a command is off: no repo for Start work, a service not set up', () => {
+    const c = ctx({
+      issues: [{ key: 'DD-101', summary: 'Checkout total' }],
+      configured: { bitbucket: false, jenkins: true, jira: true },
+    })
+    const all = buildCommands(c, VIEWS)
+    expect(all.find((x) => x.id === 'ticket:start:DD-101')!.disabled).toBe(
+      'Add a repo first: Start work makes the branch there',
+    )
+    expect(queryCommands('branch DD-101', c)[0]!.disabled).toMatch(/^Add a repo first/)
+    const noJira = ctx({
+      repos: [repo],
+      configured: { bitbucket: true, jenkins: true, jira: false },
+    })
+    expect(queryCommands('branch DD-101', noJira)[0]!.disabled).toBe(
+      'Set up Jira in Settings first',
+    )
+    expect(all.find((x) => x.id === 'pr:watch')!.disabled).toBe(
+      'Set up Bitbucket in Settings first',
+    )
+    expect(all.find((x) => x.id === 'build:pipeline')!.disabled).toBeUndefined()
+  })
+
+  it('Start work on each open issue; Stop watching each watched PR', () => {
+    const c = ctx({
+      repos: [repo],
+      issues: [{ key: 'DD-101', summary: 'Checkout total' }],
+      watches: [{ key: 'w1', label: 'web-app #412' }],
+    })
+    const all = buildCommands(c, VIEWS)
+    void filterCommands(all, 'dd-101')[0]!.run()
+    expect(c.startWork).toHaveBeenCalledWith('DD-101')
+    void filterCommands(all, 'stop watching 412')[0]!.run()
+    expect(c.unwatch).toHaveBeenCalledWith('w1')
+  })
+
+  it('`branch <KEY>` starts work (preview first); a non-key says so and opens Tickets', () => {
+    const c = ctx({ repos: [repo] })
+    const [cmd, ...rest] = queryCommands('branch dd-101', c)
+    expect(rest).toEqual([])
+    expect(cmd!.title).toBe('Start work on DD-101…')
+    void cmd!.run()
+    expect(c.startWork).toHaveBeenCalledWith('DD-101')
+    const [bad] = queryCommands('branch hello', c)
+    expect(bad!.title).toMatch(/isn't a Jira key/)
+    void bad!.run()
+    expect(c.goto).toHaveBeenCalledWith('tickets')
+  })
+
+  it('`open <link name>`: matching quick links, names starting with it first', () => {
+    const c = ctx({
+      quickLinks: [
+        { id: 'a', name: 'AWS orders', url: 'https://aws.example.com/a', group: '' },
+        { id: 'b', name: 'Orders dashboard', url: 'https://d.example.com/b', group: '' },
+        { id: 'c', name: 'Figma', url: 'https://figma.com/c', group: '' },
+      ],
+    })
+    expect(queryCommands('open orders', c).map((x) => x.title)).toEqual([
+      'Open Orders dashboard',
+      'Open AWS orders',
+    ])
+    void queryCommands('open fig', c)[0]!.run()
+    expect(c.openLink).toHaveBeenCalledWith('https://figma.com/c')
+    expect(queryCommands('open nothing-like-it', c)).toEqual([])
+  })
+
+  it('recent commands first, most recent on top; forgotten ones drop out; capped', () => {
+    const all = buildCommands(ctx(), VIEWS)
+    let recent: string[] = []
+    recent = rememberRecent(recent, 'go:builds')
+    recent = rememberRecent(recent, 'app:quit')
+    recent = rememberRecent(recent, 'go:builds')
+    recent = rememberRecent(recent, 'repo:gone:fetch')
+    const ordered = withRecentFirst(all, recent)
+    expect(ordered.slice(0, 2).map((c) => c.id)).toEqual(['go:builds', 'app:quit'])
+    expect(ordered).toHaveLength(all.length)
+    for (let i = 0; i < 20; i++) recent = rememberRecent(recent, `x${i}`)
+    expect(recent).toHaveLength(RECENT_LIMIT)
+  })
+
+  it("ranks commands that can run above ones that can't", () => {
+    const c = ctx({
+      issues: [{ key: 'DD-106', summary: 'Export orders as CSV' }],
+      quickLinks: [{ id: 'a', name: 'Orders dashboard', url: 'https://x.example.com', group: '' }],
+    })
+    const found = filterCommands(buildCommands(c, VIEWS), 'orders')
+    expect(found.map((x) => x.id)).toEqual(['link:a', 'ticket:start:DD-106'])
   })
 })

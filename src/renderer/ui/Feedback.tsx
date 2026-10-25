@@ -54,6 +54,15 @@ export function EmptyState({
 }
 
 /** What failed and what to do, with the technical part behind "Details". */
+/** "Loading …" while something arrives (announced politely). */
+export function Loading({ what }: { what: string }) {
+  return (
+    <p className="muted" role="status">
+      Loading {what}…
+    </p>
+  )
+}
+
 export function ErrorNotice({ error }: { error: unknown }) {
   const message = error instanceof Error ? error.message : String(error)
   return (

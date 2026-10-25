@@ -9,8 +9,10 @@ import { useRepos } from '../../lib/repos'
 import { Button, IconButton } from '../../ui/Button'
 import { SegmentedControl } from '../../ui/Field'
 import { CommandPalette } from '../palette/CommandPalette'
+import { useCommandDialogs } from '../palette/CommandDialogs'
 import { useCommands } from '../palette/useCommands'
 import { ActionDialog } from '../repos/ActionDialog'
+import { StartWorkFor } from '../tickets/StartWorkFor'
 import { goto, openUtility, watch } from './bits'
 import { ReposTab } from './ReposTab'
 import { TicketsTab } from './TicketsTab'
@@ -70,7 +72,17 @@ export function PanelWindow() {
     setStop((prev) => ({ port, n: (prev?.n ?? 0) + 1 }))
     setTab('tools')
   }
-  const { commands, forQuery } = useCommands(goto, requestAction, watch, utility)
+  const [startKey, setStartKey] = useState<string | null>(null)
+  const commandDialogs = useCommandDialogs()
+  const { commands, forQuery } = useCommands({
+    confirm: commandDialogs.confirm,
+    prAction: commandDialogs.prAction,
+    goto,
+    requestAction,
+    watch,
+    utility,
+    startWork: setStartKey,
+  })
   const repos = useRepos()
   const requestedRepo = requested ? repos.find((r) => r.id === requested.id) : undefined
 
@@ -121,6 +133,10 @@ export function PanelWindow() {
         </Button>
       </footer>
 
+      {commandDialogs.dialogs}
+      {startKey ? (
+        <StartWorkFor issueKey={startKey} onClose={() => setStartKey(null)} onView={goto} />
+      ) : null}
       {requested && requestedRepo ? (
         <ActionDialog
           key={`${requested.id}:${requested.request.action}`}

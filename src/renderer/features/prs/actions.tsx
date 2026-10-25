@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { Check, GitMerge, MessageSquareWarning } from 'lucide-react'
-import type { PrAction, PullRequest } from '@shared/bitbucket'
+import type { PrAction, PrList, PullRequest } from '@shared/bitbucket'
 
 /** Everything the UI says about a PR action: its button, dialog and result toast. */
 export interface ActionCopy {
@@ -47,4 +47,13 @@ export const ACTION_COPY: Record<PrAction, ActionCopy> = {
     explain: (pr) =>
       `DevDock merges ${pr.sourceBranch} into ${pr.targetBranch} on Bitbucket with the repository's default merge strategy. This can't be undone from DevDock.`,
   },
+}
+
+/** Once PR actions are on: merge your own PRs, review everyone else's (Watched mixes both). */
+export const MINE: readonly PrAction[] = ['merge']
+export const OTHERS: readonly PrAction[] = ['approve', 'needs_work']
+export const LIST_ACTIONS: Record<PrList, readonly PrAction[]> = {
+  mine: MINE,
+  reviewing: OTHERS,
+  merged: [],
 }

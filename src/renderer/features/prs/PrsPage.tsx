@@ -25,18 +25,10 @@ import { RefreshButton } from '../../ui/RefreshButton'
 import { EmptyState, ErrorNotice, useToast } from '../../ui/Feedback'
 import { Field, Input, SegmentedControl } from '../../ui/Field'
 import { ago, prLabel } from './PrBits'
+import { LIST_ACTIONS, MINE, OTHERS } from './actions'
 import { PrRow } from './PrRow'
 
 type Tab = PrList | 'watched'
-
-/** Once PR actions are on: merge your own PRs, review everyone else's (Watched mixes both). */
-const MINE: readonly PrAction[] = ['merge']
-const OTHERS: readonly PrAction[] = ['approve', 'needs_work']
-const LIST_ACTIONS: Record<PrList, readonly PrAction[]> = {
-  mine: MINE,
-  reviewing: OTHERS,
-  merged: [],
-}
 
 /** SPEC 6.3: My PRs, Reviewing, Recently merged, and the Watched list with its paste field. */
 export function PrsPage({ onView }: { onView: (v: View) => void }) {
