@@ -738,13 +738,14 @@ main:focus {
 
 .download {
   display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-4);
   margin-top: var(--space-6);
   align-items: start;
 }
 
 .download-primary {
+  max-width: 560px;
   padding: var(--space-6);
   border-color: var(--accent);
   border-width: 2px;
@@ -1062,8 +1063,7 @@ dialog::backdrop {
 /* ------------------------------------------------------------------ responsive */
 
 @media (max-width: 960px) {
-  .hero-grid,
-  .download {
+  .hero-grid {
     grid-template-columns: minmax(0, 1fr);
   }
 
@@ -1118,9 +1118,60 @@ dialog::backdrop {
     padding: var(--space-5);
   }
 
+  /* Tables become stacked rows on phones. */
+  .installers thead,
+  .keys thead {
+    display: none;
+  }
+
+  .installers tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+    padding: var(--space-4) 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .installers tbody tr:first-child {
+    border-top: 0;
+  }
+
+  .installers th,
+  .installers td,
+  .keys td {
+    padding: 0;
+    border: 0;
+  }
+
+  .installers tbody th,
+  .installers td:nth-child(2) {
+    grid-column: 1 / -1;
+  }
+
+  .installers td.num {
+    text-align: left;
+  }
+
   .installers .file {
     white-space: normal;
     overflow-wrap: anywhere;
+  }
+
+  .keys tr {
+    display: block;
+    padding: var(--space-3) 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .keys td {
+    display: inline-block;
+    margin-right: var(--space-3);
+  }
+
+  .keys td:last-child {
+    display: block;
+    margin-top: var(--space-1);
   }
 }
 
