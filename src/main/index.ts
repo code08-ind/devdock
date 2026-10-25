@@ -3,6 +3,7 @@
  * Services are plain classes with injected Electron adapters (see ./services).
  */
 import { writeFile } from 'node:fs/promises'
+import { createRequire } from 'node:module'
 import { homedir, userInfo } from 'node:os'
 import { join } from 'node:path'
 import type { OpenTarget } from '@shared/repos'
@@ -18,6 +19,7 @@ import {
   safeStorage,
   session,
   shell,
+  webContents,
   type IpcMainInvokeEvent,
   type Rectangle,
 } from 'electron'
@@ -60,6 +62,7 @@ import { NotificationService, type NativeNotifier } from './services/notificatio
 import { SecretStore } from './services/secrets'
 import { SettingsStore } from './services/settings'
 import { ShortcutService } from './services/shortcut'
+import { TerminalManager, type PtySpawn } from './services/terminal/manager'
 import { createTray, watchedForTray, type TrayHandle } from './tray'
 import {
   createMainWindow,
@@ -95,6 +98,18 @@ const PANEL_REOPEN_GUARD_MS = 300
 let panelPinned = false
 let tray: TrayHandle | null = null
 let quitting = false
+
+/**
+ * node-pty is the one native module (P7-A): loaded on the first terminal, not at start, so a
+ * PTY problem can't stop DevDock from starting and launch stays fast. Kept out of the bundle
+ * (see electron.vite.config.ts) and unpacked from the asar (electron-builder.yml).
+ */
+type NodePty = { spawn: PtySpawn }
+let nodePty: NodePty | null = null
+const spawnPty: PtySpawn = (file, args, options) => {
+  nodePty ??= createRequire(import.meta.url)('node-pty') as NodePty
+  return nodePty.spawn(file, args, options)
+}
 
 /** Opens a link in the browser only if it passes the allowlist; otherwise logs why not. */
 function openExternalSafe(url: string): void {
@@ -299,6 +314,28 @@ function start(): void {
   })
   void watcher.sync(store.get().repos)
 
+  /** Sends to one window, if it is still there (terminal output goes only to its owner). */
+  const sendTo = <E extends EventChannel>(id: number, event: E, payload: EventPayload<E>) => {
+    const wc = webContents.fromId(id)
+    if (wc && !wc.isDestroyed()) wc.send(event, payload)
+  }
+  const terminal = new TerminalManager({
+    spawn: spawnPty,
+    settings: () => store.get().terminal,
+    onOutput: (owner, e) => sendTo(owner, 'terminal:output', e),
+    onExit: (owner, e) => sendTo(owner, 'terminal:exit', e),
+    promptDir: join(userData, 'terminal'),
+    appVersion: app.getVersion(),
+  })
+  // A window that closes or reloads takes its terminals with it: no shell is left behind.
+  app.on('web-contents-created', (_e, wc) => {
+    const id = wc.id
+    wc.on('destroyed', () => void terminal.killOwner(id))
+    wc.on('did-start-navigation', (details) => {
+      if (details.isMainFrame && !details.isSameDocument) void terminal.killOwner(id)
+    })
+  })
+
   const actions = new GitActions(git)
   const jira = new JiraService({
     http,
@@ -482,6 +519,12 @@ function start(): void {
         showView('repos')
         mainWindow?.webContents.send('repos:actionRequested', event)
       },
+      terminal,
+      home: homedir(),
+      requestTerminal: (repoId) => {
+        showView('terminal')
+        mainWindow?.webContents.send('terminal:requested', { repoId })
+      },
       emitOutput: (event) => {
         // The window may close while git is still running.
         if (mainWindow && !mainWindow.isDestroyed())
@@ -523,7 +566,7 @@ function start(): void {
     if (active) store.update({ general: { paletteShortcut: active } })
   })
 
-  mainWindow = createMainWindow()
+  mainWindow = createMainWindow({ e2e: E2E })
   mainWindow.on('close', (event) => {
     if (quitting) return
     if (store.get().general.closeToTray) {
@@ -585,6 +628,8 @@ function start(): void {
         trayStatus: () => tray?.status() ?? null,
         trayState,
         pollBuilds: () => buildPolling.runNow(),
+        /** PIDs of the in-app terminals' shells (to check closing a tab stops them). */
+        terminalPids: () => terminal.pids(),
       },
     })
   }
@@ -596,6 +641,16 @@ function start(): void {
     event.preventDefault()
     void devServers.stopAll().finally(() => {
       serversStopped = true
+      app.quit()
+    })
+  })
+  // P7-A: the in-app terminals' shells (and what they started) go too.
+  let terminalsStopped = false
+  app.on('before-quit', (event) => {
+    if (terminalsStopped || terminal.count() === 0) return
+    event.preventDefault()
+    void terminal.killAll().finally(() => {
+      terminalsStopped = true
       app.quit()
     })
   })

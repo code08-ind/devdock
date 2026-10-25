@@ -6,14 +6,28 @@ directories:
 files:
   - out/**
   - package.json
-# Small packages (P6.14): every library is bundled into out/ (no node_modules; their licenses
-# are in out/THIRD_PARTY_NOTICES.txt), Electron's UI strings only in English (macOS keeps
-# en.lproj, Windows en-US.pak), maximum compression.
+  # node-pty (P7-A) is the one runtime node_module: only its JS and its own OS's binaries.
+  - '!node_modules/node-pty/{src,deps,third_party,scripts,typings}/**'
+  - '!node_modules/node-pty/binding.gyp'
+  - '!node_modules/node-pty/**/*.pdb'
+  - '!node_modules/node-addon-api/**'
+# Small packages (P6.14): every library is bundled into out/ (no node_modules except node-pty;
+# their licenses are in out/THIRD_PARTY_NOTICES.txt), Electron's UI strings only in English
+# (macOS keeps en.lproj, Windows en-US.pak), maximum compression.
 electronLanguages: [en, en-US]
 compression: maximum
-asarUnpack: []
+# node-pty loads pty.node and starts spawn-helper / winpty-agent from disk, so they can't live
+# inside the asar (node-pty looks in app.asar.unpacked itself).
+asarUnpack:
+  - node_modules/node-pty/prebuilds/**
+# node-pty's prebuilds are N-API (one binary per OS + arch, any Electron), so nothing is
+# compiled at package time: the arm64 DMG loads prebuilds/darwin-arm64, x64 darwin-x64,
+# Windows win32-x64 (DECISIONS P7-A).
+npmRebuild: false
 mac:
   category: public.app-category.developer-tools
+  files:
+    - '!node_modules/node-pty/prebuilds/win32-*/**'
   icon: build/icon.png
   target:
     - target: dmg
@@ -24,6 +38,9 @@ mac:
   identity: null
 win:
   icon: build/icon.ico
+  files:
+    - '!node_modules/node-pty/prebuilds/darwin-*/**'
+    - '!node_modules/node-pty/prebuilds/win32-arm64/**'
   target:
     - target: nsis
       arch: [x64]

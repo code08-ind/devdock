@@ -7,6 +7,7 @@ import { MAX_QUICK_LINKS, QuickLinkSchema } from './links'
 import { ProxyServerSchema } from './diagnostics'
 import { DEFAULT_LESSONS_PATH, LessonsPathSchema } from './lessons'
 import { HolidaySchema } from './standup'
+import { TerminalSettingsSchema } from './terminal'
 
 export const SETTINGS_VERSION = 1
 
@@ -271,6 +272,8 @@ export const SettingsSchema = z.object({
       startDevServerAfterStart: z.boolean().default(false),
     })
     .prefault({}),
+  /** P7-A in-app terminal. */
+  terminal: TerminalSettingsSchema,
   repos: z.array(RepoConfigSchema).default([]),
 })
 
@@ -318,6 +321,7 @@ export const SettingsPatchSchema = z.object({
   quickLinks: z.array(QuickLinkSchema).max(MAX_QUICK_LINKS).optional(),
   workflow: patchOf(SettingsSchema.shape.workflow),
   network: patchOf(SettingsSchema.shape.network),
+  terminal: patchOf(SettingsSchema.shape.terminal),
 })
 
 export type SettingsPatch = z.infer<typeof SettingsPatchSchema>

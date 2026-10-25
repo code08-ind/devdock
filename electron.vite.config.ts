@@ -35,10 +35,12 @@ export default defineConfig({
     resolve: { alias: { '@shared': shared } },
     build: {
       // Everything the main process needs (zod, msw) is bundled: the packaged app carries no
-      // node_modules at all (P6.14, small packages).
+      // node_modules (P6.14, small packages) — except node-pty (P7-A), a native module that
+      // loads its .node binary from disk, so it stays a runtime dependency (DECISIONS P7-A).
       externalizeDeps: false,
       rolldownOptions: {
         input: { index: resolve(import.meta.dirname, 'src/main/index.ts') },
+        external: ['node-pty'],
       },
     },
   },

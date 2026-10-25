@@ -112,6 +112,14 @@ export const INVOKE_CHANNELS = [
   'utilities:request',
   /** Palette window → main window: Start work on a ticket (`branch NM-1234`). */
   'tickets:request',
+  /** P7-A in-app terminal: real PTYs in main, owned by the window that made them. */
+  'terminal:create',
+  'terminal:write',
+  'terminal:resize',
+  'terminal:kill',
+  'terminal:list',
+  /** Palette window / panel → main window: open a DevDock terminal (in a repo or home). */
+  'terminal:request',
 ] as const
 
 /** Events pushed from main to renderer. */
@@ -135,6 +143,10 @@ export const EVENT_CHANNELS = [
   'buildwatch:changed',
   'utilities:requested',
   'tickets:requested',
+  /** PTY output, batched (~16 ms), only to the window that owns the session. */
+  'terminal:output',
+  'terminal:exit',
+  'terminal:requested',
 ] as const
 
 export type InvokeChannel = (typeof INVOKE_CHANNELS)[number]
@@ -149,6 +161,7 @@ export const VIEWS = [
   'builds',
   'tickets',
   'utilities',
+  'terminal',
   'settings',
 ] as const
 export type View = (typeof VIEWS)[number]

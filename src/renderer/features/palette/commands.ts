@@ -45,6 +45,7 @@ export const VIEW_LABELS: Record<View, string> = {
   builds: 'Builds',
   tickets: 'Tickets',
   utilities: 'Utilities',
+  terminal: 'Terminal',
   settings: 'Settings',
 }
 
@@ -55,6 +56,7 @@ const VIEW_KEYWORDS: Partial<Record<View, string[]>> = {
   tickets: ['jira', 'issues'],
   repos: ['git', 'branches'],
   utilities: ['ports', 'env', 'links', 'standup', 'lessons'],
+  terminal: ['shell', 'zsh', 'console', 'command line', 'pty'],
   settings: ['preferences', 'options'],
 }
 

@@ -15,12 +15,16 @@ export const PANEL = { width: 400, height: 600 }
 
 const preload = join(import.meta.dirname, '../preload/index.cjs')
 
-function load(win: BrowserWindow, page: Page): Promise<void> {
-  if (DEV_RENDERER_URL) return win.loadURL(`${DEV_RENDERER_URL}/${page}.html`)
-  return win.loadFile(join(import.meta.dirname, `../renderer/${page}.html`))
+/** `e2e`: the page gets `?e2e=1` and exposes its test hook (never in a packaged app). */
+function load(win: BrowserWindow, page: Page, e2e = false): Promise<void> {
+  if (DEV_RENDERER_URL) return win.loadURL(`${DEV_RENDERER_URL}/${page}.html${e2e ? '?e2e=1' : ''}`)
+  return win.loadFile(
+    join(import.meta.dirname, `../renderer/${page}.html`),
+    e2e ? { query: { e2e: '1' } } : undefined,
+  )
 }
 
-export function createMainWindow(): BrowserWindow {
+export function createMainWindow({ e2e = false }: { e2e?: boolean } = {}): BrowserWindow {
   const win = new BrowserWindow({
     title: 'DevDock',
     // Roomy like other desktop toolboxes (user request, P6-A); still fits a 1280×800 screen.
@@ -32,7 +36,7 @@ export function createMainWindow(): BrowserWindow {
     webPreferences: { ...WEB_PREFERENCES, preload },
   })
   win.once('ready-to-show', () => win.show())
-  void load(win, 'index')
+  void load(win, 'index', e2e)
   return win
 }
 

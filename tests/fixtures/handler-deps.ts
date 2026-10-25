@@ -6,6 +6,8 @@ import type { HandlerDeps } from '../../src/main/handlers'
 import type { HandlerMap } from '../../src/main/ipc/registry'
 import type { GitRunner } from '../../src/main/services/git/exec'
 import type { RepoOutputEvent } from '../../src/shared/repos'
+import type { TerminalExitEvent, TerminalOutputEvent } from '../../src/shared/terminal'
+import { fakeSpawn, type FakePty } from './pty'
 
 /** HandlerDeps with the Electron adapters exposed as mocks, so tests can stub and inspect them. */
 export type TestDeps = HandlerDeps & {
@@ -15,6 +17,7 @@ export type TestDeps = HandlerDeps & {
   openRepo: Mock<HandlerDeps['openRepo']>
   emitOutput: Mock<(e: RepoOutputEvent) => void>
   writeClipboard: Mock<(text: string) => void>
+  requestTerminal: Mock<(repoId: string | null) => void>
 }
 
 export interface HandlerSetup {
@@ -22,6 +25,9 @@ export interface HandlerSetup {
   handlers: HandlerMap
   output: RepoOutputEvent[]
   git: GitRunner
+  /** Fake PTYs the terminal handlers started, and what they sent to which window. */
+  ptys: FakePty[]
+  terminalEvents: { owner: number; output?: TerminalOutputEvent; exit?: TerminalExitEvent }[]
 }
 
 /**
@@ -109,7 +115,23 @@ export async function handlerSetup(
     myWork: async () => ({ branches: [], prs: [] }),
     demo: DEMO_JENKINS,
   })
+  const { TerminalManager } = await import('../../src/main/services/terminal/manager')
+  const pty = fakeSpawn()
+  const terminalEvents: HandlerSetup['terminalEvents'] = []
+  const terminal = new TerminalManager({
+    spawn: pty.spawn,
+    settings: () => settings.get().terminal,
+    onOutput: (owner, output) => terminalEvents.push({ owner, output }),
+    onExit: (owner, exit) => terminalEvents.push({ owner, exit }),
+    promptDir: join(dir, 'terminal'),
+    batchMs: 1,
+    killGraceMs: 50,
+    signal: () => undefined,
+  })
   const deps: TestDeps = {
+    terminal,
+    home: dir,
+    requestTerminal: vi.fn(),
     settings,
     secrets,
     notifications,
@@ -207,5 +229,5 @@ export async function handlerSetup(
       openEditor: (repo) => openRepo(repo, 'editor'),
     }),
   }
-  return { deps, handlers: createHandlers(deps), output, git }
+  return { deps, handlers: createHandlers(deps), output, git, ptys: pty.ptys, terminalEvents }
 }

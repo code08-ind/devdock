@@ -34,6 +34,9 @@ import { SecretsUnavailableError, type SecretStore } from './services/secrets'
 import { ServiceError, type ServiceErrorKind } from './services/service-error'
 import type { SettingsStore } from './services/settings'
 import type { ShortcutService } from './services/shortcut'
+import { TerminalError, type TerminalManager } from './services/terminal/manager'
+import { stat } from 'node:fs/promises'
+import type { IpcMainInvokeEvent } from 'electron'
 
 /** Everything the handlers touch, injected so they can be tested without Electron. */
 export interface HandlerDeps {
@@ -84,6 +87,12 @@ export interface HandlerDeps {
   requestTicket: (key: string) => void
   /** Brings up the main window's action dialog (from the palette window). */
   requestRepoAction: (event: { id: string; request: ActionRequest }) => void
+  /** P7-A: the in-app terminal's PTYs. */
+  terminal: TerminalManager
+  /** Where a terminal starts when it isn't opened for a repo. */
+  home: string
+  /** Shows the main window's Terminal view with a new tab (from the palette window / panel). */
+  requestTerminal: (repoId: string | null) => void
 }
 
 const GIT_CODES: Record<GitErrorKind, ErrorCode> = {
@@ -243,6 +252,31 @@ function withWatch<T>(fn: () => Promise<T> | T): Promise<T> {
       throw err
     }
   })
+}
+
+const TERMINAL_CODES: Record<TerminalError['kind'], ErrorCode> = {
+  'not-found': 'NOT_FOUND',
+  limit: 'PRECONDITION_FAILED',
+  shell: 'PRECONDITION_FAILED',
+  failed: 'INTERNAL',
+}
+
+/** The window asking: terminals belong to the webContents that made them. */
+function terminalOwner(event: IpcMainInvokeEvent | null): number {
+  if (!event) throw new IpcError('FORBIDDEN', 'Terminals can only be used from a DevDock window.')
+  return event.sender.id
+}
+
+/** Terminal calls: typed failures (unknown or someone else's session → NOT_FOUND). */
+async function withTerminal<T>(fn: () => Promise<T> | T): Promise<T> {
+  try {
+    return await withGit(fn)
+  } catch (err) {
+    if (err instanceof TerminalError) {
+      throw new IpcError(TERMINAL_CODES[err.kind], err.message, err.details)
+    }
+    throw err
+  }
 }
 
 /** Start work touches Jira, git and the file system: map each kind of failure. */
@@ -467,6 +501,46 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
       withGit(() => {
         deps.repos.get(id)
         deps.requestRepoAction({ id, request })
+      }),
+    // P7-A. The renderer never sends a path: a terminal starts in a registered repo (looked
+    // up here) or in the home folder.
+    'terminal:create': ({ repoId, cols, rows }, event) =>
+      withTerminal(async () => {
+        const owner = terminalOwner(event)
+        const repo = repoId ? deps.repos.get(repoId) : null
+        const cwd = repo ? repo.path : deps.home
+        const isDir = await stat(cwd).then(
+          (s) => s.isDirectory(),
+          () => false,
+        )
+        if (!isDir) {
+          throw new IpcError(
+            'NOT_FOUND',
+            repo
+              ? `The folder for ${repo.name} is missing. Check it in Repos.`
+              : 'Your home folder could not be opened.',
+          )
+        }
+        return deps.terminal.create({
+          owner,
+          cwd,
+          title: repo ? repo.name : 'Home',
+          repoId: repo ? repo.id : null,
+          cols,
+          rows,
+        })
+      }),
+    'terminal:write': ({ id, data }, event) =>
+      withTerminal(() => deps.terminal.write(terminalOwner(event), id, data)),
+    'terminal:resize': ({ id, cols, rows }, event) =>
+      withTerminal(() => deps.terminal.resize(terminalOwner(event), id, cols, rows)),
+    'terminal:kill': ({ id }, event) =>
+      withTerminal(() => deps.terminal.kill(terminalOwner(event), id)),
+    'terminal:list': (_req, event) => deps.terminal.list(terminalOwner(event)),
+    'terminal:request': ({ repoId }) =>
+      withGit(() => {
+        if (repoId) deps.repos.get(repoId)
+        deps.requestTerminal(repoId)
       }),
   }
 }

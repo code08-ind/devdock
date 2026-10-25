@@ -54,6 +54,16 @@ import {
 import { DiagnosticsSchema } from './diagnostics'
 import { StandupDraftSchema } from './standup'
 import {
+  TerminalCreateSchema,
+  TerminalRefSchema,
+  TerminalRequestSchema,
+  TerminalResizeSchema,
+  TerminalSessionSchema,
+  TerminalWriteSchema,
+  type TerminalExitEvent,
+  type TerminalOutputEvent,
+} from './terminal'
+import {
   CachePlanSchema,
   CleanRequestSchema,
   CleanResultSchema,
@@ -295,6 +305,14 @@ export const contract = {
     req: z.object({ id: z.string(), request: ActionRequestSchema }),
     res: none,
   },
+  'terminal:create': { req: TerminalCreateSchema, res: TerminalSessionSchema },
+  'terminal:write': { req: TerminalWriteSchema, res: none },
+  'terminal:resize': { req: TerminalResizeSchema, res: none },
+  /** Closing a tab: the shell and what it started are stopped. */
+  'terminal:kill': { req: TerminalRefSchema, res: none },
+  /** This window's sessions. */
+  'terminal:list': { req: none, res: z.array(TerminalSessionSchema) },
+  'terminal:request': { req: TerminalRequestSchema, res: none },
 } satisfies Record<InvokeChannel, { req: z.ZodType; res: z.ZodType }>
 
 export type Contract = typeof contract
@@ -357,5 +375,8 @@ export interface EventPayloads {
   'buildwatch:changed': BuildWatch[]
   'utilities:requested': z.infer<typeof UtilityRequestSchema>
   'tickets:requested': { key: string }
+  'terminal:output': TerminalOutputEvent
+  'terminal:exit': TerminalExitEvent
+  'terminal:requested': { repoId: string | null }
 }
 export type EventPayload<E extends EventChannel> = EventPayloads[E]
