@@ -23,6 +23,13 @@ import {
   type WatchItem,
 } from './bitbucket'
 import {
+  BranchesResultSchema,
+  BuildDetailSchema,
+  BuildRefSchema,
+  ConsoleChunkSchema,
+  JenkinsConnectionSchema,
+} from './jenkins'
+import {
   IssueKeySchema,
   JiraConnectionSchema,
   JiraIssueDetailSchema,
@@ -179,6 +186,19 @@ export const contract = {
   'watch:add': { req: z.object({ link: z.string().min(1).max(2000) }), res: WatchItemSchema },
   'watch:remove': { req: z.object({ key: z.string().min(1).max(400) }), res: none },
   'watch:request': { req: z.object({ link: z.string().min(1).max(2000) }), res: none },
+  'jenkins:testConnection': { req: none, res: JenkinsConnectionSchema },
+  'jenkins:branches': { req: none, res: BranchesResultSchema },
+  'jenkins:build': { req: BuildRefSchema, res: BuildDetailSchema },
+  'jenkins:console': {
+    req: BuildRefSchema.extend({
+      start: z
+        .number()
+        .int()
+        .nonnegative()
+        .max(2 ** 40),
+    }),
+    res: ConsoleChunkSchema,
+  },
   /** Read-only: branch name, commands, brief path + .gitignore check, agent and message. */
   'startwork:plan': { req: StartWorkRequestSchema, res: StartWorkPlanSchema },
   'startwork:run': { req: StartWorkRunSchema, res: StartWorkResultSchema },

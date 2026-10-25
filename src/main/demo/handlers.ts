@@ -1,5 +1,6 @@
 import { http, HttpResponse, type RequestHandler } from 'msw'
 import { bitbucketHandlers } from './bitbucket'
+import { jenkinsHandlers } from './jenkins'
 import { jiraHandlers } from './jira'
 import { DEMO_ORIGIN } from './origin'
 
@@ -11,5 +12,5 @@ export const coreHandlers: RequestHandler[] = [
 
 /** Every adapter's demo fixtures. Adapters added in later phases register theirs here. */
 export function demoHandlers(): RequestHandler[] {
-  return [...coreHandlers, ...jiraHandlers, ...bitbucketHandlers()]
+  return [...coreHandlers, ...jiraHandlers, ...bitbucketHandlers(), ...jenkinsHandlers()]
 }

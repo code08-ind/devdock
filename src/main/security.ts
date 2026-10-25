@@ -154,11 +154,13 @@ export function linkHosts(settings: Settings, demo: boolean): string[] {
 
 /** Hosts of the services configured in Settings (links to them may be opened). */
 function serviceHosts(settings: Settings): string[] {
-  return [settings.jira.baseUrl, settings.bitbucket.baseUrl].flatMap((url) => {
-    try {
-      return url ? [new URL(url).hostname] : []
-    } catch {
-      return []
-    }
-  })
+  return [settings.jira.baseUrl, settings.bitbucket.baseUrl, settings.jenkins.baseUrl].flatMap(
+    (url) => {
+      try {
+        return url ? [new URL(url).hostname] : []
+      } catch {
+        return []
+      }
+    },
+  )
 }

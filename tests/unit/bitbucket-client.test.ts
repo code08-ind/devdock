@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import {
-  BitbucketClient,
-  mapLimit,
-  type BitbucketConfig,
-} from '../../src/main/services/bitbucket/client'
+import { BitbucketClient, type BitbucketConfig } from '../../src/main/services/bitbucket/client'
+import { mapLimit } from '../../src/main/services/async'
 import { detectBitbucket } from '../../src/main/services/bitbucket/detect'
 import { ServiceError } from '../../src/main/services/service-error'
 import { summariseBuilds } from '../../src/shared/bitbucket'

@@ -27,10 +27,13 @@ import { GitRunner } from './services/git/exec'
 import { remoteUrls } from './services/git/repo'
 import { editorCommand, editorFallback, launchDetached, terminalCommand } from './services/open'
 import { DEMO_BITBUCKET } from './demo/bitbucket'
+import { DEMO_JENKINS } from './demo/jenkins'
 import { DEMO_JIRA } from './demo/jira'
 import { BitbucketService } from './services/bitbucket/service'
 import { PrWatcher } from './services/bitbucket/watcher'
 import { Scheduler } from './services/scheduler'
+import { collectMyWork } from './services/jenkins/mine'
+import { JenkinsService } from './services/jenkins/service'
 import { JiraService } from './services/jira/service'
 import { StartWorkService } from './services/startwork'
 import { DevServerManager } from './services/process/devserver'
@@ -223,6 +226,13 @@ function start(): void {
     notify: (n) => notifications.notify(n),
     onChange: () => broadcast('watch:changed', prWatcher.list()),
   })
+  const jenkins = new JenkinsService({
+    http,
+    settings: () => store.get(),
+    token: () => secrets.get('jenkins.token'),
+    myWork: () => collectMyWork(git, store.get().repos, () => bitbucket.list('mine')),
+    demo: DEMO_JENKINS,
+  })
   // SPEC 6.3: 60 s while a DevDock window has focus, 3 min otherwise (Settings → Polling).
   const prPolling = new Scheduler({
     name: 'pr watcher',
@@ -286,6 +296,7 @@ function start(): void {
       jira,
       bitbucket,
       prWatcher,
+      jenkins,
       startWork: new StartWorkService({
         jira,
         actions,

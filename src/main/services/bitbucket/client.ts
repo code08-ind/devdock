@@ -10,6 +10,7 @@ import {
   type RepoRef,
 } from '@shared/bitbucket'
 import type { HttpClient } from '../http'
+import { mapLimit } from '../async'
 import { requestJson } from '../rest'
 import { serverMessage, type BitbucketAdapter, type Call, type Me, type PrBase } from './adapter'
 import { ServiceError } from '../service-error'
@@ -134,22 +135,4 @@ function withServerWords(err: unknown): unknown {
     retryAfterSec: err.retryAfterSec,
     details: err.details,
   })
-}
-
-/** `Promise.all(items.map(fn))` with at most `limit` calls running; keeps the order. */
-export async function mapLimit<T, R>(
-  items: T[],
-  limit: number,
-  fn: (item: T) => Promise<R>,
-): Promise<R[]> {
-  const out: R[] = new Array<R>(items.length)
-  let next = 0
-  const worker = async () => {
-    while (next < items.length) {
-      const i = next++
-      out[i] = await fn(items[i]!)
-    }
-  }
-  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker))
-  return out
 }

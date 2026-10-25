@@ -59,6 +59,12 @@ export const INVOKE_CHANNELS = [
   'watch:remove',
   /** Palette window → main window: show PRs and watch this link there (result as a toast). */
   'watch:request',
+  'jenkins:testConnection',
+  /** SPEC 6.4 "My branches": last build of each branch I have locally or in open PRs. */
+  'jenkins:branches',
+  'jenkins:build',
+  /** Console from a byte offset (progressive text). */
+  'jenkins:console',
   'startwork:plan',
   'startwork:run',
 ] as const

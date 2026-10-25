@@ -48,6 +48,8 @@ export async function handlerSetup(
   const { DEMO_BITBUCKET } = await import('../../src/main/demo/bitbucket')
   const { StartWorkService } = await import('../../src/main/services/startwork')
   const { PrWatcher } = await import('../../src/main/services/bitbucket/watcher')
+  const { JenkinsService } = await import('../../src/main/services/jenkins/service')
+  const { DEMO_JENKINS } = await import('../../src/main/demo/jenkins')
 
   const dir = mkdtempSync(join(tmpdir(), 'devdock-handlers-'))
   const settings = new SettingsStore(join(dir, 'settings.json'))
@@ -128,6 +130,13 @@ export async function handlerSetup(
       bitbucket,
       notify: (n) => notifications.notify(n),
       onChange: vi.fn(),
+    }),
+    jenkins: new JenkinsService({
+      http,
+      settings: () => settings.get(),
+      token: () => secrets.get('jenkins.token'),
+      myWork: async () => ({ branches: [], prs: [] }),
+      demo: DEMO_JENKINS,
     }),
     writeClipboard,
     startWork: new StartWorkService({

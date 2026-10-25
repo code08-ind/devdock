@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { isAllowedEditorPath, isValidBranchName, parseDevCommand } from './gitref'
 import { BITBUCKET_FLAVORS } from './bitbucket'
 import { DEFAULT_JQL, JIRA_FLAVORS, SavedQuerySchema } from './jira'
+import { DEFAULT_PROTECTED_JOBS, JobPathSchema } from './jenkins'
 
 export const SETTINGS_VERSION = 1
 
@@ -197,6 +198,27 @@ export const SettingsSchema = z.object({
         .default(''),
     })
     .prefault({}),
+  /** SPEC 6.4 / 6.7. The API token is a secret (`jenkins.token`), never stored here. */
+  jenkins: z
+    .object({
+      baseUrl: serviceUrl.default(''),
+      username: z
+        .string()
+        .trim()
+        .max(200)
+        .refine((u) => !u.includes(':'), 'A user name has no ":"')
+        .default(''),
+      /** Multibranch pipeline jobs (or folders of them) for "My branches", as job paths. */
+      jobs: z.array(JobPathSchema).max(50).default([]),
+      /** Deploy watcher (P4-B): the deploy job followed for my branch; '' = none. */
+      deployJob: z.union([z.literal(''), JobPathSchema]).default(''),
+      /** Jobs whose path contains one of these are never triggered (SPEC 6.4). */
+      protectedPatterns: z
+        .array(z.string().trim().min(1).max(100))
+        .max(50)
+        .default(() => [...DEFAULT_PROTECTED_JOBS]),
+    })
+    .prefault({}),
   repos: z.array(RepoConfigSchema).default([]),
 })
 
@@ -238,6 +260,7 @@ export const SettingsPatchSchema = z.object({
   git: patchOf(SettingsSchema.shape.git),
   jira: patchOf(SettingsSchema.shape.jira),
   bitbucket: patchOf(SettingsSchema.shape.bitbucket),
+  jenkins: patchOf(SettingsSchema.shape.jenkins),
 })
 
 export type SettingsPatch = z.infer<typeof SettingsPatchSchema>

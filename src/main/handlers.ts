@@ -14,6 +14,7 @@ import type { HttpClient } from './services/http'
 import { PrActionError } from './services/bitbucket/client'
 import type { BitbucketService } from './services/bitbucket/service'
 import { WatchError, type PrWatcher } from './services/bitbucket/watcher'
+import type { JenkinsService } from './services/jenkins/service'
 import type { JiraService } from './services/jira/service'
 import { StartWorkError, type StartWorkService } from './services/startwork'
 import type { NotificationService } from './services/notifications'
@@ -53,6 +54,7 @@ export interface HandlerDeps {
   jira: JiraService
   bitbucket: BitbucketService
   prWatcher: PrWatcher
+  jenkins: JenkinsService
   startWork: StartWorkService
   /** Shows PRs in the main window and hands it a link to watch (from the palette window). */
   requestWatch: (link: string) => void
@@ -274,6 +276,10 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
     'watch:add': ({ link }) => withWatch(() => deps.prWatcher.add(link)),
     'watch:remove': ({ key }) => deps.prWatcher.remove(key),
     'watch:request': ({ link }) => deps.requestWatch(link),
+    'jenkins:testConnection': () => withService(() => deps.jenkins.testConnection()),
+    'jenkins:branches': () => withService(() => deps.jenkins.branches()),
+    'jenkins:build': (ref) => withService(() => deps.jenkins.build(ref)),
+    'jenkins:console': ({ start, ...ref }) => withService(() => deps.jenkins.console(ref, start)),
     'startwork:plan': (request) => withStartWork(() => deps.startWork.plan(request)),
     'startwork:run': (request) =>
       withStartWork(() =>

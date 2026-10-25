@@ -14,10 +14,10 @@ Contract docs: `docs/SPEC.md`, `docs/UI-THEMES.md`, `docs/BUILD-PROMPTS.md` (pha
 
 | Field        | Value                                                         |
 | ------------ | ------------------------------------------------------------- |
-| Phase        | **Phase 3 closed** — P3-A (4b83a2c), P3-B (25f5999), P3-C (ca32b02) pushed; CI 40121991825 green on macOS + Windows. User paused; Phase 4 starts next session. |
-| Next step    | **Phase 4 — Jenkins builds and watchers** (`docs/BUILD-PROMPTS.md`): split into sub-phases first; reuse `services/scheduler.ts`, `settings/ServiceBits.tsx`, the tray dot deferred from P3-B |
+| Phase        | **Phase 4 — P4-A done** (Jenkins core, main process), not committed. Phase 4 split into P4-A / P4-B / P4-C (below). |
+| Next step    | User review → commit P4-A → **P4-B**: build/job watcher (reuse `services/scheduler.ts`, persisted like `PrWatcher`), Watch PR pipeline IPC on `JenkinsService.resolvePr`, trigger handler (`features.jobTriggers` + `allowedJobs` + `isProtectedJob`, confirmation flag) on `JenkinsClient.trigger`, deploy watcher (`jenkins.deployJob`), tray status dot |
 | Blockers     | None                                                          |
-| Last updated | 2026-10-24                                                    |
+| Last updated | 2026-10-25                                                    |
 
 ---
 
@@ -338,18 +338,37 @@ Done criteria:
 
 ## Phase 4 — Jenkins builds and watchers (SPEC 6.4)
 
-- [ ] `P4.01` Jenkins client: Basic + API token, crumb handling (retry on 403)
-- [ ] `P4.02` Job tree discovery (multibranch), last build per branch
-- [ ] `P4.03` `wfapi/describe` stages + graceful fallback
-- [ ] `P4.04` Console tail (progressive `start` offset, auto-scroll, search, copy)
-- [ ] `P4.05` Watch build/job + notifications; Watch PR pipeline (PR → branch → job, no-match message)
-- [ ] `P4.06` Triggers: off default, per-job allow-list, protected patterns blocked in handler, UI hides, confirmation
+- [x] `P4.01` Jenkins client: Basic + API token, crumb handling (retry on 403) — `services/jenkins/client.ts` (crumb cached, 403 → fresh crumb, one retry; no issuer → none; JSESSIONID forwarded), IPC `jenkins:testConnection`; `tests/unit/jenkins-client.test.ts`
+- [x] `P4.02` Job tree discovery (multibranch), last build per branch — `JenkinsClient.branches` (folders/org folders 2 deep, `PR-{n}` jobs), "My branches" filter `jenkins/resolve.ts` `myBuilds` + `jenkins/mine.ts`, IPC `jenkins:branches`; UI is P4-C
+- [x] `P4.03` `wfapi/describe` stages + graceful fallback — `jenkins/wfapi.ts` `parseStages` (404/non-JSON → null = "stages unavailable"), IPC `jenkins:build`
+- [~] `P4.04` Console tail (progressive `start` offset, auto-scroll, search, copy) — main side done: `jenkins/console.ts` (byte offsets, reset, split UTF-8 held back, ANSI stripped), IPC `jenkins:console`; auto-scroll/search/copy UI is P4-C
+- [~] `P4.05` Watch build/job + notifications; Watch PR pipeline (PR → branch → job, no-match message) — PR→job resolution done (`resolvePrJob`, `JenkinsService.resolvePr`); watcher + notifications + IPC are P4-B
+- [~] `P4.06` Triggers: off default, per-job allow-list, protected patterns blocked in handler, UI hides, confirmation — matcher `shared/jenkins.ts` `isProtectedJob` + settings `jenkins.protectedPatterns`; `JenkinsClient.trigger` (not on IPC yet); handler is P4-B, UI P4-C
 - [ ] `P4.07` Deploy watcher (read-only)
 - [ ] `P4.08` Tray status dot from watched builds
 
+### Sub-phases (pause points)
+
+- [x] **P4-A — Jenkins core (main)** (done 2026-10-25). Evidence: `npm run lint` exit 0; `npm test` → 37 files,
+  630 passed, 1 skipped; `npm run e2e` → 26 passed, 1 skipped. New: `jenkins-client` (19), `jenkins-parse` (14),
+  `jenkins-resolve` (21), `jenkins-service` (12), `jenkins-ipc` (3); 19 + 10 mutations, each caught by a failing
+  test (one survivor got a new test). `code-review` (Standards + Spec) run; fixed: protected patterns accept
+  `prod|production` and `*` (a literal entry matched nothing → job unprotected), PR jobs match by id when no job
+  is named after the repo (My branches + resolution), console holds back a UTF-8 character split at the offset,
+  unchecked build `number`, `skipped` in Settings order, `mapLimit` → `services/async.ts`, `num` guard →
+  `services/json.ts`. Not fixed: Spec reviewer's "no trigger switch / allow-list" (they exist as
+  `features.jobTriggers` / `allowedJobs`). DECISIONS P4-A written.
+- [ ] **P4-B — Watchers, triggers, deploy watcher, tray dot (main)**: `P4.05` build/job watch (persisted, no
+  duplicate notifications, `job-finished`/`build-finished`), Watch PR pipeline IPC, `P4.06` trigger handler
+  (switch, allow-list, protected, confirmed flag, parameters), `P4.07` deploy watcher, `P4.08` tray dot +
+  watched items in the tray menu.
+- [ ] **P4-C — Renderer + demo e2e**: Builds view (My branches, stages, console tail with auto-scroll/search/copy),
+  watch buttons + palette, trigger confirmation (job, branch, parameters; hidden for protected), Settings →
+  Jenkins (`ServiceBits`), `P4.D2` e2e.
+
 Done criteria:
 
-- [ ] `P4.D1` Tests: stage parsing, console offset, PR→job, protected patterns (case + folder paths), crumb retry — Evidence:
+- [x] `P4.D1` Tests: stage parsing, console offset, PR→job, protected patterns (case + folder paths), crumb retry — Evidence: `tests/unit/jenkins-parse.test.ts` ("wfapi stage parsing", "progressive console offsets" incl. reset, bytes, split character, chunk-by-chunk rebuild), `jenkins-resolve.test.ts` ("Watch PR pipeline: PR → job resolution", "protected jobs": `apps/deploy-prod`, `apps/Deploy-PROD`, full-width, encoded, `prod|production`, `*`), `jenkins-client.test.ts` ("a 403 fetches a fresh crumb and retries once", "a second 403 is the answer")
 - [ ] `P4.D2` Demo e2e: running build → "passed" notification + green dot; failing → red — Evidence:
 
 ---
@@ -413,3 +432,4 @@ Done criteria:
 | 2026-10-24 | P3-B  | Committed P3-A (4b83a2c, local) after re-running lint/test. Watcher (persisted snapshots → notifications, new `pr-closed` type with old settings files filled in), focus-aware Scheduler (jitter, exponential backoff, `Retry-After`), PR actions behind `features.prActions` (handler check, typed merge target, DC vetoes/version, server words verbatim), 409 `conflict` kind, stateful demo, IPC `watch:*` + `bitbucket:action`, notification clicks use the full link allowlist. code-review run; 7 fixes, all mutation-checked. lint/test/e2e green. Not committed. | User review → commit → P3-C |
 | 2026-10-25 | P3-C  | Committed P3-B (25f5999, local) on the user's go-ahead. Renderer: PRs view (4 lists, PR rows, Watch field), action dialogs (typed merge, server words), Settings → Bitbucket (Detect, Test connection, PR-actions switch behind a warning; shared ServiceBits), Today (my PRs, watched, in-progress tickets, repos), palette `watch <link>` in both windows (`watch:request` hand-off). code-review run; 11 fixes. lint/test/e2e/dist green. Phase 3 Done criteria all met. Not committed. | User review → commit/push/CI → Phase 4 |
 | 2026-10-25 | P3 close | Committed P3-C (ca32b02), pushed P3-A/B/C. CI run 40121991825: macOS + Windows green — lint/format/typecheck, unit, e2e (incl. prs.spec), package. Phase 3 closed; user paused before Phase 4. | Phase 4 |
+| 2026-10-25 | P4-A  | Split Phase 4 into P4-A/B/C. Jenkins core: shared job-path model + `jobFromUrl` + `isProtectedJob`, client (Basic, crumb + 403 retry, tree walk, last build, wfapi stages + fallback, progressive console, trigger), My branches matching, PR→job resolution, settings `jenkins`, demo Jenkins (running builds pass/fail on a clock), IPC `jenkins:testConnection/branches/build/console`; `rest.ts` exposes `send`/`readJson`. code-review run; 7 fixes, mutation-checked. lint/test/e2e green. Not committed. | User review → commit → P4-B |
