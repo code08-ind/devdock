@@ -2,7 +2,7 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { Page } from '@playwright/test'
 import { makeRepos, type Repos } from '../fixtures/git-repos'
-import { expect, test } from './fixtures'
+import { callHook, expect, test, windowFor } from './fixtures'
 
 /**
  * P6-A UI audit: every screen in every theme, font size and density, saved as screenshots for
@@ -88,6 +88,8 @@ test('UI audit screenshots', async ({ launched }) => {
     }),
   )
 
+  await callHook(launched.app, 'togglePanel')
+  const panel = await windowFor(launched.app, 'panel.html')
   for (const look of LOOKS) {
     await win.evaluate(
       (l) =>
@@ -105,6 +107,15 @@ test('UI audit screenshots', async ({ launched }) => {
       await win.waitForTimeout(400) // lists load from the demo servers
       await win.screenshot({
         path: join(out!, `${look.theme}-${look.fontSize}-${look.density}-${name}.png`),
+        animations: 'disabled',
+      })
+    }
+    // The menu-bar panel (P6-E), each tab.
+    for (const tab of ['Today', 'Repos', 'Tickets', 'Tools']) {
+      await panel.getByText(tab, { exact: true }).click()
+      await panel.waitForTimeout(400)
+      await panel.screenshot({
+        path: join(out!, `${look.theme}-${look.fontSize}-${look.density}-panel-${tab}.png`),
         animations: 'disabled',
       })
     }

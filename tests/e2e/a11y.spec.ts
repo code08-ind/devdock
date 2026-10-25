@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import { expect, test } from './fixtures'
+import { callHook, expect, test, windowFor } from './fixtures'
 
 /**
  * P6.03: every view at 12px and 18px in every theme, and a keyboard-only pass through every view.
@@ -29,6 +29,8 @@ test('12px and 18px in every theme: no view overflows sideways or scrolls the wi
 }) => {
   test.setTimeout(120_000)
   const { win } = launched
+  await callHook(launched.app, 'togglePanel')
+  const panel = await windowFor(launched.app, 'panel.html')
   for (const theme of THEMES) {
     for (const fontSize of [12, 18] as const) {
       await win.evaluate((a) => window.devdock.settings.update({ appearance: a as never }), {
@@ -47,6 +49,23 @@ test('12px and 18px in every theme: no view overflows sideways or scrolls the wi
           }
         })
         expect(layout, `${theme} ${fontSize}px ${view}`).toEqual({
+          sideways: false,
+          pageScrolls: false,
+        })
+      }
+      // The menu-bar panel's tabs: only its body scrolls, and never sideways.
+      for (const tab of ['Today', 'Repos', 'Tickets', 'Tools']) {
+        await panel.getByText(tab, { exact: true }).click()
+        const layout = await panel.evaluate(() => {
+          const body = document.querySelector('.panel-body')!
+          const page = document.scrollingElement!
+          return {
+            sideways:
+              body.scrollWidth > body.clientWidth + 1 || page.scrollWidth > page.clientWidth + 1,
+            pageScrolls: page.scrollHeight > page.clientHeight + 1,
+          }
+        })
+        expect(layout, `${theme} ${fontSize}px panel ${tab}`).toEqual({
           sideways: false,
           pageScrolls: false,
         })
@@ -175,4 +194,13 @@ test('keyboard only: every screen and dialog — Tab goes round with a visible f
   await win.keyboard.press('Escape')
   await expect(dialog).toBeHidden()
   await expect(opener).toBeFocused()
+
+  // The menu-bar panel: every tab, the same round and rings.
+  await callHook(launched.app, 'togglePanel')
+  const panel = await windowFor(launched.app, 'panel.html')
+  for (const tab of ['Today', 'Repos', 'Tickets', 'Tools']) {
+    await panel.getByText(tab, { exact: true }).click()
+    await panel.getByRole('button', { name: 'Search every action' }).focus()
+    await tabRound(panel, `panel › ${tab}`)
+  }
 })

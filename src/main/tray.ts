@@ -1,8 +1,12 @@
-/** Tray / menu-bar icon, status dot and menu (SPEC §6.1). Quick actions arrive in P6. */
+/**
+ * Tray / menu-bar icon, status dot and menu (SPEC §6.1). Left click opens the panel (P6-E);
+ * right click shows the menu.
+ */
 import { join } from 'node:path'
 import {
   Menu,
   Tray,
+  type Rectangle,
   nativeImage,
   nativeTheme,
   type MenuItemConstructorOptions,
@@ -32,6 +36,8 @@ export interface TrayState {
 
 export interface TrayActions {
   open: () => void
+  /** Shows or hides the menu-bar panel next to the icon (its bounds). */
+  togglePanel: (icon: Rectangle) => void
   /** Opens the Builds view (a watched item was clicked). */
   showBuilds: () => void
   pause: (minutes: number) => void
@@ -242,8 +248,13 @@ export function createTray(
   if (mac) base.setTemplateImage(true)
   const tray = new Tray(base)
   tray.setToolTip('DevDock')
-  // Windows convention: left click opens the window, right click shows the menu.
-  if (process.platform === 'win32') tray.on('click', () => actions.open())
+  // Left click: the panel, on both OSes. Right click: the menu (popped up by hand, since a
+  // context menu set on the tray would take the left click on macOS). Windows also opens the
+  // main window on double click, as tray apps there do.
+  let menu = Menu.buildFromTemplate([])
+  tray.on('click', () => actions.togglePanel(tray.getBounds()))
+  tray.on('right-click', () => tray.popUpContextMenu(menu))
+  if (process.platform === 'win32') tray.on('double-click', () => actions.open())
 
   let shown: string | null = null
   let status: TrayStatus = 'grey'
@@ -262,7 +273,7 @@ export function createTray(
       tray.setImage(withDot(base, status, { glyph, template }))
     }
     tray.setToolTip(trayTooltip(state.watched))
-    tray.setContextMenu(Menu.buildFromTemplate(trayMenuTemplate(state, actions)))
+    menu = Menu.buildFromTemplate(trayMenuTemplate(state, actions))
   }
   nativeTheme.on('updated', refresh)
   // Finished builds age out of the dot's colour; nothing else fires when they do.

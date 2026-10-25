@@ -2,9 +2,10 @@ import { useState } from 'react'
 import { Code, FolderOpen, Settings2, Terminal } from 'lucide-react'
 import type { ActionRequest, OpenTarget } from '@shared/repos'
 import type { RepoConfig } from '@shared/settings'
-import { ACTION_LABELS, OPEN_LABELS, useOpenRepo, useRepoStatus } from '../../lib/repos'
+import { OPEN_LABELS, useOpenRepo, useRepoStatus } from '../../lib/repos'
 import { Button, IconButton } from '../../ui/Button'
 import { ActionDialog } from './ActionDialog'
+import { RepoActionButton } from './RepoActionButton'
 import { DevServerPanel } from './DevServerPanel'
 import { RepoSettingsDialog } from './RepoSettingsDialog'
 import { RepoStatusError, RepoStatusLine } from './RepoStatusLine'
@@ -20,15 +21,8 @@ export function RepoCard({ repo }: { repo: RepoConfig }) {
 
   const open = (target: OpenTarget) => void openRepo(repo.id, target)
 
-  const actionButton = (req: ActionRequest, primary = false, disabled = false) => (
-    <Button
-      size="sm"
-      variant={primary ? 'primary' : 'secondary'}
-      disabled={disabled || (inProgress && req.action !== 'abort')}
-      onClick={() => setAction(req)}
-    >
-      {ACTION_LABELS[req.action]}
-    </Button>
+  const actionButton = (req: ActionRequest, primary = false) => (
+    <RepoActionButton repo={repo} status={s} request={req} primary={primary} onPick={setAction} />
   )
 
   return (
@@ -77,13 +71,9 @@ export function RepoCard({ repo }: { repo: RepoConfig }) {
         ) : null}
         {actionButton({ action: 'fetchAll' })}
         {actionButton({ action: 'syncBase' })}
-        {actionButton(
-          { action: 'updateBranch', strategy: 'merge', stash: false },
-          !inProgress,
-          !s?.branch || s.branch === repo.baseBranch,
-        )}
+        {actionButton({ action: 'updateBranch', strategy: 'merge', stash: false }, !inProgress)}
         {actionButton({ action: 'newBranch', kind: 'feature', title: '' })}
-        {actionButton({ action: 'pushBranch' }, false, !s?.branch)}
+        {actionButton({ action: 'pushBranch' })}
         {s?.hasUpstreamRemote ? actionButton({ action: 'syncFork' }) : null}
       </div>
 

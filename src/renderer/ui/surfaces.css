@@ -12,7 +12,9 @@
 .repo-card,
 .issue-pane,
 .link-form,
-.code {
+.code,
+.panel-repo,
+.panel-ticket {
   border-color: var(--border);
   border-radius: var(--radius-lg);
   background: var(--surface);

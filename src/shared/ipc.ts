@@ -153,6 +153,7 @@ export const contract = {
   },
   'palette:open': { req: none, res: none },
   'palette:close': { req: none, res: none },
+  'panel:close': { req: none, res: none },
 
   'demo:ping': {
     req: none,
@@ -327,6 +328,7 @@ export interface EventPayloads {
   'notifications:changed': null
   'nav:goto': (typeof VIEWS)[number]
   'palette:shown': null
+  'panel:shown': null
   'repos:output': RepoOutputEvent
   'repos:changed': { id: string }
   'repos:actionRequested': { id: string; request: ActionRequest }

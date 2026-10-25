@@ -163,16 +163,19 @@ export function SegmentedControl<T extends string | number>({
   options,
   value,
   onValue,
+  hideLabel = false,
 }: {
   label: string
   options: readonly { value: T; label: string }[]
   value: T
   onValue: (v: T) => void
+  /** For tabs that explain themselves: the label is for screen readers only. */
+  hideLabel?: boolean
 }) {
   const name = useId()
   return (
     <fieldset className="segmented">
-      <legend className="field-label">{label}</legend>
+      <legend className={hideLabel ? 'visually-hidden' : 'field-label'}>{label}</legend>
       <div className="segmented-options">
         {options.map((o) => (
           <label

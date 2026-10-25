@@ -39,7 +39,7 @@ export async function launch(
 /** Window order at launch isn't stable, so find windows by page. */
 export async function windowFor(
   app: ElectronApplication,
-  page: 'index.html' | 'palette.html',
+  page: 'index.html' | 'palette.html' | 'panel.html',
 ): Promise<Page> {
   const matches = (p: Page) => p.url().endsWith(`/${page}`)
   return app.windows().find(matches) ?? app.waitForEvent('window', { predicate: matches })
@@ -67,6 +67,9 @@ export function filesUnder(dir: string): string[] {
 interface TestHook {
   togglePalette(): void
   isPaletteVisible(): boolean
+  /** Opens or hides the menu-bar panel as a tray click would; it stays up when unfocused. */
+  togglePanel(): void
+  isPanelVisible(): boolean
   shortcutStatus(): { ok: boolean; accelerator: string; reason?: string }
   trayStatus(): 'green' | 'red' | 'grey' | null
   trayState(): {

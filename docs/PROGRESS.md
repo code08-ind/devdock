@@ -14,8 +14,8 @@ Contract docs: `docs/SPEC.md`, `docs/UI-THEMES.md`, `docs/BUILD-PROMPTS.md` (pha
 
 | Field        | Value                                                         |
 | ------------ | ------------------------------------------------------------- |
-| Phase        | **Phase 6 — P6-A done** (Home launcher, flat look, UI audit, scroll/width fixes, P6.02, P6.03, code-review fixes). Not committed. |
-| Next step    | Owner review → commit P6-A → P6-B (palette) → P6-C (diagnostics, perf) → P6-D (packaging, README, QA) |
+| Phase        | **Phase 6 — P6-E done** (menu-bar / tray panel). Not committed. |
+| Next step    | Owner review → commit P6-E → P6-F (agent lessons + workflow options) → P6-B (palette) → P6-C (diagnostics, perf) → P6-D (small packages, README, QA) |
 | Blockers     | None                                                          |
 | Last updated | 2026-10-25                                                    |
 
@@ -439,7 +439,9 @@ Done criteria:
 - [x] **P6-A — Home, look, UI audit** — Home launcher, flat DevToys-style cards in every theme, window 1240×820, switch/select fixes, audit fixes, only the content pane scrolls, views use the full width (DECISIONS P6-A). code-review run (Standards + Spec); fixes applied. Evidence: `npm run lint` exit 0; `npm test` → 51 files, 736 passed, 1 skipped; `npm run e2e` → 40 passed, 2 skipped (opt-in audit and screenshot specs); audit screenshots (14 screens × 7 looks) reviewed.
 - [ ] **P6-B — Palette completeness** (P6.01)
 - [ ] **P6-C — Diagnostics + performance** (P6.04, P6.05)
-- [ ] **P6-D — Packaging, CHANGELOG, README, QA** (P6.06, P6.07, Done)
+- [x] **P6-E — Menu-bar / tray panel** (owner request 2026-10-25; P6.08–P6.10) — code-review run (Standards + Spec); fixes applied. Evidence: `npm run lint` exit 0; `npm test` → 52 files, 744 passed, 1 skipped; `npm run e2e` → 42 passed, 2 skipped (opt-in audit and screenshot specs); panel screenshots in every look reviewed.
+- [ ] **P6-F — Agent lessons + workflow options** (owner request 2026-10-25; P6.11–P6.13)
+- [ ] **P6-D — Packaging (small), CHANGELOG, README, QA** (P6.06, P6.07, P6.14, Done)
 
 - [ ] `P6.01` Palette registry: title, keywords, arg parsers (`watch`, `branch`, `kill`, `open`), enabled reason, recents first
 - [x] `P6.02` Empty / loading / error states everywhere + "error with Details" pattern — sweep of every view and panel; repo status errors and the allowed-hosts field gained Details (shared `ErrorDetails`). Evidence: `tests/renderer/feedback-ui.test.ts` (fails with Details removed).
@@ -448,6 +450,13 @@ Done criteria:
 - [ ] `P6.05` Perf check: 5 repos + 10 watches in demo — idle CPU/memory
 - [ ] `P6.06` Packaging: icons, version + CHANGELOG, unsigned-app README section
 - [ ] `P6.07` README: features + demo screenshots, per-service setup + scopes, security model, shortcuts
+- [x] `P6.08` Panel window: left-click on the menu-bar (macOS) / tray (Windows) icon opens a small frameless panel anchored to the icon (below the menu bar on macOS, above the taskbar on Windows, kept on screen), hides on blur or Escape; right-click keeps the native menu; Open DevDock at the bottom — Evidence: `tests/unit/panel-position.test.ts` (8: macOS menu bar, Windows bottom/top/left/right taskbars, second display, auto-hide, no bounds, tiny screen); `tests/e2e/panel.spec.ts` (Escape hides; reopens).
+- [x] `P6.09` Panel content, one click each: search (palette commands), Today at a glance (my PRs + watch/open, watched builds + open, in-progress tickets + Start work), repos (branch/status + Sync base, Update my branch, Push, dev server start/stop), utilities (kill port, copy standup, quick links, pause notifications); anything that changes a remote or kills a process confirms inline in the panel (SPEC 7); deep work hands off to the main window — Evidence: `tests/e2e/panel.spec.ts`: watch a PR in one click, tickets in progress on Today, Sync base dialog in the panel (Escape closes the dialog, not the panel), Start work dialog, copy standup, ports, search, `kill <port>` handled in the panel, Open DevDock hides it and shows Home.
+- [x] `P6.10` Panel tests: positioning (unit, both OSes' tray geometry), e2e open → act → hide, keyboard + themes — Evidence: `tests/e2e/a11y.spec.ts` covers the panel: 5 themes × 12/18px × 4 tabs (no sideways overflow, only the body scrolls) and a keyboard round on each tab with the theme's focus ring; `audit.spec.ts` screenshots the panel tabs in 7 looks.
+- [ ] `P6.11` Lessons file per repo (`docs/ai/LESSONS.md`, path configurable): DevDock gathers review comments on my PRs (Bitbucket), groups them, and lets me tick which become lessons before anything is written; never written without review
+- [ ] `P6.12` Agent kickoff uses the lessons: the Start work brief links LESSONS.md and the agent message asks the agent to read it and append what it learned (no AI calls by DevDock — SPEC non-goal kept, owner's choice)
+- [ ] `P6.13` Workflow options as checkboxes (Settings → Workflow, and in Start work / the panel): e.g. include lessons in the brief, ask the agent to update lessons, watch the PR build after push, move the ticket on PR, run a check command before push, start the dev server after switching branch
+- [ ] `P6.14` Small packages: everything bundled by electron-vite (no runtime node_modules), English-only Electron locales, maximum compression, no source maps, per-arch builds; size measured before/after and recorded
 
 Done criteria:
 
@@ -491,3 +500,5 @@ Done criteria:
 | 2026-10-25 | P6-A (partial) | Phase 5 closed (CI 40181751867). Split Phase 6 (P6-A–D); owner added a Home launcher and a cosmetic audit. Home (DevToys-style: logo, welcome, tool cards), flat card look in every theme (a glass/soft-shadow look was built, shown and dropped at the owner's request), window 1240×820, switch + select redesign, audit fixes across screens (row actions, refresh placement, labels, Ports text, repo picker…). lint/test green; e2e green bar one teardown timeout. Not committed. | Owner review of the look → finish P6-A |
 | 2026-10-25 | P6-A (partial) | Fixed the whole window scrolling on Settings (hidden radio inputs positioned against the window; `.content` now the containing block) with a regression e2e that fails without the fix; removed the content width caps so views use the 1240px window, Settings sections laid out title-left/controls-right on wide windows. lint, test (734 passed), e2e (38 passed, 2 skipped) green; audit screenshots reviewed. Not committed. | Owner review → P6.02 states, P6.03 keyboard pass, code-review |
 | 2026-10-25 | P6-A done | P6.02 states sweep (repo status + allowed hosts errors get Details via shared `ErrorDetails`), P6.03 e2e (12/18px every theme; keyboard round on every screen, palette and a dialog). code-review: Standards (radius/bold tokens into tokens.css, rail + Settings card rules folded into shell.css, dead CSS removed, shared `RefreshButton`, Home ids fixed, names) and Spec (keyboard test widened and made strict) fixes applied. Renderer component tests live in `tests/renderer/` (web tsconfig). lint/test/e2e green. Not committed. | Owner review → commit → P6-B |
+| 2026-10-25 | P6-A close / plan | Committed P6-A (f3becab) and pushed; CI 40197538370 green on macOS (5m31s) and Windows (8m13s). Owner asked for a menu-bar/tray panel (one-click actions, open the app only for depth), agents that learn from PR comments with workflow checkboxes (kept: no AI calls by DevDock — owner chose "prep for my agent"), and small packages. Planned as P6-E, P6-F and P6.14 in P6-D. | P6-E |
+| 2026-10-25 | P6-E | Menu-bar / tray panel: left click opens a panel by the icon (macOS below the menu bar, Windows by the taskbar, kept on screen), right click the menu; tabs Today / Repos / Tickets / Tools and search, all one click, confirmations in the same dialogs as the main window, Open DevDock for depth. code-review run; fixes (shared RepoActionButton/SetUp/WatchedBuildRow, Show in Builds, tickets on Today, `kill <port>` in the panel, copy wording, card styles in surfaces.css, per-tab files). lint/test/e2e green. Not committed. | Owner review → commit → P6-F |

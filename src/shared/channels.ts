@@ -28,6 +28,7 @@ export const INVOKE_CHANNELS = [
   'shortcut:set',
   'palette:open',
   'palette:close',
+  'panel:close',
   'demo:ping',
   'repos:list',
   'repos:pickFolder',
@@ -109,6 +110,8 @@ export const EVENT_CHANNELS = [
   'notifications:changed',
   'nav:goto',
   'palette:shown',
+  /** The menu-bar panel was shown again: back to its first tab, scrolled to the top. */
+  'panel:shown',
   'repos:output',
   /** A repo's HEAD changed (checkout, commit, merge…): refresh its status. */
   'repos:changed',

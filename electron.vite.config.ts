@@ -64,6 +64,7 @@ export default defineConfig({
         input: {
           index: resolve(import.meta.dirname, 'src/renderer/index.html'),
           palette: resolve(import.meta.dirname, 'src/renderer/palette.html'),
+          panel: resolve(import.meta.dirname, 'src/renderer/panel.html'),
         },
       },
     },

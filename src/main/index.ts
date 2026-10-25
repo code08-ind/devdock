@@ -16,6 +16,7 @@ import {
   safeStorage,
   shell,
   type IpcMainInvokeEvent,
+  type Rectangle,
 } from 'electron'
 import type { EventChannel, View } from '@shared/channels'
 import type { EventPayload } from '@shared/ipc'
@@ -54,7 +55,14 @@ import { SecretStore } from './services/secrets'
 import { SettingsStore } from './services/settings'
 import { ShortcutService } from './services/shortcut'
 import { createTray, watchedForTray, type TrayHandle } from './tray'
-import { createMainWindow, createPaletteWindow, DEV_RENDERER_URL, showPalette } from './windows'
+import {
+  createMainWindow,
+  createPaletteWindow,
+  createPanelWindow,
+  DEV_RENDERER_URL,
+  showPalette,
+  showPanel,
+} from './windows'
 
 // Test-only switches. Ignored in packaged builds, so a shipped app can't be put in test mode.
 const E2E = !app.isPackaged && process.env.DEVDOCK_E2E === '1'
@@ -72,6 +80,13 @@ const appOrigin = DEV_RENDERER_URL ? new URL(DEV_RENDERER_URL).origin : 'file://
 let settings: SettingsStore | null = null
 let mainWindow: BrowserWindow | null = null
 let paletteWindow: BrowserWindow | null = null
+let panelWindow: BrowserWindow | null = null
+/** When the panel last hid on blur: a click on the tray icon blurs it first, then toggles. */
+let panelHiddenAt = 0
+/** A tray click this soon after that blur is the same click: it must not reopen the panel. */
+const PANEL_REOPEN_GUARD_MS = 300
+/** e2e only: the panel stays up when it loses focus. */
+let panelPinned = false
 let tray: TrayHandle | null = null
 let quitting = false
 
@@ -96,7 +111,9 @@ installSecurity(app, {
 })
 
 function windows(): BrowserWindow[] {
-  return [mainWindow, paletteWindow].filter((w): w is BrowserWindow => !!w && !w.isDestroyed())
+  return [mainWindow, paletteWindow, panelWindow].filter(
+    (w): w is BrowserWindow => !!w && !w.isDestroyed(),
+  )
 }
 
 function broadcast<E extends EventChannel>(event: E, payload: EventPayload<E>): void {
@@ -112,6 +129,7 @@ function showMain(): void {
 
 function showView(view: View): void {
   paletteWindow?.hide()
+  panelWindow?.hide()
   showMain()
   mainWindow?.webContents.send('nav:goto', view)
 }
@@ -125,6 +143,19 @@ function openPalette(): void {
 function togglePalette(): void {
   if (paletteWindow?.isVisible()) paletteWindow.hide()
   else openPalette()
+}
+
+/** Tray left click: show the panel by the icon, or hide it if it is showing. */
+function togglePanel(icon: Rectangle): void {
+  if (!panelWindow || panelWindow.isDestroyed()) return
+  if (panelWindow.isVisible()) {
+    panelWindow.hide()
+    return
+  }
+  // The click that blurred (and so hid) the panel must not open it again straight away.
+  if (Date.now() - panelHiddenAt < PANEL_REOPEN_GUARD_MS) return
+  showPanel(panelWindow, icon)
+  panelWindow.webContents.send('panel:shown', null)
 }
 
 function quit(): void {
@@ -305,6 +336,7 @@ function start(): void {
       showView,
       openPalette,
       closePalette: () => paletteWindow?.hide(),
+      closePanel: () => panelWindow?.hide(),
       quit,
       repos,
       git,
@@ -415,6 +447,13 @@ function start(): void {
     }
   })
   paletteWindow = createPaletteWindow()
+  panelWindow = createPanelWindow()
+  // Like other menu-bar panels: clicking anywhere else dismisses it.
+  panelWindow.on('blur', () => {
+    if (E2E && panelPinned) return
+    panelHiddenAt = Date.now()
+    panelWindow?.hide()
+  })
 
   // Focus moves between our windows as blur-then-focus; read the result after both.
   const focusChanged = (): void => {
@@ -439,6 +478,7 @@ function start(): void {
   })
   tray = createTray(trayDir, trayState, {
     open: showMain,
+    togglePanel,
     showBuilds: () => showView('builds'),
     pause: (minutes) => notifications.pause(minutes),
     resume: () => notifications.resume(),
@@ -453,6 +493,13 @@ function start(): void {
         togglePalette,
         showView,
         isPaletteVisible: () => paletteWindow?.isVisible() ?? false,
+        /** Opens the panel as a tray click would (no real tray click from Playwright). */
+        togglePanel: (pin = true) => {
+          // Test windows lose focus to each other; keep the panel up while a test drives it.
+          panelPinned = pin
+          togglePanel({ x: 0, y: 0, width: 0, height: 0 })
+        },
+        isPanelVisible: () => panelWindow?.isVisible() ?? false,
         shortcutStatus: () => shortcut.status(),
         trayStatus: () => tray?.status() ?? null,
         trayState,

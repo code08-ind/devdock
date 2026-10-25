@@ -94,6 +94,7 @@ describe('tray menu', () => {
     (items.find((i) => i.id === id)?.click as (() => void) | undefined)?.()
   const actions = {
     open: vi.fn(),
+    togglePanel: vi.fn(),
     showBuilds: vi.fn(),
     pause: vi.fn(),
     resume: vi.fn(),

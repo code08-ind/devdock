@@ -1,0 +1,115 @@
+/* The menu-bar / tray panel (P6-E): a fixed header, search and tabs, a scrolling body and a
+   footer, in the flat card look. Tokens only. */
+
+.panel {
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  height: 100vh;
+  overflow: hidden;
+  border: var(--border-w) solid var(--border);
+  background: var(--bg);
+}
+.panel-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-3) var(--space-2);
+}
+.panel-logo {
+  border-radius: var(--radius-md);
+}
+.panel-title {
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
+}
+.panel-search-button {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--control-h);
+  margin: 0 var(--space-3);
+  padding: 0 var(--space-3);
+  border: var(--border-w) solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text-muted);
+  font: inherit;
+  text-align: left;
+  cursor: text;
+}
+.panel-search {
+  grid-row: 2 / 5;
+  min-height: 0;
+  margin: 0 var(--space-3);
+}
+.panel-search .palette {
+  height: 100%;
+  max-height: none;
+}
+.panel-tabs {
+  padding: var(--space-2) var(--space-3);
+}
+.panel-tabs .segmented-options {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  width: 100%;
+}
+.panel-tabs .segment {
+  text-align: center;
+}
+.panel-body {
+  /* The containing block for visually hidden inputs, so they scroll with the body. */
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: var(--space-4);
+  min-height: 0;
+  padding: var(--space-1) var(--space-3) var(--space-3);
+  overflow-y: auto;
+}
+.panel-group {
+  display: grid;
+  gap: var(--space-2);
+}
+.panel-group-title {
+  font-size: var(--fs-base);
+  font-weight: var(--fw-semibold);
+}
+.panel-repos,
+.panel-tickets,
+.panel-links {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+/* Cards: colour, corners and surface come from surfaces.css. */
+.panel-repo,
+.panel-ticket {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: var(--border-w) solid;
+}
+.panel-repo-name {
+  font-size: var(--fs-base);
+  font-weight: var(--fw-semibold);
+}
+.panel-ticket-summary {
+  overflow-wrap: anywhere;
+}
+.panel-links {
+  gap: 0;
+}
+.panel-foot {
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--space-2) var(--space-3);
+  border-top: var(--border-w) solid var(--border);
+  background: var(--bg-subtle);
+}
+.panel-foot .btn {
+  width: 100%;
+  justify-content: center;
+}

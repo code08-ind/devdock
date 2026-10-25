@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { isLive } from '@shared/bitbucket'
 import type { View } from '@shared/channels'
+import type { BuildWatch } from '@shared/jenkins'
 import type { RepoConfig } from '@shared/settings'
 import { usePrList, useWatchedKeys, useWatches } from '../../lib/bitbucket'
 import { isNotConfigured } from '../../lib/devdock'
@@ -53,7 +54,7 @@ function TodaySection({
 }
 
 /** A service that isn't set up yet: one line and the way to fix it, not an error. */
-function SetUp({ error, onView }: { error: unknown; onView: (v: View) => void }) {
+export function SetUp({ error, onView }: { error: unknown; onView: (v: View) => void }) {
   if (!isNotConfigured(error)) {
     return <ErrorNotice error={error} />
   }
@@ -128,15 +129,23 @@ function WatchedBuilds({ onView }: { onView: (v: View) => void }) {
     >
       <ul className="pr-list" aria-label="Watched builds">
         {items.map((w) => (
-          <li key={w.key} className="pr-row">
-            <div className="pr-row-head">
-              <WatchHead watch={w} />
-            </div>
-            <p className={w.error ? 'pr-watch-error' : 'muted pr-watch-note'}>{watchNote(w)}</p>
-          </li>
+          <WatchedBuildRow key={w.key} watch={w} />
         ))}
       </ul>
     </TodaySection>
+  )
+}
+
+/** A watched build: its head (job, number, state) and the last check; `actions` on the right. */
+export function WatchedBuildRow({ watch: w, actions }: { watch: BuildWatch; actions?: ReactNode }) {
+  return (
+    <li className="pr-row">
+      <div className="pr-row-head">
+        <WatchHead watch={w} />
+        {actions ? <span className="row-actions">{actions}</span> : null}
+      </div>
+      <p className={w.error ? 'pr-watch-error' : 'muted pr-watch-note'}>{watchNote(w)}</p>
+    </li>
   )
 }
 

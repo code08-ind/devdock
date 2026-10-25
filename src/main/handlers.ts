@@ -47,6 +47,7 @@ export interface HandlerDeps {
   showView: (view: View) => void
   openPalette: () => void
   closePalette: () => void
+  closePanel: () => void
   quit: () => void
   repos: RepoService
   git: GitRunner
@@ -302,6 +303,7 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
     },
     'palette:open': () => deps.openPalette(),
     'palette:close': () => deps.closePalette(),
+    'panel:close': () => deps.closePanel(),
 
     'demo:ping': async () => {
       const res = await deps.http.fetch(new Request(`${DEMO_ORIGIN}/ping`))

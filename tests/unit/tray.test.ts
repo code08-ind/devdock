@@ -16,6 +16,7 @@ const {
 
 const actions = {
   open: vi.fn(),
+  togglePanel: vi.fn(),
   showBuilds: vi.fn(),
   pause: vi.fn(),
   resume: vi.fn(),

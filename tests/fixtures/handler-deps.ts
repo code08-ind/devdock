@@ -122,6 +122,7 @@ export async function handlerSetup(
     showView: vi.fn(),
     openPalette: vi.fn(),
     closePalette: vi.fn(),
+    closePanel: vi.fn(),
     quit: vi.fn(),
     repos,
     git,
