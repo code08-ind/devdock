@@ -14,8 +14,8 @@ Contract docs: `docs/SPEC.md`, `docs/UI-THEMES.md`, `docs/BUILD-PROMPTS.md` (pha
 
 | Field        | Value                                                         |
 | ------------ | ------------------------------------------------------------- |
-| Phase        | **Phase 5 — P5-A (da4976f), P5-B (fc65716) committed; P5-C done**, not committed. All Phase 5 Done criteria met. |
-| Next step    | User review → commit P5-C → push → read CI (macOS + Windows) → close Phase 5 → **Phase 6** (palette completeness, polish, packaging, docs) |
+| Phase        | **Phase 5 closed** — P5-A (da4976f), P5-B (fc65716), P5-C (b551481) pushed; CI 40181751867 green on macOS + Windows. Phase 6 starts next. |
+| Next step    | **Phase 6 — Command palette completeness, polish, packaging, docs** (`docs/BUILD-PROMPTS.md`): split into sub-phases first; carry over the deferred palette entries (PR actions, build actions, stop watching — DECISIONS P3-C/P4-C) |
 | Blockers     | None                                                          |
 | Last updated | 2026-10-25                                                    |
 
@@ -480,3 +480,4 @@ Done criteria:
 | 2026-10-25 | P5-A  | Phase 4 closed (CI 40172300911). Split Phase 5 into P5-A/B/C. Ports: lsof+ps / netstat tcp+tcpv6+tasklist parsers on captured outputs (incl. German netstat), PortService stop with re-scan, own/system PID refusal, /F or SIGKILL only with `forceConfirmed`; real kill-by-port integration test on macOS. Clean caches: sized plan, fixed paths, symlinks never followed, CacheError on partial removal. IPC `ports:*`, `caches:*`. code-review run; fixes applied and tested (5 mutations caught); DECISIONS P5-A written. lint/test/e2e green. Not committed. | User review → commit → P5-B |
 | 2026-10-25 | P5-B  | Committed P5-A (da4976f) on the user's "sure". Env profiles (encrypted per repo, byte-exact switch with backup + swapping restore, key-only state/diff, per-value reveal), quick links (settings + import/export/search/group helpers, hosts allowed), standup (working-day window with holidays, git log by author, PRs opened/merged, Jira status changes, Today from in-progress; demo commits), IPC `envprofiles:*`, `standup:draft`. code-review run; 8 fixes, mutation-checked. Not committed. | User review → commit → P5-C |
 | 2026-10-25 | P5-C  | Committed P5-B (fc65716) on the user's "Sure". Utilities view (ports, caches, env profiles, quick links, standup), Settings → Standup, palette `kill <port>`/utilities/links in both windows, Clear all data + env profiles, README with the Windows check, utilities e2e incl. P5.D2. code-review run; 12 fixes. lint/test/e2e/dist green. Phase 5 Done criteria all met. Not committed. | User review → commit/push/CI → Phase 6 |
+| 2026-10-25 | P5 close | Committed P5-C (b551481), pushed. CI run 40181751867: macOS + Windows green — macOS unit 50 files, e2e 36 passed; Windows unit 49 files + 1 skipped (real-process ports test), e2e 30 passed (utilities.spec skipped there by design; Windows stop path covered by mocked unit tests). Phase 5 closed. | Phase 6 |
