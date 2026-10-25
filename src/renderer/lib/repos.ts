@@ -46,6 +46,15 @@ export function useOpenRepo() {
   return (id: string, target: OpenTarget) => run(unwrap(bridge.repos.open({ id, target })))
 }
 
+/**
+ * A new tab in DevDock's own terminal (P7-A) in this repo. Goes through main, which shows the
+ * main window's Terminal view, so it works the same from the panel and the palette window.
+ */
+export function useOpenDevdockTerminal() {
+  const { run } = useAction()
+  return (repoId: string | null) => run(unwrap(bridge.terminal.request({ repoId })))
+}
+
 // ---- Streamed output, per run --------------------------------------------------------------
 
 const output = new Map<string, string>()

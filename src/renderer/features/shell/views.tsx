@@ -6,6 +6,7 @@ import {
   GitPullRequest,
   Hammer,
   Settings as SettingsIcon,
+  SquareTerminal,
   Ticket,
   Wrench,
 } from 'lucide-react'
@@ -19,6 +20,7 @@ export const VIEW_ICONS: Record<View, ReactNode> = {
   builds: <Hammer size={18} aria-hidden="true" />,
   tickets: <Ticket size={18} aria-hidden="true" />,
   utilities: <Wrench size={18} aria-hidden="true" />,
+  terminal: <SquareTerminal size={18} aria-hidden="true" />,
   settings: <SettingsIcon size={18} aria-hidden="true" />,
 }
 
@@ -31,4 +33,5 @@ export const EMPTY_COPY: Record<Exclude<View, 'settings'>, string> = {
   builds: 'No builds watched yet. Connect Jenkins to follow jobs and pipelines.',
   tickets: 'No tickets yet. Connect Jira to see the issues assigned to you.',
   utilities: 'Port scanner, env profiles, quick links and the standup helper will live here.',
+  terminal: 'No terminals open.',
 }

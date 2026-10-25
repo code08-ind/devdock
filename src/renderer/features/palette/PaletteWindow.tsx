@@ -14,13 +14,21 @@ const requestAction = (id: string, request: ActionRequest) =>
 const watch = (link: string, pipeline?: boolean) => void bridge.watch.request({ link, pipeline })
 const utility = (request: UtilityRequest) => void bridge.utilities.request(request)
 const startWork = (key: string) => void bridge.tickets.request({ key })
+const openTerminal = (repoId: string | null) => void bridge.terminal.request({ repoId })
 
 /** The global-shortcut palette window. It is hidden, not destroyed, so reset on each show. */
 export function PaletteWindow() {
   const [resetKey, setResetKey] = useState(0)
   const onShown = useCallback(() => setResetKey((k) => k + 1), [])
   useBridgeEvent('palette:shown', onShown)
-  const { commands, forQuery } = useCommands({ goto, requestAction, watch, utility, startWork })
+  const { commands, forQuery } = useCommands({
+    goto,
+    requestAction,
+    watch,
+    utility,
+    startWork,
+    openTerminal,
+  })
   return (
     <div className="palette-window">
       <CommandPalette key={resetKey} commands={commands} forQuery={forQuery} onClose={close} />

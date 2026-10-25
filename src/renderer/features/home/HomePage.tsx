@@ -13,6 +13,7 @@ import {
   MessageSquareText,
   Network,
   Settings as SettingsIcon,
+  SquareTerminal,
   Ticket,
 } from 'lucide-react'
 import { VIEWS, type View } from '@shared/channels'
@@ -108,6 +109,12 @@ export function HomePage({
           'Tickets',
           'Your Jira issues and Start work: branch, brief and agent message in one go',
           Ticket,
+        ),
+        viewTool(
+          'terminal',
+          'Terminal',
+          'Your own shell in tabs, in a repo or your home folder, in DevDock colours',
+          SquareTerminal,
         ),
       ],
     },

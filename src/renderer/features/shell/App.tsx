@@ -28,6 +28,7 @@ import { TodayPage } from '../today/TodayPage'
 import type { UtilityRequest } from '@shared/utilities'
 import { UtilitiesPage } from '../utilities/UtilitiesPage'
 import { Announcer } from './Announcer'
+import { TerminalPage } from '../terminal/TerminalPage'
 import { NavRail } from './NavRail'
 import { EMPTY_COPY, VIEW_ICONS } from './views'
 
@@ -38,7 +39,10 @@ function ViewBody({
   buildsKey,
   utility,
   onUtility,
+  terminal,
 }: {
+  /** The last "open a terminal" request (palette, repo card, panel). */
+  terminal: { n: number; repoId: string | null } | null
   onUtility: (request: UtilityRequest) => void
   buildsKey: number
   /** The palette's last request for Utilities (remounts the view on its tab). */
@@ -60,6 +64,8 @@ function ViewBody({
   if (view === 'utilities') {
     return <UtilitiesPage key={utility?.n ?? 0} request={utility?.request} onView={onView} />
   }
+  // Its tabs and shells live in a store outside React: switching views keeps them.
+  if (view === 'terminal') return <TerminalPage request={terminal ?? undefined} />
   return (
     <EmptyState
       icon={VIEW_ICONS[view]}
@@ -126,6 +132,16 @@ export function App() {
     setView('utilities')
   }, [])
   useBridgeEvent('utilities:requested', openUtility)
+  const [terminal, setTerminal] = useState<{ n: number; repoId: string | null } | null>(null)
+  const openTerminal = useCallback((repoId: string | null) => {
+    setTerminal((t) => ({ n: (t?.n ?? 0) + 1, repoId }))
+    setView('terminal')
+  }, [])
+  const onTerminalRequested = useCallback(
+    ({ repoId }: { repoId: string | null }) => openTerminal(repoId),
+    [openTerminal],
+  )
+  useBridgeEvent('terminal:requested', onTerminalRequested)
   const [requested, setRequested] = useState<{ id: string; request: ActionRequest } | null>(null)
   const repos = useRepos()
   const requestedRepo = requested ? repos.find((r) => r.id === requested.id) : undefined
@@ -170,6 +186,7 @@ export function App() {
     watch: watchLink,
     utility: openUtility,
     startWork: setStartKey,
+    openTerminal,
   })
   const main = useRef<HTMLElement>(null)
 
@@ -230,6 +247,7 @@ export function App() {
           buildsKey={buildsKey}
           utility={utility}
           onUtility={openUtility}
+          terminal={terminal}
         />
       </main>
       {startKey ? (

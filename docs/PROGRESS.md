@@ -14,8 +14,8 @@ Contract docs: `docs/SPEC.md`, `docs/UI-THEMES.md`, `docs/BUILD-PROMPTS.md` (pha
 
 | Field        | Value                                                         |
 | ------------ | ------------------------------------------------------------- |
-| Phase        | **Phase 7, resumed 2026-10-26.** P7-E done on `main` except the human VoiceOver/NVDA pass. P7-A/B/D agents resuming on their branches (p7-terminal, p7-providers, p7-website, in .claude/worktrees/). |
-| Next step    | (1) Resume the three agents from their branches' notes (P7-D: GitHub Pages → Vercel, versionless names; P7-B: CI-actions switch + confirm); (2) review/merge P7-A, P7-B, P7-D; (3) start P7-C |
+| Phase        | **Phase 7, resumed 2026-10-26.** P7-E done on `main` except the human VoiceOver/NVDA pass. P7-A resuming on branch `p7-terminal` (rebased onto main). |
+| Next step    | P7-A: see "Phase 7 → Where P7-A stopped" below |
 | Blockers     | None                                                          |
 | Last updated | 2026-10-26                                                    |
 
@@ -514,6 +514,25 @@ exact resume steps. Nothing pushed.
 
 ---
 
+## Phase 7 — In-app terminal (P7-A, branch `p7-terminal`)
+
+- [~] `P7.01` Terminal view + "Open in DevDock terminal" per repo, real PTY (node-pty) in main, xterm.js tabs/find/copy/paste/clear, batched output, sessions survive view switches, PTYs killed on quit — code written, **not yet built, run or tested**.
+- [~] `P7.02` Per-theme ANSI palette from tokens (`terminalPalette`), Settings → Terminal schema, DevDock prompt (zsh ZDOTDIR + bash rcfile) — code written; **Settings → Terminal UI section not written**; untested.
+- [~] `P7.03` Packaging: node-pty external + only runtime dep, asarUnpack prebuilds, `npmRebuild: false` (N-API prebuilds per arch), spawn-helper chmod postinstall — config written, **dist not run**; notices/DECISIONS/README/CHANGELOG not updated.
+
+### Where P7-A stopped (2026-10-26)
+
+Done (committed WIP): node-pty 1.1.0 installs here and runs under Electron 45 (prebuilt N-API binaries for darwin-arm64/x64, win32-x64/arm64; needed `chmod +x` on spawn-helper → `scripts/fix-node-pty.mjs` postinstall). Shared contract `src/shared/terminal.ts` (+ channels/ipc/settings `terminal` section, view `terminal` after Utilities → 9 views). Main: `src/main/services/terminal/{shell,prompt,batcher,manager}.ts`, handlers `terminal:*` (owner = webContents id, cwd = registered repo or home), index.ts wiring (lazy node-pty require, kill on window destroy/reload and before-quit, e2e hook `terminalPids`), main window loads `?e2e=1` in e2e. Renderer: `features/terminal/{store,TerminalPage,styleShim,theme}.ts(x)` + terminal.css, App/views/Home/palette (`New terminal`, `Open in DevDock terminal — repo`, `terminal <repo>`), Repos card + panel buttons. Typecheck: node/web pass except `tests/unit/palette.test.ts` (context needs `openTerminal`).
+
+Next, in order:
+1. Fix `tests/unit/palette.test.ts` ctx (add `openTerminal`) and any view-count tests; `tests/e2e/fixtures.ts` `windowFor` must match on URL pathname (main window now has `?e2e=1`).
+2. Settings → Terminal section (shell override, font size, cursor style/blink, scrollback, Use DevDock prompt; note zsh/bash only).
+3. `npm run build`, launch, check: xterm styles under CSP via `styleShim` (constructed stylesheets — verify no CSP console errors), WebGL/DOM fallback, copy/paste, F6 leave.
+4. Tests: unit (palette contrast per theme from tokens.css, prompt generation + real `zsh -i`/`bash -n` run, IPC validation, batcher, manager with `tests/fixtures/pty.ts`, shell resolution), integration (real node-pty: echo hello, exit code, kill), e2e terminal spec (`echo devdock-ok` via `window.__devdockTerminal.text()`, repo `pwd`, close tab kills pid), a11y spec additions.
+5. scripts/notices.mjs (xterm + node-pty licenses), DECISIONS P7-A (deps, P6.14 exception, CSP style shim, F6, npmRebuild false), README + screenshot, CHANGELOG; `npm run lint/test/e2e/dist` + package size before/after; code-review skill.
+
+---
+
 ## Session log (append-only)
 
 | Date       | Phase | Summary                                                                                                             | Next    |
@@ -564,3 +583,4 @@ exact resume steps. Nothing pushed.
 | 2026-10-26 | P7.13 | Settings → Accessibility (reduce motion, larger targets, underline links, focus ring always, read out events). Fixed the palette click-outside e2e (clicked below the page). Checks: lint ok; unit 785 passed; e2e 51 passed, 4 skipped (opt-in). | code-review P7-E |
 | 2026-10-26 | P7-E review, pause | code-review (Standards + Spec): fixed DECISIONS installer names, SPEC §6.7 + UI-THEMES motion note, announcer also in the menu-bar panel, axe on panel + palette window in all 5 themes, computed underline check, shared e2e helpers in fixtures.ts, MOTION_MODES + label map, `--target-min` token. Open: Slate muted vs text hierarchy (asked owner). Checks: lint ok; vitest 785 passed; e2e 51 passed, 4 skipped. Owner paused. | Resume per Next step |
 | 2026-10-26 | Resume | Owner: Slate `--text` lightened #ADBAC7 → #CDD9E5 so it stays brighter than the AA muted #A6B1BC (UI-THEMES, DECISIONS). lint ok; vitest 785 passed, 1 skipped (contrast 32). | Resume P7-A/B/D agents |
+| 2026-10-26 | P7-A (WIP) | Branch p7-terminal. node-pty 1.1.0 verified under Electron 45 (prebuilds; spawn-helper chmod fix). Terminal contract, PTY manager, shell/prompt, handlers, main wiring, packaging config, renderer store/view/palette/repo buttons written. Not built or tested yet. Paused by owner. | P7-A step 1 in Phase 7 "Where P7-A stopped" |

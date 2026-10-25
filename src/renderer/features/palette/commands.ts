@@ -26,6 +26,7 @@ export interface Command {
     | 'Builds'
     | 'Tickets'
     | 'Utilities'
+    | 'Terminal'
     | 'Quick links'
     | 'Appearance'
     | 'Notifications'
@@ -116,7 +117,12 @@ export interface CommandContext {
   /** Watched pull requests, to stop watching. */
   watches: readonly { key: string; label: string }[]
   unwatch: (key: string) => unknown
+  /** A new tab in DevDock's own terminal (P7-A), in a repo or the home folder. */
+  openTerminal: (repoId: string | null) => unknown
 }
+
+/** The palette's name for DevDock's own terminal ("Open terminal" is the OS terminal app). */
+export const DEVDOCK_TERMINAL_LABEL = 'Open in DevDock terminal'
 
 const UTILITY_COMMANDS: { tab: UtilityRequest['tab']; title: string; keywords: string[] }[] = [
   {
@@ -178,6 +184,13 @@ function repoCommands(ctx: CommandContext): Command[] {
       keywords: ['open', 'code', 'shell', 'folder', 'finder', 'explorer'],
       run: () => ctx.openRepo(r.id, target),
     })),
+    {
+      id: `repo:${r.id}:devdock-terminal`,
+      title: `${DEVDOCK_TERMINAL_LABEL} — ${r.name}`,
+      group: 'Terminal',
+      keywords: ['terminal', 'shell', 'zsh', 'console', 'tab'],
+      run: () => ctx.openTerminal(r.id),
+    },
   ])
 }
 
@@ -309,6 +322,13 @@ export function buildCommands(ctx: CommandContext, views: readonly View[]): Comm
       keywords: u.keywords,
       run: () => ctx.utility({ tab: u.tab }),
     })),
+    {
+      id: 'terminal:new',
+      title: 'New terminal',
+      group: 'Terminal',
+      keywords: ['shell', 'zsh', 'console', 'tab', 'home'],
+      run: () => ctx.openTerminal(null),
+    },
     ...ctx.quickLinks.map<Command>((l) => ({
       id: `link:${l.id}`,
       title: `Open ${l.name}`,
@@ -380,10 +400,57 @@ export function queryCommands(
   query: string,
   ctx: Pick<
     CommandContext,
-    'watch' | 'goto' | 'utility' | 'startWork' | 'quickLinks' | 'openLink' | 'repos' | 'configured'
+    | 'watch'
+    | 'goto'
+    | 'utility'
+    | 'startWork'
+    | 'quickLinks'
+    | 'openLink'
+    | 'repos'
+    | 'configured'
+    | 'openTerminal'
   >,
 ): Command[] {
   const text = query.trim()
+  // `terminal <repo>`: DevDock's terminal in each repo whose name matches (best first);
+  // `terminal` alone: a new one in the home folder.
+  const term = /^terminal(?:\s+(.+))?$/i.exec(text)
+  if (term) {
+    const name = term[1]?.trim().toLowerCase()
+    if (!name) {
+      return [
+        {
+          id: 'terminal:new',
+          title: 'New terminal',
+          group: 'Terminal',
+          run: () => ctx.openTerminal(null),
+        },
+      ]
+    }
+    const matches = ctx.repos
+      .filter((r) => r.name.toLowerCase().includes(name))
+      .sort(
+        (a, b) =>
+          Number(b.name.toLowerCase().startsWith(name)) -
+          Number(a.name.toLowerCase().startsWith(name)),
+      )
+    return matches.length
+      ? matches.map<Command>((r) => ({
+          // The registry's id, so it shows up in recents.
+          id: `repo:${r.id}:devdock-terminal`,
+          title: `${DEVDOCK_TERMINAL_LABEL} — ${r.name}`,
+          group: 'Terminal',
+          run: () => ctx.openTerminal(r.id),
+        }))
+      : [
+          {
+            id: 'terminal:no-repo',
+            title: `No repo called "${term[1]!.trim()}": open a terminal in the home folder`,
+            group: 'Terminal',
+            run: () => ctx.openTerminal(null),
+          },
+        ]
+  }
   // `branch NM-1234` (SPEC 6.1): Start work on that ticket — the preview, never straight away.
   const branch = /^branch\s+(\S+)$/i.exec(text)
   if (branch) {

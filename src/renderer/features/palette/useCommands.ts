@@ -28,6 +28,8 @@ export interface CommandHandlers {
   utility: (request: UtilityRequest) => void
   /** Opens Start work for an issue key. */
   startWork: (key: string) => void
+  /** A new DevDock terminal tab (in a repo, or the home folder), in the main window. */
+  openTerminal: (repoId: string | null) => void
   /** Windows that can show dialogs (main, panel): stopping a process and PR actions ask first. */
   confirm?: (request: ConfirmRequest) => void
   prAction?: (pr: PullRequest, action: PrAction) => void

@@ -1,9 +1,16 @@
 import { Loading } from '../../ui/Feedback'
 import { useState } from 'react'
-import { Code, Terminal } from 'lucide-react'
+import { Code, SquareTerminal, Terminal } from 'lucide-react'
 import type { ActionRequest } from '@shared/repos'
 import type { RepoConfig } from '@shared/settings'
-import { OPEN_LABELS, useOpenRepo, useRepoStatus, useRepos } from '../../lib/repos'
+import {
+  OPEN_LABELS,
+  useOpenDevdockTerminal,
+  useOpenRepo,
+  useRepoStatus,
+  useRepos,
+} from '../../lib/repos'
+import { DEVDOCK_TERMINAL_LABEL } from '../palette/commands'
 import { Button, IconButton } from '../../ui/Button'
 import { ActionDialog } from '../repos/ActionDialog'
 import { DevServerPanel } from '../repos/DevServerPanel'
@@ -36,6 +43,7 @@ export function ReposTab() {
 function PanelRepo({ repo }: { repo: RepoConfig }) {
   const status = useRepoStatus(repo.id)
   const openRepo = useOpenRepo()
+  const openTerminal = useOpenDevdockTerminal()
   const [action, setAction] = useState<ActionRequest | null>(null)
   const s = status.data
   const inProgress = s?.operation != null
@@ -57,6 +65,11 @@ function PanelRepo({ repo }: { repo: RepoConfig }) {
             label={`${OPEN_LABELS.editor}: ${repo.name}`}
             icon={<Code size={16} aria-hidden="true" />}
             onClick={() => void openRepo(repo.id, 'editor')}
+          />
+          <IconButton
+            label={`${DEVDOCK_TERMINAL_LABEL}: ${repo.name}`}
+            icon={<SquareTerminal size={16} aria-hidden="true" />}
+            onClick={() => void openTerminal(repo.id)}
           />
           <IconButton
             label={`${OPEN_LABELS.terminal}: ${repo.name}`}

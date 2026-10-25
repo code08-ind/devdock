@@ -64,6 +64,8 @@ export function PanelWindow() {
   }, [searching])
 
   const requestAction = (id: string, request: ActionRequest) => setRequested({ id, request })
+  // The terminal lives in the main window.
+  const openTerminal = (repoId: string | null) => void bridge.terminal.request({ repoId })
   const utility = (request: UtilityRequest) => {
     const port = request.tab === 'ports' ? request.stopPort : undefined
     if (port === undefined) {
@@ -83,6 +85,7 @@ export function PanelWindow() {
     watch,
     utility,
     startWork: setStartKey,
+    openTerminal,
   })
   const repos = useRepos()
   const requestedRepo = requested ? repos.find((r) => r.id === requested.id) : undefined

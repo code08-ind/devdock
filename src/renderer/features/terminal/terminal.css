@@ -1,0 +1,127 @@
+/* P7-A Terminal view. Tokens only (UI-THEMES.md); the terminal's own colours come from the
+   same tokens through terminalPalette(). */
+
+/* The terminal fills the content pane instead of scrolling it. */
+.content[data-view='terminal'] {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.terminal-view {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-height: 0;
+}
+
+.terminal-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.terminal-tabs {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.terminal-tab {
+  display: flex;
+  align-items: center;
+  border: var(--border-w) solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+.terminal-tab[data-active] {
+  border-color: var(--accent);
+  background: var(--selection);
+}
+.terminal-tab > button[role='tab'] {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  max-width: 220px;
+  padding: var(--space-1) var(--space-2);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+.terminal-tab > button[role='tab'] span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.terminal-tab > button[role='tab']:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.terminal-tab .btn-icon {
+  width: calc(var(--control-h) * 0.8);
+  height: calc(var(--control-h) * 0.8);
+}
+
+.terminal-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.terminal-toolbar .select-wrap {
+  min-width: 10rem;
+}
+
+.terminal-find {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.terminal-find .input {
+  max-width: 20rem;
+}
+
+.terminal-error {
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-w) solid var(--danger);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+/* The terminal's own background is the theme's --bg, set by its palette; this frame matches. */
+.terminal-viewport {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  padding: var(--space-2);
+  border: var(--border-w) solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg);
+  overflow: hidden;
+}
+.terminal-viewport:focus-within {
+  border-color: var(--focus);
+}
+.terminal-viewport[hidden] {
+  display: none;
+}
+.terminal-screen {
+  width: 100%;
+  height: 100%;
+}
+.terminal-screen[hidden] {
+  display: none;
+}
+
+.terminal-hint {
+  margin: 0;
+  font-size: var(--fs-sm);
+}
