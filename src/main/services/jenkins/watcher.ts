@@ -128,7 +128,10 @@ export class BuildWatcher {
         request.kind === 'deploy'
           ? recent.filter((r) => deploysBranch(r.parameters, request.branch))
           : recent
-      const running = mine.find((r) => r.build.state === 'running')
+      const running =
+        request.kind === 'job' && request.next
+          ? undefined
+          : mine.find((r) => r.build.state === 'running')
       item = running
         ? { ...base, number: running.build.number, build: running.build }
         : { ...base, after: recent[0]?.build.number ?? 0 }

@@ -197,8 +197,13 @@ export class JenkinsClient {
    * the queue item link from `Location`. Callers check the switch, allow-list and protected
    * patterns first: this only sends.
    */
-  async trigger(job: JobPath, parameters: Record<string, string>): Promise<string | null> {
-    const withParams = Object.keys(parameters).length > 0
+  async trigger(
+    job: JobPath,
+    parameters: Record<string, string>,
+    /** The job is parameterised (Jenkins refuses `build` then, even with only defaults). */
+    parameterised = Object.keys(parameters).length > 0,
+  ): Promise<string | null> {
+    const withParams = parameterised || Object.keys(parameters).length > 0
     const res = await this.post(
       `${jobUrl(this.base, job)}/${withParams ? 'buildWithParameters' : 'build'}`,
       withParams ? new URLSearchParams(parameters) : undefined,

@@ -17,11 +17,14 @@ export interface Launched {
 export const newProfile = () => mkdtempSync(join(tmpdir(), 'devdock-e2e-'))
 
 /** Launches the built app (`out/`) against `userData`, a throwaway profile by default. */
-export async function launch(userData = newProfile()): Promise<Launched> {
+export async function launch(
+  userData = newProfile(),
+  env: Record<string, string> = {},
+): Promise<Launched> {
   const app = await _electron.launch({
     args: [root],
     cwd: root,
-    env: { ...process.env, DEVDOCK_E2E: '1', DEVDOCK_USER_DATA: userData },
+    env: { ...process.env, DEVDOCK_E2E: '1', DEVDOCK_USER_DATA: userData, ...env },
   })
   const win = await windowFor(app, 'index.html')
   const errors: string[] = []

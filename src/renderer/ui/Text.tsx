@@ -8,8 +8,9 @@ export function Kbd({ children }: { children: ReactNode }) {
 export function KeyValue({ items }: { items: [label: string, value: ReactNode][] }) {
   return (
     <dl className="kv">
-      {items.map(([k, v]) => (
-        <div key={k} className="kv-row">
+      {items.map(([k, v], i) => (
+        // Labels can repeat (a build parameter named like a heading row).
+        <div key={`${i}:${k}`} className="kv-row">
           <dt className="muted">{k}</dt>
           <dd>{v}</dd>
         </div>

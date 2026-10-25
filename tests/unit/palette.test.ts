@@ -99,7 +99,7 @@ describe('filterCommands', () => {
     expect(ids('quit')[0]).toBe('app:quit')
   })
   it('matches keywords', () => {
-    expect(ids('jenkins')).toEqual(['go:builds'])
+    expect(ids('jenkins')).toEqual(['go:builds', 'build:pipeline'])
     expect(ids('jira')).toEqual(['go:tickets'])
   })
   it('requires every term to match', () => {
@@ -119,12 +119,29 @@ describe('watch <PR link> (SPEC 6.1 argument command)', () => {
   it('`watch <link>` and a bare pasted link both offer to watch that PR', () => {
     for (const query of [`watch ${DC}`, `  WATCH   ${DC} `, DC]) {
       const c = ctx()
-      const [cmd, ...rest] = queryCommands(query, c)
-      expect(rest).toEqual([])
+      const [cmd] = queryCommands(query, c)
       expect(cmd).toMatchObject({ title: 'Watch pull request web-app #42', group: 'Pull requests' })
       void cmd!.run()
       expect(c.watch).toHaveBeenCalledWith(DC)
     }
+    expect(queryCommands(`watch ${DC}`, ctx())).toHaveLength(1)
+  })
+
+  it('`pipeline <link>` watches its Jenkins build; a bare link offers that second', () => {
+    for (const query of [`pipeline ${DC}`, DC]) {
+      const c = ctx()
+      const offered = queryCommands(query, c)
+      const cmd = offered.at(-1)!
+      expect(offered).toHaveLength(query === DC ? 2 : 1)
+      expect(cmd).toMatchObject({ title: 'Watch the pipeline of web-app #42', group: 'Builds' })
+      void cmd.run()
+      expect(c.watch).toHaveBeenCalledWith(DC, true)
+    }
+    const c = ctx()
+    const [hint] = queryCommands('pipeline nope', c)
+    expect(hint).toMatchObject({ id: 'build:pipeline-invalid' })
+    void hint!.run()
+    expect(c.goto).toHaveBeenCalledWith('builds')
   })
 
   it('offers nothing for searches that are not links; `watch <not a link>` says so', () => {

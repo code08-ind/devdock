@@ -7,6 +7,7 @@ import {
 } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import type { WatchItem } from '@shared/bitbucket'
+import type { BuildWatch } from '@shared/jenkins'
 import type { EventChannel } from '@shared/channels'
 import type { ErrorCode, EventPayload, IpcEnvelope } from '@shared/ipc'
 import type { Settings, SettingsPatch } from '@shared/settings'
@@ -70,6 +71,8 @@ export const keys = {
   repoStatus: (id: string) => ['repos', 'status', id] as const,
   /** Watched PRs (lib/bitbucket.ts); here so main's `watch:changed` can update it. */
   watches: ['watches'],
+  /** Build watches (lib/jenkins.ts), updated by main's `buildwatch:changed`. */
+  buildWatches: ['buildwatches'],
 } as const
 
 export function useBridgeEvent<E extends EventChannel>(
@@ -109,9 +112,12 @@ const onRepoChanged = ({ id }: { id: string }) => {
 }
 
 const onWatchesChanged = (items: WatchItem[]) => queryClient.setQueryData(keys.watches, items)
+const onBuildWatchesChanged = (items: BuildWatch[]) =>
+  queryClient.setQueryData(keys.buildWatches, items)
 
 export function useMainEvents(): void {
   useBridgeEvent('watch:changed', onWatchesChanged)
+  useBridgeEvent('buildwatch:changed', onBuildWatchesChanged)
   useBridgeEvent('settings:changed', onSettingsChanged)
   useBridgeEvent('notifications:changed', onNotificationsChanged)
   useBridgeEvent('repos:changed', onRepoChanged)

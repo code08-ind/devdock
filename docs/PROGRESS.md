@@ -14,8 +14,8 @@ Contract docs: `docs/SPEC.md`, `docs/UI-THEMES.md`, `docs/BUILD-PROMPTS.md` (pha
 
 | Field        | Value                                                         |
 | ------------ | ------------------------------------------------------------- |
-| Phase        | **Phase 4 — P4-A committed (dc4ef43); P4-B done** (code-review run, fixes applied), not committed. |
-| Next step    | User review → commit P4-B → **P4-C** renderer: Builds view (My branches, stages, console tail auto-scroll/search/copy), watch buttons + palette, trigger confirmation (hidden for protected), Settings → Jenkins, `P4.D2` e2e (hooks `trayStatus` / `pollBuilds` exist) |
+| Phase        | **Phase 4 — P4-A (dc4ef43), P4-B (43efc86) committed; P4-C done**, not committed. All Phase 4 Done criteria met. |
+| Next step    | User review → commit P4-C → push → read CI (macOS + Windows) → close Phase 4 → **Phase 5** (Utilities and standup). Was: **P4-C** renderer: Builds view (My branches, stages, console tail auto-scroll/search/copy), watch buttons + palette, trigger confirmation (hidden for protected), Settings → Jenkins, `P4.D2` e2e (hooks `trayStatus` / `pollBuilds` exist) |
 | Blockers     | None                                                          |
 | Last updated | 2026-10-25                                                    |
 
@@ -341,9 +341,9 @@ Done criteria:
 - [x] `P4.01` Jenkins client: Basic + API token, crumb handling (retry on 403) — `services/jenkins/client.ts` (crumb cached, 403 → fresh crumb, one retry; no issuer → none; JSESSIONID forwarded), IPC `jenkins:testConnection`; `tests/unit/jenkins-client.test.ts`
 - [x] `P4.02` Job tree discovery (multibranch), last build per branch — `JenkinsClient.branches` (folders/org folders 2 deep, `PR-{n}` jobs), "My branches" filter `jenkins/resolve.ts` `myBuilds` + `jenkins/mine.ts`, IPC `jenkins:branches`; UI is P4-C
 - [x] `P4.03` `wfapi/describe` stages + graceful fallback — `jenkins/wfapi.ts` `parseStages` (404/non-JSON → null = "stages unavailable"), IPC `jenkins:build`
-- [~] `P4.04` Console tail (progressive `start` offset, auto-scroll, search, copy) — main side done: `jenkins/console.ts` (byte offsets, reset, split UTF-8 held back, ANSI stripped), IPC `jenkins:console`; auto-scroll/search/copy UI is P4-C
-- [~] `P4.05` Watch build/job + notifications; Watch PR pipeline (PR → branch → job, no-match message) — main done: `services/jenkins/watcher.ts` `BuildWatcher` (build / job / deploy, persisted, save-before-notify, `job-finished`), IPC `buildwatch:list/add/addPr/remove/clearFinished` + `buildwatch:changed`; `tests/unit/build-watcher.test.ts`, `jenkins-triggers.test.ts` "Watch PR pipeline (demo)"; watch buttons/palette are P4-C
-- [~] `P4.06` Triggers: off default, per-job allow-list, protected patterns blocked in handler, UI hides, confirmation — handler done: `jenkins:trigger` (protected → off → not allow-listed, all `NOT_ALLOWED` before any request; `confirmed: true`), `jenkins:parameters`; `tests/unit/jenkins-triggers.test.ts`; hidden button + confirmation dialog are P4-C
+- [x] `P4.04` Console tail (progressive `start` offset, auto-scroll, search, copy) — UI `features/builds/ConsoleTail.tsx` (P4-C); main side: `jenkins/console.ts` (byte offsets, reset, split UTF-8 held back, ANSI stripped), IPC `jenkins:console`; auto-scroll/search/copy UI is P4-C
+- [x] `P4.05` Watch build/job + notifications; Watch PR pipeline (PR → branch → job, no-match message) — UI: Builds view eye buttons, pipeline field, palette `pipeline <link>` (P4-C); main: `services/jenkins/watcher.ts` `BuildWatcher` (build / job / deploy, persisted, save-before-notify, `job-finished`), IPC `buildwatch:list/add/addPr/remove/clearFinished` + `buildwatch:changed`; `tests/unit/build-watcher.test.ts`, `jenkins-triggers.test.ts` "Watch PR pipeline (demo)"; watch buttons/palette are P4-C
+- [x] `P4.06` Triggers: off default, per-job allow-list, protected patterns blocked in handler, UI hides, confirmation — UI: `TriggerDialog` + Settings → Jenkins switch/allow-list (P4-C), e2e "triggers: hidden by default …"; handler: `jenkins:trigger` (protected → off → not allow-listed, all `NOT_ALLOWED` before any request; `confirmed: true`), `jenkins:parameters`; `tests/unit/jenkins-triggers.test.ts`; hidden button + confirmation dialog are P4-C
 - [x] `P4.07` Deploy watcher (read-only) — `BuildWatcher` kind `deploy` (Settings → Jenkins → deploy job, my branch by parameter value); "deploy watcher: follows only the deploy job’s builds for my branch"; UI entry point is P4-C
 - [x] `P4.08` Tray status dot from watched builds — `src/main/tray.ts` (`trayStatus`, `watchedForTray`, `paintDot` onto the icon bitmap, watched items in the menu, tooltip); `tests/unit/tray.test.ts`, `tests/e2e/builds.spec.ts` (real tray: grey, watched PR pipeline listed as running)
 
@@ -369,14 +369,21 @@ Done criteria:
   after remove + re-add, 50-limit race, `WatchError`/`prRefFromLink` → `services/watch.ts`, `JobPathSchema` on
   stored watches, one `jobLabel`. Not changed (recorded in DECISIONS P4-B): green while others still run; a deploy
   that finished just before the watch was added.
-- [ ] **P4-C — Renderer + demo e2e**: Builds view (My branches, stages, console tail with auto-scroll/search/copy),
-  watch buttons + palette, trigger confirmation (job, branch, parameters; hidden for protected), Settings →
-  Jenkins (`ServiceBits`), `P4.D2` e2e.
+- [x] **P4-C — Renderer + demo e2e** (done 2026-10-25). Evidence: `npm run lint` exit 0; `npm test` → 41 files,
+  670 passed, 1 skipped; `npm run e2e` → 30 passed, 1 skipped (`builds.spec.ts`: 4); `npm run dist` exit 0
+  (arm64 + x64 dmg). New: Builds view (My branches, Watched, pipeline field, build dialog with stages + console
+  tail, trigger confirmation), Settings → Jenkins, Today watched builds, palette `pipeline <link>`, demo clock
+  speed for e2e, `builds-ui` unit tests (5). `code-review` (Standards + Spec) run; fixed: a failed watch could make
+  a trigger retry queue a second build, the post-trigger watch could follow an older running build (`next`),
+  password-only jobs POSTed `build` (400), duplicate `KeyValue` keys, live region on a stored setting, silently
+  trimmed console, endless retries on a deleted build, Builds opening on the wrong tab from a notification /
+  palette, duplicated watch-row head; the two main-side fixes mutation-checked. Recorded instead: stages in
+  the dialog, palette completeness (P6.01), one unexplained e2e view switch (DECISIONS P4-C).
 
 Done criteria:
 
 - [x] `P4.D1` Tests: stage parsing, console offset, PR→job, protected patterns (case + folder paths), crumb retry — Evidence: `tests/unit/jenkins-parse.test.ts` ("wfapi stage parsing", "progressive console offsets" incl. reset, bytes, split character, chunk-by-chunk rebuild), `jenkins-resolve.test.ts` ("Watch PR pipeline: PR → job resolution", "protected jobs": `apps/deploy-prod`, `apps/Deploy-PROD`, full-width, encoded, `prod|production`, `*`), `jenkins-client.test.ts` ("a 403 fetches a fresh crumb and retries once", "a second 403 is the answer")
-- [ ] `P4.D2` Demo e2e: running build → "passed" notification + green dot; failing → red — Evidence:
+- [x] `P4.D2` Demo e2e: running build → "passed" notification + green dot; failing → red — Evidence: `tests/e2e/builds.spec.ts` "P4.D2: watching a running PR pipeline ends in a \"passed\" notification and a green dot" (through the UI: pipeline field → Watched → `Passed · design-system #88 pipeline #12` in the notification history → tray `green`; then the console dialog) and "P4.D2: a failing watched build ends in a \"failed\" notification and a red dot" (eye button on `chore/bump-tooling` → `Failed · …` → tray `red`); screenshots `docs/screenshots/p4-builds.png`, `p4-build-console.png`
 
 ---
 
@@ -441,3 +448,4 @@ Done criteria:
 | 2026-10-25 | P3 close | Committed P3-C (ca32b02), pushed P3-A/B/C. CI run 40121991825: macOS + Windows green — lint/format/typecheck, unit, e2e (incl. prs.spec), package. Phase 3 closed; user paused before Phase 4. | Phase 4 |
 | 2026-10-25 | P4-A  | Split Phase 4 into P4-A/B/C. Jenkins core: shared job-path model + `jobFromUrl` + `isProtectedJob`, client (Basic, crumb + 403 retry, tree walk, last build, wfapi stages + fallback, progressive console, trigger), My branches matching, PR→job resolution, settings `jenkins`, demo Jenkins (running builds pass/fail on a clock), IPC `jenkins:testConnection/branches/build/console`; `rest.ts` exposes `send`/`readJson`. code-review run; 7 fixes, mutation-checked. lint/test/e2e green. Not committed. | User review → commit → P4-B |
 | 2026-10-25 | P4-B  | Committed P4-A (dc4ef43) on the user's "sure". Build watcher (build / job / deploy-for-my-branch, persisted, one `job-finished` notification each, failed stage named), Watch PR pipeline, trigger handler (protected → switch → allow-list, before any request), `jenkins:parameters`, second scheduler, tray dot painted on the icon + watched items in the menu, shared watch-list file helper, demo triggers + deploy build. lint/test/e2e green; 16 mutations checked. code-review then run (after agents first failed to launch); 11 fixes, mutation-checked; lint/test/e2e green (e2e 27). Not committed. | User review → commit → P4-C |
+| 2026-10-25 | P4-C  | Committed P4-B (43efc86) on the user's "Sure". Builds view, console tail, trigger dialog, Settings → Jenkins, Today watched builds, palette `pipeline <link>`, demo speed for e2e, P4.D2 e2e (green + red). code-review run; 9 fixes. lint/test/e2e/dist green. Phase 4 Done criteria all met. Not committed. | User review → commit/push/CI → Phase 5 |

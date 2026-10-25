@@ -192,7 +192,11 @@ export const contract = {
   'watch:list': { req: none, res: z.array(WatchItemSchema) },
   'watch:add': { req: z.object({ link: z.string().min(1).max(2000) }), res: WatchItemSchema },
   'watch:remove': { req: z.object({ key: z.string().min(1).max(400) }), res: none },
-  'watch:request': { req: z.object({ link: z.string().min(1).max(2000) }), res: none },
+  /** `pipeline`: watch the PR's Jenkins build (Builds view) instead of the PR itself. */
+  'watch:request': {
+    req: z.object({ link: z.string().min(1).max(2000), pipeline: z.boolean().optional() }),
+    res: none,
+  },
   'jenkins:testConnection': { req: none, res: JenkinsConnectionSchema },
   'jenkins:branches': { req: none, res: BranchesResultSchema },
   'jenkins:build': { req: BuildRefSchema, res: BuildDetailSchema },
@@ -285,7 +289,7 @@ export interface EventPayloads {
   'devserver:changed': DevServerState[]
   'devserver:output': DevServerOutputEvent
   'watch:changed': WatchItem[]
-  'watch:requested': { link: string }
+  'watch:requested': { link: string; pipeline?: boolean }
   'buildwatch:changed': BuildWatch[]
 }
 export type EventPayload<E extends EventChannel> = EventPayloads[E]

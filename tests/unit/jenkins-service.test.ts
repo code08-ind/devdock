@@ -144,6 +144,36 @@ describe('JenkinsService', () => {
     expect(err.kind).toBe('auth')
   })
 
+  it('trigger: a job whose only parameters are passwords still uses buildWithParameters', async () => {
+    const http = new ScriptedHttp([
+      (r) =>
+        new URL(r.url).pathname === '/jenkins/crumbIssuer/api/json'
+          ? json(jenkins.crumb)
+          : undefined,
+      (r) =>
+        new URL(r.url).pathname === '/jenkins/job/apps/job/deploy-dev/api/json'
+          ? json({
+              property: [
+                {
+                  parameterDefinitions: [
+                    {
+                      name: 'TOKEN',
+                      type: 'PasswordParameterDefinition',
+                      defaultParameterValue: {},
+                    },
+                  ],
+                },
+              ],
+            })
+          : undefined,
+      (r) => (r.method === 'POST' ? new Response(null, { status: 201 }) : undefined),
+    ])
+    await service(http, { baseUrl: JENKINS, username: 'ada' }).trigger('apps/deploy-dev', {})
+    expect(
+      http.requests.filter((q) => q.method === 'POST').map((q) => new URL(q.url).pathname),
+    ).toEqual(['/jenkins/job/apps/job/deploy-dev/buildWithParameters'])
+  })
+
   it('repo slugs from remotes', () => {
     expect(repoSlug('git@bitbucket.org:acme/web-app.git')).toBe('web-app')
     expect(repoSlug('https://bb.example.com/scm/proj/Design-System.git')).toBe('Design-System')

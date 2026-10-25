@@ -4,10 +4,12 @@ import type { View } from '@shared/channels'
 import type { RepoConfig } from '@shared/settings'
 import { usePrList, useWatchedKeys, useWatches } from '../../lib/bitbucket'
 import { isNotConfigured } from '../../lib/devdock'
+import { useBuildWatches, byLiveFirst } from '../../lib/jenkins'
 import { useJiraList } from '../../lib/jira'
 import { useRepoStatus, useRepos } from '../../lib/repos'
 import { Button } from '../../ui/Button'
 import { ErrorNotice } from '../../ui/Feedback'
+import { WatchHead, watchNote } from '../builds/BuildBits'
 import { PrRow } from '../prs/PrRow'
 import { RepoStatusError, RepoStatusLine } from '../repos/RepoStatusLine'
 import { StatusOf } from '../tickets/IssueBits'
@@ -18,6 +20,7 @@ export function TodayPage({ onView }: { onView: (v: View) => void }) {
     <div className="today">
       <MyPrs onView={onView} />
       <Watched onView={onView} />
+      <WatchedBuilds onView={onView} />
       <InProgress onView={onView} />
       <Repos onView={onView} />
     </div>
@@ -107,6 +110,30 @@ function Watched({ onView }: { onView: (v: View) => void }) {
           <PrRow key={w.key} pr={w.pr} watchKey={w.key} showAuthor>
             {w.error ? <p className="pr-watch-error">{w.error}</p> : null}
           </PrRow>
+        ))}
+      </ul>
+    </TodaySection>
+  )
+}
+
+/** SPEC 6.1 Today "watched builds": running ones first. Hidden while there are none. */
+function WatchedBuilds({ onView }: { onView: (v: View) => void }) {
+  const items = byLiveFirst(useBuildWatches().data ?? [])
+  if (items.length === 0) return null
+  return (
+    <TodaySection
+      id="today-builds"
+      title="Watched builds"
+      open={{ label: 'Open Builds', onClick: () => onView('builds') }}
+    >
+      <ul className="pr-list" aria-label="Watched builds">
+        {items.map((w) => (
+          <li key={w.key} className="pr-row">
+            <div className="pr-row-head">
+              <WatchHead watch={w} />
+            </div>
+            <p className={w.error ? 'pr-watch-error' : 'muted pr-watch-note'}>{watchNote(w)}</p>
+          </li>
         ))}
       </ul>
     </TodaySection>

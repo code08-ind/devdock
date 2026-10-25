@@ -77,7 +77,11 @@ export class JenkinsService {
 
   /** The handler has already checked the switch, the allow-list and the protected patterns. */
   async trigger(job: JobPath, parameters: Record<string, string>): Promise<string | null> {
-    return this.client().trigger(job, parameters)
+    // A job whose only parameters are passwords gets none from DevDock, but still needs
+    // buildWithParameters (its defaults apply).
+    const client = this.client()
+    const parameterised = (await client.parameters(job)).length > 0
+    return client.trigger(job, parameters, parameterised)
   }
 
   /** Settings → Jenkins → deploy job (the demo's in demo mode); null when none is set. */

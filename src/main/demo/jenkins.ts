@@ -315,8 +315,10 @@ const authed = (request: Request) => /^Basic .+/.test(request.headers.get('autho
  * Fresh state per call (demoHandlers() builds one set per app or test), so the running builds
  * start over each time.
  */
-export function jenkinsHandlers(): RequestHandler[] {
+export function jenkinsHandlers({ speed = 1 }: { speed?: number } = {}): RequestHandler[] {
   const startedAt = Date.now()
+  // The demo's clock: `speed` > 1 runs the builds faster (e2e only, see index.ts).
+  const now = () => startedAt + (Date.now() - startedAt) * speed
   // Triggers add builds, so each set of handlers has its own copy.
   const all: DemoJob[] = structuredClone(JOBS)
   const jobs = new Map(all.map((j) => [j.path, j]))
@@ -342,7 +344,7 @@ export function jenkinsHandlers(): RequestHandler[] {
 
   const buildJson = (job: DemoJob, build: DemoBuild) => {
     const started = startedAt - build.agoMin * MIN
-    const elapsed = (Date.now() - started) / 1000
+    const elapsed = (now() - started) / 1000
     const t = timeline(job, build, elapsed)
     return {
       _class: 'org.jenkinsci.plugins.workflow.job.WorkflowRun',
@@ -424,7 +426,7 @@ export function jenkinsHandlers(): RequestHandler[] {
       if (!build) return notFound()
       const page = tail.slice(1).join('/')
       const started = startedAt - build.agoMin * MIN
-      const t = timeline(job, build, (Date.now() - started) / 1000)
+      const t = timeline(job, build, (now() - started) / 1000)
       if (page === 'api/json') return HttpResponse.json(buildJson(job, build))
       if (page === 'wfapi/describe') {
         if (job.kind === 'freestyle') return notFound()
@@ -467,7 +469,7 @@ export function jenkinsHandlers(): RequestHandler[] {
       }
       const form =
         action === 'buildWithParameters' ? new URLSearchParams(await request.text()) : null
-      const sinceStartMin = (Date.now() - startedAt) / MIN
+      const sinceStartMin = (now() - startedAt) / MIN
       job.builds.push({
         number: (job.builds.at(-1)?.number ?? 0) + 1,
         result: 'SUCCESS',

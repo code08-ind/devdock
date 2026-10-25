@@ -140,6 +140,18 @@ describe('build watcher', () => {
     ])
   })
 
+  it('after a trigger (next: true) a job watch skips the build already running', async () => {
+    const t = setup()
+    t.j.set('web-app/develop', 230, 'running')
+    expect(await t.watcher.add({ kind: 'job', job: 'web-app/develop', next: true })).toMatchObject({
+      number: null,
+      after: 230,
+    })
+    t.j.set('web-app/develop', 231, 'running')
+    await t.watcher.poll()
+    expect(t.watcher.list()[0]).toMatchObject({ number: 231 })
+  })
+
   it('a job watch on a running job follows that build', async () => {
     const t = setup()
     t.j.set('web-app/develop', 230, 'running')

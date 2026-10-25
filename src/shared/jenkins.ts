@@ -80,6 +80,17 @@ export function jobFromUrl(
   return names.length && isJobPath(job) ? { job, build } : null
 }
 
+/**
+ * A job as typed in Settings: its path (`apps/web-app`, slashes around it ignored) or a job
+ * link on the configured site. Null when it is neither.
+ */
+export function jobPathFrom(input: string, baseUrl: string): JobPath | null {
+  const text = input.trim()
+  if (/^https?:\/\//i.test(text)) return baseUrl ? (jobFromUrl(baseUrl, text)?.job ?? null) : null
+  const path = text.replace(/^\/+|\/+$/g, '')
+  return isJobPath(path) ? path : null
+}
+
 /** SPEC 6.4 default: jobs whose name or path contains one of these can never be triggered. */
 export const DEFAULT_PROTECTED_JOBS = ['prod', 'production', 'uat', 'release'] as const
 
@@ -252,6 +263,23 @@ export type TriggerRequest = z.infer<typeof TriggerRequestSchema>
  */
 export const sameJob = (a: JobPath, b: JobPath) => a.toLowerCase() === b.toLowerCase()
 
+/**
+ * Whether a job may be triggered (SPEC 6.4): triggers on, the job allow-listed, and never a
+ * protected job. The renderer shows the button with this; the IPC handler checks the same.
+ */
+export function triggerRefusal(
+  job: JobPath,
+  settings: {
+    features: { jobTriggers: boolean; allowedJobs: readonly string[] }
+    jenkins: { protectedPatterns: readonly string[] }
+  },
+): 'protected' | 'off' | 'not-allowed' | null {
+  if (isProtectedJob(job, settings.jenkins.protectedPatterns)) return 'protected'
+  if (!settings.features.jobTriggers) return 'off'
+  if (!settings.features.allowedJobs.some((allowed) => sameJob(allowed, job))) return 'not-allowed'
+  return null
+}
+
 /** SPEC 6.4 watches: one build, a job's next build, or the deploy job's next build for a branch. */
 export const BUILD_WATCH_KINDS = ['build', 'job', 'deploy'] as const
 export type BuildWatchKind = (typeof BUILD_WATCH_KINDS)[number]
@@ -288,7 +316,12 @@ export type BuildWatch = z.infer<typeof BuildWatchSchema>
 
 export const BuildWatchRequestSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('build'), job: JobPathSchema, number: z.number().int().positive() }),
-  z.object({ kind: z.literal('job'), job: JobPathSchema }),
+  z.object({
+    kind: z.literal('job'),
+    job: JobPathSchema,
+    /** Only a build that starts after now (just triggered), not one already running. */
+    next: z.boolean().optional(),
+  }),
   /** Follows Settings → Jenkins → deploy job for this branch (SPEC 6.4 deploy watcher). */
   z.object({ kind: z.literal('deploy'), branch: z.string().trim().min(1).max(255) }),
 ])

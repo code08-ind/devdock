@@ -91,8 +91,9 @@ test('Cmd/Ctrl+K palette searches and runs a command', async ({ launched }) => {
   const palette = win.getByTestId('command-palette')
   await expect(palette).toBeVisible()
   await win.keyboard.type('jenkins')
-  await expect(palette.getByRole('option')).toHaveCount(1)
-  await expect(palette.getByRole('option')).toContainText('Go to Builds')
+  // "Go to Builds" first; the pipeline watch (P4-C) matches the keyword too.
+  await expect(palette.getByRole('option')).toHaveCount(2)
+  await expect(palette.getByRole('option').first()).toContainText('Go to Builds')
   await win.keyboard.press('Enter')
   await expect(palette).toBeHidden()
   await expect(win.locator('main')).toHaveAttribute('data-view', 'builds')

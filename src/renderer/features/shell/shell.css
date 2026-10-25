@@ -702,3 +702,51 @@
   min-width: 12em;
   overflow-wrap: anywhere;
 }
+
+/* ---- Builds (SPEC 6.4) ------------------------------------------------------------------- */
+.build-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+  margin: 0;
+}
+.stage-list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: var(--border-w) solid var(--border);
+  border-radius: var(--radius-md);
+}
+.stage {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--fs-sm);
+}
+.stage + .stage {
+  border-top: var(--border-w) solid var(--border);
+}
+.stage-name {
+  flex: 1;
+  min-width: 8rem;
+  font-weight: var(--fw-medium);
+}
+.console-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.console-bar .input {
+  flex: 1;
+  min-width: 12rem;
+}
+.console-log {
+  height: 18rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

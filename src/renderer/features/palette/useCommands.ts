@@ -15,7 +15,7 @@ import { buildCommands, queryCommands, type Command } from './commands'
 export function useCommands(
   goto: (view: View) => void,
   requestAction: (id: string, request: ActionRequest) => void,
-  watch: (link: string) => void,
+  watch: (link: string, pipeline?: boolean) => void,
 ): { commands: Command[]; forQuery: (query: string) => Command[] } {
   const { run } = useAction()
   const notifications = useNotificationActions()

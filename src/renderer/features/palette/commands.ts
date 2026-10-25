@@ -7,7 +7,7 @@ import { THEMES, type SettingsPatch, type Theme } from '@shared/settings'
 export interface Command {
   id: string
   title: string
-  group: 'Go to' | 'Repos' | 'Pull requests' | 'Appearance' | 'Notifications' | 'App'
+  group: 'Go to' | 'Repos' | 'Pull requests' | 'Builds' | 'Appearance' | 'Notifications' | 'App'
   keywords?: string[]
   shortcut?: string
   run: () => unknown
@@ -52,8 +52,11 @@ export interface CommandContext {
   requestAction: (id: string, request: ActionRequest) => unknown
   openRepo: (id: string, target: OpenTarget) => unknown
   openLabels: Record<OpenTarget, string>
-  /** Watches a PR link (the main window shows PRs and reports the result there). */
-  watch: (link: string) => unknown
+  /**
+   * Watches a PR link (the main window shows PRs and reports the result there), or with
+   * `pipeline` the Jenkins build that runs it (shown in Builds).
+   */
+  watch: (link: string, pipeline?: boolean) => unknown
 }
 
 const REPO_ACTIONS: { key: string; label: string; request: ActionRequest; keywords: string[] }[] = [
@@ -127,6 +130,13 @@ export function buildCommands(ctx: CommandContext, views: readonly View[]): Comm
       keywords: ['watch', 'bitbucket', 'link', 'pr', 'paste'],
       run: () => ctx.goto('prs'),
     },
+    {
+      id: 'build:pipeline',
+      title: "Watch a pull request's pipeline…",
+      group: 'Builds',
+      keywords: ['jenkins', 'build', 'watch', 'pipeline', 'pr', 'paste'],
+      run: () => ctx.goto('builds'),
+    },
     ...themes,
     ctx.paused
       ? {
@@ -168,37 +178,55 @@ export function buildCommands(ctx: CommandContext, views: readonly View[]): Comm
 
 /**
  * Commands made from what is typed (SPEC 6.1 "some take arguments, e.g. `watch <PR link>`"):
- * `watch <link>`, or a pull request link pasted on its own. Checked with the same parser as main.
+ * `watch <link>`, `pipeline <link>`, or a pull request link pasted on its own (both offered).
+ * Checked with the same parser as main.
  */
 export function queryCommands(
   query: string,
   ctx: Pick<CommandContext, 'watch' | 'goto'>,
 ): Command[] {
   const text = query.trim()
-  const argument = /^watch\s+(\S+)$/i.exec(text)?.[1]
+  const typed = /^(watch|pipeline)\s+(\S+)$/i.exec(text)
+  const verb = typed?.[1]?.toLowerCase()
+  const argument = typed?.[2]
   const link = argument ?? text
   const parsed = link ? parsePrLink(link) : null
   if (!parsed) {
     // `watch <something>` that isn't a link: say so (a bare non-link is just a search).
     return argument
       ? [
-          {
-            id: 'pr:watch-invalid',
-            title: `Not a pull request link: open Pull requests to paste one`,
-            group: 'Pull requests',
-            run: () => ctx.goto('prs'),
-          },
+          verb === 'pipeline'
+            ? {
+                id: 'build:pipeline-invalid',
+                title: 'Not a pull request link: open Builds to paste one',
+                group: 'Builds',
+                run: () => ctx.goto('builds'),
+              }
+            : {
+                id: 'pr:watch-invalid',
+                title: `Not a pull request link: open Pull requests to paste one`,
+                group: 'Pull requests',
+                run: () => ctx.goto('prs'),
+              },
         ]
       : []
   }
-  return [
-    {
-      id: 'pr:watch-link',
-      title: `Watch pull request ${parsed.ref.repo} #${parsed.ref.id}`,
-      group: 'Pull requests',
-      run: () => ctx.watch(link),
-    },
-  ]
+  const name = `${parsed.ref.repo} #${parsed.ref.id}`
+  const pr: Command = {
+    id: 'pr:watch-link',
+    title: `Watch pull request ${name}`,
+    group: 'Pull requests',
+    run: () => ctx.watch(link),
+  }
+  const pipeline: Command = {
+    id: 'build:pipeline-link',
+    title: `Watch the pipeline of ${name}`,
+    group: 'Builds',
+    run: () => ctx.watch(link, true),
+  }
+  if (verb === 'pipeline') return [pipeline]
+  if (verb === 'watch') return [pr]
+  return [pr, pipeline]
 }
 
 function score(c: Command, q: string): number {

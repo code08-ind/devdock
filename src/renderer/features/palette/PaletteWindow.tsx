@@ -10,7 +10,7 @@ const goto = (view: View) => void bridge.app.showView({ view })
 const requestAction = (id: string, request: ActionRequest) =>
   void bridge.repos.requestAction({ id, request })
 // This window hides after a command, so the main window watches it and reports the result.
-const watch = (link: string) => void bridge.watch.request({ link })
+const watch = (link: string, pipeline?: boolean) => void bridge.watch.request({ link, pipeline })
 
 /** The global-shortcut palette window. It is hidden, not destroyed, so reset on each show. */
 export function PaletteWindow() {

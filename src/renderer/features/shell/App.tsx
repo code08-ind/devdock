@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { VIEWS, type View } from '@shared/channels'
 import type { ActionRequest } from '@shared/repos'
 import { useAddWatch } from '../../lib/bitbucket'
+import { useWatchPipeline } from '../../lib/jenkins'
 import { useBridgeEvent, useSettings } from '../../lib/devdock'
 import { hasMod } from '../../lib/keyboard'
 import { useAction } from '../../lib/useAction'
@@ -9,6 +10,8 @@ import { useRepos } from '../../lib/repos'
 import { Button } from '../../ui/Button'
 import { useModal } from '../../ui/Dialog'
 import { EmptyState, useToast } from '../../ui/Feedback'
+import { watchLabel } from '../builds/BuildBits'
+import { BuildsPage } from '../builds/BuildsPage'
 import { CommandPalette } from '../palette/CommandPalette'
 import { VIEW_LABELS } from '../palette/commands'
 import { useCommands } from '../palette/useCommands'
@@ -26,7 +29,9 @@ function ViewBody({
   view,
   onView,
   onPalette,
+  buildsKey,
 }: {
+  buildsKey: number
   view: View
   onView: (v: View) => void
   onPalette: () => void
@@ -36,6 +41,8 @@ function ViewBody({
   if (view === 'today') return <TodayPage onView={onView} />
   if (view === 'tickets') return <TicketsPage onView={onView} />
   if (view === 'prs') return <PrsPage onView={onView} />
+  // Remounted (key) after a pipeline watch from the palette, so it opens on Watched.
+  if (view === 'builds') return <BuildsPage key={buildsKey} onView={onView} />
   return (
     <EmptyState
       icon={VIEW_ICONS[view]}
@@ -74,6 +81,7 @@ export function App() {
   const settings = useSettings().data
   const [view, setView] = useState<View>('today')
   const [paletteOpen, setPaletteOpen] = useState(false)
+  const [buildsKey, setBuildsKey] = useState(0)
   const [requested, setRequested] = useState<{ id: string; request: ActionRequest } | null>(null)
   const repos = useRepos()
   const requestedRepo = requested ? repos.find((r) => r.id === requested.id) : undefined
@@ -81,18 +89,29 @@ export function App() {
     setView('repos')
     setRequested({ id, request })
   }, [])
-  // `watch <link>` from either palette: show PRs and report the result here (toast).
+  // `watch <link>` / `pipeline <link>` from either palette: show PRs or Builds and report the
+  // result here (toast).
   const { run } = useAction()
   const toast = useToast()
   const addWatch = useAddWatch().mutateAsync
+  const watchPipeline = useWatchPipeline().mutateAsync
   const watchLink = useCallback(
-    (link: string) => {
+    (link: string, pipeline = false) => {
+      if (pipeline) {
+        setView('builds')
+        void run(watchPipeline(link)).then((r) => {
+          if (!r.ok) return
+          toast(`Watching ${watchLabel(r.value)}`)
+          setBuildsKey((k) => k + 1)
+        })
+        return
+      }
       setView('prs')
       void run(addWatch(link)).then((r) => {
         if (r.ok) toast(`Watching ${prLabel(r.value.pr)}`)
       })
     },
-    [run, toast, addWatch],
+    [run, toast, addWatch, watchPipeline],
   )
   const { commands, forQuery } = useCommands(setView, requestAction, watchLink)
   const main = useRef<HTMLElement>(null)
@@ -104,7 +123,10 @@ export function App() {
     [requestAction],
   )
   useBridgeEvent('repos:actionRequested', onActionRequested)
-  const onWatchRequested = useCallback(({ link }: { link: string }) => watchLink(link), [watchLink])
+  const onWatchRequested = useCallback(
+    ({ link, pipeline }: { link: string; pipeline?: boolean }) => watchLink(link, pipeline),
+    [watchLink],
+  )
   useBridgeEvent('watch:requested', onWatchRequested)
 
   useEffect(() => {
@@ -141,7 +163,12 @@ export function App() {
         <h1 className="view-title" tabIndex={-1}>
           {VIEW_LABELS[view]}
         </h1>
-        <ViewBody view={view} onView={setView} onPalette={() => setPaletteOpen(true)} />
+        <ViewBody
+          view={view}
+          onView={setView}
+          onPalette={() => setPaletteOpen(true)}
+          buildsKey={buildsKey}
+        />
       </main>
       {requested && requestedRepo ? (
         <ActionDialog

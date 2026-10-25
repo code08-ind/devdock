@@ -2,7 +2,7 @@
 import type { View } from '@shared/channels'
 import type { ErrorCode, Res } from '@shared/ipc'
 import type { ActionRequest, OpenTarget, RepoOutputEvent } from '@shared/repos'
-import type { RepoConfig } from '@shared/settings'
+import type { RepoConfig, Settings } from '@shared/settings'
 import { DEMO_ORIGIN } from './demo/handlers'
 import { IpcError, type HandlerMap } from './ipc/registry'
 import { checkExternalUrl, linkHosts } from './security'
@@ -15,7 +15,7 @@ import { PrActionError } from './services/bitbucket/client'
 import type { BitbucketService } from './services/bitbucket/service'
 import type { PrWatcher } from './services/bitbucket/watcher'
 import { WatchError } from './services/watch'
-import { isProtectedJob, sameJob } from '@shared/jenkins'
+import { triggerRefusal } from '@shared/jenkins'
 import type { JenkinsService } from './services/jenkins/service'
 import type { BuildWatcher } from './services/jenkins/watcher'
 import type { JiraService } from './services/jira/service'
@@ -61,7 +61,7 @@ export interface HandlerDeps {
   buildWatcher: BuildWatcher
   startWork: StartWorkService
   /** Shows PRs in the main window and hands it a link to watch (from the palette window). */
-  requestWatch: (link: string) => void
+  requestWatch: (link: string, pipeline: boolean) => void
   /** Brings up the main window's action dialog (from the palette window). */
   requestRepoAction: (event: { id: string; request: ActionRequest }) => void
 }
@@ -90,6 +90,18 @@ async function withGit<T>(fn: () => Promise<T> | T): Promise<T> {
     if (err instanceof DevServerError) throw new IpcError('PRECONDITION_FAILED', err.message)
     throw err
   }
+}
+
+const TRIGGER_REFUSALS: Record<
+  NonNullable<ReturnType<typeof triggerRefusal>>,
+  (job: string, s: Settings) => string
+> = {
+  protected: (job, s) =>
+    `${job} matches a protected pattern (${s.jenkins.protectedPatterns.join(', ')}), so DevDock never triggers it. Run it from Jenkins if your role permits.`,
+  off: () =>
+    'Job triggers are turned off. Turn them on in Settings → Jenkins (only if your role permits).',
+  'not-allowed': (job) =>
+    `${job} isn't on the list of jobs DevDock may trigger. Add it in Settings → Jenkins.`,
 }
 
 const SERVICE_CODES: Record<ServiceErrorKind, ErrorCode> = {
@@ -279,7 +291,7 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
     'watch:list': () => deps.prWatcher.list(),
     'watch:add': ({ link }) => withWatch(() => deps.prWatcher.add(link)),
     'watch:remove': ({ key }) => deps.prWatcher.remove(key),
-    'watch:request': ({ link }) => deps.requestWatch(link),
+    'watch:request': ({ link, pipeline }) => deps.requestWatch(link, pipeline ?? false),
     'jenkins:testConnection': () => withService(() => deps.jenkins.testConnection()),
     'jenkins:branches': () => withService(() => deps.jenkins.branches()),
     'jenkins:build': (ref) => withService(() => deps.jenkins.build(ref)),
@@ -289,25 +301,9 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
       withService(async () => {
         // SPEC 6.4: checked here, whatever the renderer showed or sent. Protected wins over
         // the allow-list: those jobs can never be triggered from DevDock.
-        const { features, jenkins } = deps.settings.get()
-        if (isProtectedJob(job, jenkins.protectedPatterns)) {
-          throw new IpcError(
-            'NOT_ALLOWED',
-            `${job} matches a protected pattern (${jenkins.protectedPatterns.join(', ')}), so DevDock never triggers it. Run it from Jenkins if your role permits.`,
-          )
-        }
-        if (!features.jobTriggers) {
-          throw new IpcError(
-            'NOT_ALLOWED',
-            'Job triggers are turned off. Turn them on in Settings → Jenkins (only if your role permits).',
-          )
-        }
-        if (!features.allowedJobs.some((allowed) => sameJob(allowed, job))) {
-          throw new IpcError(
-            'NOT_ALLOWED',
-            `${job} isn't on the list of jobs DevDock may trigger. Add it in Settings → Jenkins.`,
-          )
-        }
+        const settings = deps.settings.get()
+        const refusal = triggerRefusal(job, settings)
+        if (refusal) throw new IpcError('NOT_ALLOWED', TRIGGER_REFUSALS[refusal](job, settings))
         return { queueUrl: await deps.jenkins.trigger(job, parameters) }
       }),
     'buildwatch:list': () => deps.buildWatcher.list(),

@@ -184,7 +184,10 @@ function start(): void {
   const http = new SwitchingHttpClient(
     () => store.get().general.demoMode,
     new RealHttpClient((request) => net.fetch(request)),
-    new DemoHttpClient(demoHandlers()),
+    // e2e may run the demo builds faster (DEVDOCK_DEMO_SPEED); never in normal runs.
+    new DemoHttpClient(
+      demoHandlers({ jenkinsSpeed: E2E ? Number(process.env.DEVDOCK_DEMO_SPEED) || 1 : 1 }),
+    ),
   )
 
   const git = new GitRunner()
@@ -326,9 +329,9 @@ function start(): void {
         writeClipboard: (text) => clipboard.writeText(text),
         openEditor: (repo) => openRepo(repo, 'editor'),
       }),
-      requestWatch: (link) => {
-        showView('prs')
-        mainWindow?.webContents.send('watch:requested', { link })
+      requestWatch: (link, pipeline) => {
+        showView(pipeline ? 'builds' : 'prs')
+        mainWindow?.webContents.send('watch:requested', { link, pipeline })
       },
       requestRepoAction: (event) => {
         showView('repos')
