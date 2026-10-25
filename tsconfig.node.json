@@ -16,6 +16,7 @@
     // DOM-free renderer logic that unit tests import directly.
     "src/renderer/features/palette/commands.ts",
     "src/renderer/features/builds/console.ts",
+    "src/renderer/features/utilities/pure.ts",
     "tests/unit/**/*",
     "tests/integration/**/*",
     "tests/fixtures/**/*"

@@ -2,7 +2,7 @@ import type { ListeningPort } from '@shared/utilities'
 
 /**
  * Parsers for the port scanner (SPEC 6.6). Pure, tested on captured outputs.
- * macOS: `lsof -nP -iTCP -sTCP:LISTEN` (+ `ps -o pid=,args=` for full command lines).
+ * macOS: `lsof +c 0 -nP -iTCP -sTCP:LISTEN` (+ `ps -o pid=,args=` for full command lines).
  * Windows: `netstat -ano -p tcp` / `-p tcpv6` + `tasklist /FO CSV /NH`.
  */
 
@@ -10,7 +10,7 @@ export interface Listener {
   port: number
   pid: number
   address: string
-  /** lsof's COMMAND column (at most 9 characters); null on Windows. */
+  /** lsof's COMMAND column (`\x20` for spaces); null on Windows. */
   name: string | null
 }
 

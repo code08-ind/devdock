@@ -99,6 +99,8 @@ export const INVOKE_CHANNELS = [
   'envprofiles:clearAll',
   /** SPEC 6.6 standup draft from commits, PRs and Jira. */
   'standup:draft',
+  /** Palette window → main window: show Utilities on a tab (`kill 5173` → that port). */
+  'utilities:request',
 ] as const
 
 /** Events pushed from main to renderer. */
@@ -118,6 +120,7 @@ export const EVENT_CHANNELS = [
   'watch:requested',
   /** The build watch list or a watched build changed. */
   'buildwatch:changed',
+  'utilities:requested',
 ] as const
 
 export type InvokeChannel = (typeof INVOKE_CHANNELS)[number]

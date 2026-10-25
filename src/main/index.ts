@@ -353,6 +353,10 @@ function start(): void {
         writeClipboard: (text) => clipboard.writeText(text),
         openEditor: (repo) => openRepo(repo, 'editor'),
       }),
+      requestUtility: (request) => {
+        showView('utilities')
+        mainWindow?.webContents.send('utilities:requested', request)
+      },
       requestWatch: (link, pipeline) => {
         showView(pipeline ? 'builds' : 'prs')
         mainWindow?.webContents.send('watch:requested', { link, pipeline })

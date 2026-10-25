@@ -24,6 +24,9 @@ const ctx = (over: Partial<CommandContext> = {}): CommandContext => ({
   openRepo: vi.fn(),
   openLabels: { editor: 'Open in VS Code', terminal: 'Open terminal', files: 'Reveal in Finder' },
   watch: vi.fn(),
+  utility: vi.fn(),
+  quickLinks: [],
+  openLink: vi.fn(),
   ...over,
 })
 
@@ -165,5 +168,55 @@ describe('watch <PR link> (SPEC 6.1 argument command)', () => {
     expect(c.goto).toHaveBeenCalledWith('prs')
     // With a link typed, the static entry no longer matches: only the argument command shows.
     expect(filterCommands(buildCommands(c, VIEWS), `watch ${DC}`)).toEqual([])
+  })
+})
+
+describe('Utilities in the palette (SPEC 6.1 / 6.6)', () => {
+  it('`kill 5173` opens the stop dialog for that port (it never stops anything itself)', () => {
+    const c = ctx()
+    const [cmd, ...rest] = queryCommands('kill 5173', c)
+    expect(rest).toEqual([])
+    expect(cmd).toMatchObject({ title: 'Stop the process on port 5173…', group: 'Utilities' })
+    void cmd!.run()
+    expect(c.utility).toHaveBeenCalledWith({ tab: 'ports', stopPort: 5173 })
+    expect(queryCommands('kill 70000', c)).toEqual([])
+    expect(queryCommands('kill', c)).toEqual([])
+  })
+
+  it('each quick link is a command, found by name, group or host', () => {
+    const c = ctx({
+      quickLinks: [
+        {
+          id: 'a',
+          name: 'Orders dashboard',
+          url: 'https://eu-west-1.console.aws.amazon.com/cw',
+          group: 'AWS',
+        },
+      ],
+    })
+    for (const q of ['orders', 'aws', 'eu-west']) {
+      expect(
+        filterCommands(buildCommands(c, VIEWS), q).map((x) => x.id),
+        q,
+      ).toContain('link:a')
+    }
+    const link = buildCommands(c, VIEWS).find((x) => x.id === 'link:a')!
+    expect(link).toMatchObject({ title: 'Open Orders dashboard', group: 'Quick links' })
+    void link.run()
+    expect(c.openLink).toHaveBeenCalledWith('https://eu-west-1.console.aws.amazon.com/cw')
+  })
+
+  it('every utility has an entry that opens its tab', () => {
+    const c = ctx()
+    const utils = buildCommands(c, VIEWS).filter((x) => x.group === 'Utilities')
+    expect(utils.map((x) => x.id)).toEqual([
+      'util:ports',
+      'util:caches',
+      'util:env',
+      'util:links',
+      'util:standup',
+    ])
+    void filterCommands(utils, 'standup')[0]!.run()
+    expect(c.utility).toHaveBeenCalledWith({ tab: 'standup' })
   })
 })

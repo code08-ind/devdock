@@ -6,6 +6,7 @@ import { modLabel } from '../../lib/keyboard'
 import { OPEN_LABELS, useOpenRepo, useRepos } from '../../lib/repos'
 import { useAction } from '../../lib/useAction'
 import { THEME_LABELS } from '../../ui/appearance'
+import type { UtilityRequest } from '@shared/utilities'
 import { buildCommands, queryCommands, type Command } from './commands'
 
 /**
@@ -16,6 +17,7 @@ export function useCommands(
   goto: (view: View) => void,
   requestAction: (id: string, request: ActionRequest) => void,
   watch: (link: string, pipeline?: boolean) => void,
+  utility: (request: UtilityRequest) => void,
 ): { commands: Command[]; forQuery: (query: string) => Command[] } {
   const { run } = useAction()
   const notifications = useNotificationActions()
@@ -25,7 +27,7 @@ export function useCommands(
   const paused = usePauseState().data?.pausedUntil != null
   const repos = useRepos()
 
-  const forQuery = (query: string) => queryCommands(query, { watch, goto })
+  const forQuery = (query: string) => queryCommands(query, { watch, goto, utility })
   if (!settings) return { commands: [], forQuery }
   const commands = buildCommands(
     {
@@ -46,6 +48,9 @@ export function useCommands(
       openRepo,
       openLabels: OPEN_LABELS,
       watch,
+      utility,
+      quickLinks: settings.quickLinks,
+      openLink: (url) => run(unwrap(bridge.app.openExternal({ url }))),
     },
     VIEWS,
   )

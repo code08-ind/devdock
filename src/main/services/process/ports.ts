@@ -94,7 +94,8 @@ export class PortService {
   }
 
   private async listUnix(): Promise<ListeningPort[]> {
-    const lsof = await this.tool('lsof', ['-nP', '-iTCP', '-sTCP:LISTEN'])
+    // `+c 0`: the whole process name (lsof cuts it to 9 characters otherwise).
+    const lsof = await this.tool('lsof', ['+c', '0', '-nP', '-iTCP', '-sTCP:LISTEN'])
     // lsof exits 1 when nothing matches.
     if (lsof.code !== 0 && lsof.code !== 1) {
       throw new ProcessError('failed', "Couldn't list ports: lsof failed.", lsof.stderr)

@@ -14,6 +14,14 @@ export const ListeningPortSchema = z.object({
 })
 export type ListeningPort = z.infer<typeof ListeningPortSchema>
 
+/** The Utilities view's tabs; the palette opens one (`kill 5173` → Ports, that port). */
+export const UTILITY_TABS = ['ports', 'caches', 'env', 'links', 'standup'] as const
+export const UtilityRequestSchema = z.object({
+  tab: z.enum(UTILITY_TABS),
+  stopPort: z.number().int().min(1).max(65535).optional(),
+})
+export type UtilityRequest = z.infer<typeof UtilityRequestSchema>
+
 /** SPEC 6.6 quick filters. */
 export const PORT_FILTERS = [
   { label: '3000–3010', from: 3000, to: 3010 },
@@ -90,3 +98,16 @@ export const CleanResultSchema = z.object({
   freedBytes: z.number().int().nonnegative(),
 })
 export type CleanResult = z.infer<typeof CleanResultSchema>
+
+/** "1.4 MB" (binary units, as file managers show). */
+export function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  const units = ['KB', 'MB', 'GB', 'TB']
+  let value = bytes / 1024
+  let unit = 0
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024
+    unit++
+  }
+  return `${value < 10 ? value.toFixed(1) : Math.round(value)} ${units[unit]}`
+}

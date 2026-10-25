@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Download, FolderOpen, Upload } from 'lucide-react'
 import type { Settings } from '@shared/settings'
-import { bridge, keys, unwrap, useUpdateSettings } from '../../lib/devdock'
+import { bridge, keys, unwrap, useUpdateSettings, DevDockError } from '../../lib/devdock'
 import { useAction } from '../../lib/useAction'
 import { Button } from '../../ui/Button'
 import { ConfirmDialog, Dialog } from '../../ui/Dialog'
@@ -151,6 +151,25 @@ function DangerZone() {
     qc.setQueryData(keys.settings, await unwrap(bridge.settings.reset()))
   }
   const refresh = () => qc.invalidateQueries({ queryKey: keys.secretsAll })
+  /** Every part is tried; one that fails is named (the others are cleared regardless). */
+  const clearEverything = async () => {
+    const parts: [string, () => Promise<unknown>][] = [
+      ['credentials', clearCredentials],
+      ['env profiles', () => unwrap(bridge.envprofiles.clearAll({ confirmed: true }))],
+      ['notification history', () => unwrap(bridge.notifications.clear())],
+      ['settings', resetSettings],
+    ]
+    const results = await Promise.allSettled(parts.map(([, fn]) => fn()))
+    const failed = parts.filter((_, i) => results[i]!.status === 'rejected').map(([what]) => what)
+    if (failed.length) {
+      const first = results.find((r) => r.status === 'rejected') as PromiseRejectedResult
+      throw new DevDockError(
+        'INTERNAL',
+        `Couldn't clear ${failed.join(', ')}; everything else was cleared.`,
+        first.reason instanceof Error ? first.reason.message : String(first.reason),
+      )
+    }
+  }
 
   return (
     <div className="danger-zone">
@@ -194,23 +213,15 @@ function DangerZone() {
         title="Clear all DevDock data?"
         body={
           <p>
-            DevDock deletes every stored token, clears notification history and resets every setting
-            to its default. Log files stay so you can still report problems.
+            DevDock deletes every stored token and saved env profile, clears notification history
+            and resets every setting to its default. Log files stay so you can still report
+            problems.
           </p>
         }
         confirmLabel="Clear all data"
         danger
         onClose={close}
-        onConfirm={() =>
-          void run(
-            Promise.all([
-              clearCredentials(),
-              unwrap(bridge.notifications.clear()),
-              resetSettings(),
-            ]),
-            'All data cleared',
-          ).then(refresh)
-        }
+        onConfirm={() => void run(clearEverything(), 'All data cleared').then(refresh)}
       />
     </div>
   )

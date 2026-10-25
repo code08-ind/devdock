@@ -52,6 +52,7 @@ import {
   ListeningPortSchema,
   StopRequestSchema,
   StopResultSchema,
+  UtilityRequestSchema,
 } from './utilities'
 import {
   ActionOutcomeSchema,
@@ -267,6 +268,7 @@ export const contract = {
   /** Settings → Clear all data. */
   'envprofiles:clearAll': { req: z.object({ confirmed: z.literal(true) }), res: none },
   'standup:draft': { req: none, res: StandupDraftSchema },
+  'utilities:request': { req: UtilityRequestSchema, res: none },
   /** Read-only: branch name, commands, brief path + .gitignore check, agent and message. */
   'startwork:plan': { req: StartWorkRequestSchema, res: StartWorkPlanSchema },
   'startwork:run': { req: StartWorkRunSchema, res: StartWorkResultSchema },
@@ -307,6 +309,8 @@ export const ERROR_CODES = [
   'CERTIFICATE',
   'NETWORK',
   'SERVICE_FAILED',
+  // A process that didn't accept a polite stop (Ports: offer Force stop).
+  'NOT_STOPPED',
 ] as const
 export type ErrorCode = (typeof ERROR_CODES)[number]
 
@@ -331,5 +335,6 @@ export interface EventPayloads {
   'watch:changed': WatchItem[]
   'watch:requested': { link: string; pipeline?: boolean }
   'buildwatch:changed': BuildWatch[]
+  'utilities:requested': z.infer<typeof UtilityRequestSchema>
 }
 export type EventPayload<E extends EventChannel> = EventPayloads[E]

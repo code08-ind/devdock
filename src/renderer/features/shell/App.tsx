@@ -22,6 +22,8 @@ import { ReposPage } from '../repos/ReposPage'
 import { SettingsPage } from '../settings/SettingsPage'
 import { TicketsPage } from '../tickets/TicketsPage'
 import { TodayPage } from '../today/TodayPage'
+import type { UtilityRequest } from '@shared/utilities'
+import { UtilitiesPage } from '../utilities/UtilitiesPage'
 import { NavRail } from './NavRail'
 import { EMPTY_COPY, VIEW_ICONS } from './views'
 
@@ -30,8 +32,11 @@ function ViewBody({
   onView,
   onPalette,
   buildsKey,
+  utility,
 }: {
   buildsKey: number
+  /** The palette's last request for Utilities (remounts the view on its tab). */
+  utility: { n: number; request: UtilityRequest } | null
   view: View
   onView: (v: View) => void
   onPalette: () => void
@@ -43,6 +48,9 @@ function ViewBody({
   if (view === 'prs') return <PrsPage onView={onView} />
   // Remounted (key) after a pipeline watch from the palette, so it opens on Watched.
   if (view === 'builds') return <BuildsPage key={buildsKey} onView={onView} />
+  if (view === 'utilities') {
+    return <UtilitiesPage key={utility?.n ?? 0} request={utility?.request} onView={onView} />
+  }
   return (
     <EmptyState
       icon={VIEW_ICONS[view]}
@@ -82,6 +90,12 @@ export function App() {
   const [view, setView] = useState<View>('today')
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [buildsKey, setBuildsKey] = useState(0)
+  const [utility, setUtility] = useState<{ n: number; request: UtilityRequest } | null>(null)
+  const openUtility = useCallback((request: UtilityRequest) => {
+    setUtility((u) => ({ n: (u?.n ?? 0) + 1, request }))
+    setView('utilities')
+  }, [])
+  useBridgeEvent('utilities:requested', openUtility)
   const [requested, setRequested] = useState<{ id: string; request: ActionRequest } | null>(null)
   const repos = useRepos()
   const requestedRepo = requested ? repos.find((r) => r.id === requested.id) : undefined
@@ -113,7 +127,7 @@ export function App() {
     },
     [run, toast, addWatch, watchPipeline],
   )
-  const { commands, forQuery } = useCommands(setView, requestAction, watchLink)
+  const { commands, forQuery } = useCommands(setView, requestAction, watchLink, openUtility)
   const main = useRef<HTMLElement>(null)
 
   useBridgeEvent('nav:goto', setView)
@@ -168,6 +182,7 @@ export function App() {
           onView={setView}
           onPalette={() => setPaletteOpen(true)}
           buildsKey={buildsKey}
+          utility={utility}
         />
       </main>
       {requested && requestedRepo ? (

@@ -2,12 +2,31 @@ import type { View } from '@shared/channels'
 import { parsePrLink } from '@shared/prlink'
 import type { ActionRequest, OpenTarget } from '@shared/repos'
 import { THEMES, type SettingsPatch, type Theme } from '@shared/settings'
+import type { QuickLink } from '@shared/links'
+import type { UtilityRequest } from '@shared/utilities'
+
+const linkHost = (url: string) => {
+  try {
+    return new URL(url).hostname
+  } catch {
+    return ''
+  }
+}
 
 /** One palette entry. Argument commands (`watch <link>`) come from `queryCommands`. */
 export interface Command {
   id: string
   title: string
-  group: 'Go to' | 'Repos' | 'Pull requests' | 'Builds' | 'Appearance' | 'Notifications' | 'App'
+  group:
+    | 'Go to'
+    | 'Repos'
+    | 'Pull requests'
+    | 'Builds'
+    | 'Utilities'
+    | 'Quick links'
+    | 'Appearance'
+    | 'Notifications'
+    | 'App'
   keywords?: string[]
   shortcut?: string
   run: () => unknown
@@ -57,7 +76,24 @@ export interface CommandContext {
    * `pipeline` the Jenkins build that runs it (shown in Builds).
    */
   watch: (link: string, pipeline?: boolean) => unknown
+  /** Opens a Utilities tab (`stopPort`: the stop dialog for that port's process). */
+  utility: (request: UtilityRequest) => unknown
+  /** SPEC 6.6 quick links: each is a palette command. */
+  quickLinks: readonly QuickLink[]
+  openLink: (url: string) => unknown
 }
+
+const UTILITY_COMMANDS: { tab: UtilityRequest['tab']; title: string; keywords: string[] }[] = [
+  {
+    tab: 'ports',
+    title: 'Show listening ports',
+    keywords: ['port', 'kill', 'lsof', 'netstat', 'process'],
+  },
+  { tab: 'caches', title: 'Clean caches…', keywords: ['dist', 'coverage', 'vite', 'node_modules'] },
+  { tab: 'env', title: 'Switch env profile…', keywords: ['env', '.env.local', 'dotenv'] },
+  { tab: 'links', title: 'Manage quick links', keywords: ['links', 'bookmarks', 'aws'] },
+  { tab: 'standup', title: 'Write standup draft', keywords: ['standup', 'yesterday', 'daily'] },
+]
 
 const REPO_ACTIONS: { key: string; label: string; request: ActionRequest; keywords: string[] }[] = [
   { key: 'fetch', label: 'Fetch all', request: { action: 'fetchAll' }, keywords: ['git', 'fetch'] },
@@ -137,6 +173,21 @@ export function buildCommands(ctx: CommandContext, views: readonly View[]): Comm
       keywords: ['jenkins', 'build', 'watch', 'pipeline', 'pr', 'paste'],
       run: () => ctx.goto('builds'),
     },
+    ...UTILITY_COMMANDS.map<Command>((u) => ({
+      id: `util:${u.tab}`,
+      title: u.title,
+      group: 'Utilities',
+      keywords: u.keywords,
+      run: () => ctx.utility({ tab: u.tab }),
+    })),
+    ...ctx.quickLinks.map<Command>((l) => ({
+      id: `link:${l.id}`,
+      title: `Open ${l.name}`,
+      group: 'Quick links',
+      // Matched lower-case (see score).
+      keywords: [l.group, linkHost(l.url)].filter(Boolean).map((k) => k.toLowerCase()),
+      run: () => ctx.openLink(l.url),
+    })),
     ...themes,
     ctx.paused
       ? {
@@ -183,9 +234,24 @@ export function buildCommands(ctx: CommandContext, views: readonly View[]): Comm
  */
 export function queryCommands(
   query: string,
-  ctx: Pick<CommandContext, 'watch' | 'goto'>,
+  ctx: Pick<CommandContext, 'watch' | 'goto' | 'utility'>,
 ): Command[] {
   const text = query.trim()
+  // `kill 5173` (SPEC 6.1): opens the stop dialog for that port's process — never stops it here.
+  const kill = /^kill\s+(\d{1,5})$/i.exec(text)
+  if (kill) {
+    const port = Number(kill[1])
+    return port >= 1 && port <= 65535
+      ? [
+          {
+            id: 'util:kill-port',
+            title: `Stop the process on port ${port}…`,
+            group: 'Utilities',
+            run: () => ctx.utility({ tab: 'ports', stopPort: port }),
+          },
+        ]
+      : []
+  }
   const typed = /^(watch|pipeline)\s+(\S+)$/i.exec(text)
   const verb = typed?.[1]?.toLowerCase()
   const argument = typed?.[2]

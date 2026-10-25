@@ -1,6 +1,6 @@
 /** One handler per IPC channel in @shared/ipc `contract`. Electron-free: adapters are injected. */
 import type { View } from '@shared/channels'
-import type { ErrorCode, Res } from '@shared/ipc'
+import type { ErrorCode, Req, Res } from '@shared/ipc'
 import type { ActionRequest, OpenTarget, RepoOutputEvent } from '@shared/repos'
 import type { RepoConfig, Settings } from '@shared/settings'
 import { DEMO_ORIGIN } from './demo/handlers'
@@ -70,6 +70,8 @@ export interface HandlerDeps {
   startWork: StartWorkService
   /** Shows PRs in the main window and hands it a link to watch (from the palette window). */
   requestWatch: (link: string, pipeline: boolean) => void
+  /** Shows Utilities in the main window on a tab (from the palette window). */
+  requestUtility: (request: Req<'utilities:request'>) => void
   /** Brings up the main window's action dialog (from the palette window). */
   requestRepoAction: (event: { id: string; request: ActionRequest }) => void
 }
@@ -119,7 +121,7 @@ const PROCESS_CODES: Record<ProcessErrorKind, ErrorCode> = {
   permission: 'NOT_ALLOWED',
   changed: 'PRECONDITION_FAILED',
   gone: 'NOT_FOUND',
-  'not-stopped': 'PRECONDITION_FAILED',
+  'not-stopped': 'NOT_STOPPED',
 }
 
 /** Port scanning and stopping: typed failures with what the OS said in Details. */
@@ -395,6 +397,7 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
       withEnv(() => deps.envProfiles.diff(deps.repos.get(id), a, b)),
     'envprofiles:clearAll': () => withEnv(() => deps.envProfiles.clearAll()),
     'standup:draft': () => deps.standupDraft(),
+    'utilities:request': (request) => deps.requestUtility(request),
     'startwork:plan': (request) => withStartWork(() => deps.startWork.plan(request)),
     'startwork:run': (request) =>
       withStartWork(() =>

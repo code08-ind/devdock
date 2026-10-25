@@ -64,6 +64,11 @@ export function applyPatch(current: Settings, patch: SettingsPatch): Settings {
   const next: Raw = { ...current }
   for (const [section, value] of Object.entries(patch)) {
     if (value === undefined) continue
+    // A top-level list (quickLinks) is replaced whole, like arrays inside sections.
+    if (Array.isArray(value)) {
+      next[section] = value
+      continue
+    }
     const base = (current as unknown as Raw)[section] as Raw
     const merged: Raw = { ...base }
     for (const [k, v] of Object.entries(value as Raw)) {

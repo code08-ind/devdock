@@ -163,3 +163,18 @@ describe('notification types added later', () => {
     ).toBe(false)
   })
 })
+
+describe('top-level lists in a patch (P5-C)', () => {
+  it('quickLinks is replaced whole, other settings untouched', async () => {
+    const { mkdtempSync } = await import('node:fs')
+    const { tmpdir } = await import('node:os')
+    const { join } = await import('node:path')
+    const { SettingsStore } = await import('../../src/main/services/settings')
+    const store = new SettingsStore(join(mkdtempSync(join(tmpdir(), 'devdock-set-')), 's.json'))
+    store.update({ appearance: { theme: 'dark' } })
+    const link = { id: 'a', name: 'A', url: 'https://a.example.com', group: '' }
+    expect(store.update({ quickLinks: [link] }).quickLinks).toEqual([link])
+    expect(store.update({ quickLinks: [] }).quickLinks).toEqual([])
+    expect(store.get().appearance.theme).toBe('dark')
+  })
+})

@@ -29,7 +29,7 @@ describe('port parsers: macOS (lsof + ps)', () => {
       { address: '*', port: 3000, pid: 41990, name: 'node' },
       { address: '*', port: 3000, pid: 42001, name: 'node' },
       { address: '*', port: 8080, pid: 1777, name: 'com.docke' },
-      { address: 'fe80::1%lo0', port: 7000, pid: 9001, name: 'Google' },
+      { address: 'fe80::1%lo0', port: 7000, pid: 9001, name: 'Google Chrome Helper' },
     ])
   })
 
@@ -39,7 +39,7 @@ describe('port parsers: macOS (lsof + ps)', () => {
       [3000, 41990, 'node', ['*']],
       [3000, 42001, 'node', ['*']],
       [5173, 41873, 'node', ['::1', '127.0.0.1']],
-      [7000, 9001, 'Google', ['fe80::1%lo0']],
+      [7000, 9001, 'Google Chrome Helper', ['fe80::1%lo0']],
       [8080, 1777, 'com.docke', ['*']],
       [49152, 612, 'rapportd', ['*']],
     ])
