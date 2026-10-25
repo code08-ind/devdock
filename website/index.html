@@ -1,0 +1,574 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DevDock — your dev chores, one click from the menu bar</title>
+    <meta
+      name="description"
+      content="DevDock is a free desktop app for macOS and Windows: local git repos, pull requests, builds and Jira tickets one click from the menu bar or tray. Starts in demo mode; no account, no telemetry."
+    />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1E1F22" media="(prefers-color-scheme: dark)" />
+    <meta property="og:title" content="DevDock" />
+    <meta
+      property="og:description"
+      content="Repos, pull requests, builds and tickets — one click from the menu bar. For macOS and Windows."
+    />
+    <meta property="og:image" content="img/readme-home.webp" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <link rel="apple-touch-icon" href="img/icon-192.png" />
+    <!-- Applies the saved theme before first paint (external so the CSP needs no inline script). -->
+    <script src="theme.js"></script>
+    <script type="module" src="/src/main.ts"></script>
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+
+    <header class="site-header">
+      <div class="wrap header-row">
+        <a class="brand" href="#top" aria-label="DevDock, back to top">
+          <img src="img/icon-192.png" alt="" width="28" height="28" />
+          <span>DevDock</span>
+        </a>
+        <nav aria-label="Sections" class="site-nav">
+          <a href="#tour">Features</a>
+          <a href="#how">How it works</a>
+          <a href="#privacy">Privacy</a>
+          <a href="#faq">FAQ</a>
+        </nav>
+        <div class="header-tools">
+          <label class="theme-pick">
+            <span class="visually-hidden">Theme</span>
+            <select id="theme" aria-label="Theme">
+              <option value="system">System</option>
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+              <option value="hc">High contrast</option>
+              <option value="paper">Paper</option>
+              <option value="slate">Slate</option>
+            </select>
+          </label>
+          <a class="btn btn-primary btn-sm" href="#download">Download</a>
+        </div>
+      </div>
+    </header>
+
+    <main id="main" tabindex="-1">
+      <section class="hero" id="top" aria-labelledby="hero-title">
+        <div class="wrap hero-grid">
+          <div class="hero-copy">
+            <h1 id="hero-title">
+              Your repos, pull requests, builds and tickets, one click from the menu bar.
+            </h1>
+            <p class="lede">
+              DevDock is a desktop app for frontend developers on macOS and Windows. Sync your
+              branch, check a build, start work on a Jira ticket and stop a stray dev server
+              without opening five tabs. It starts in demo mode, so you can try every screen
+              before connecting anything.
+            </p>
+            <div class="hero-actions" id="hero-download">
+              <a class="btn btn-primary btn-lg" href="#download">Download DevDock</a>
+            </div>
+            <p class="hero-meta" id="hero-meta">
+              Free · macOS and Windows · No account, no telemetry
+            </p>
+          </div>
+
+          <figure class="desk" aria-labelledby="desk-cap">
+            <div class="desk-bar" aria-hidden="true">
+              <span class="desk-bar-left">
+                <svg viewBox="0 0 16 16" width="14" height="14"><circle cx="8" cy="8" r="6" /></svg>
+                <span class="desk-app">Code</span><span>File</span><span>Edit</span
+                ><span>View</span>
+              </span>
+              <span class="desk-bar-right">
+                <span class="desk-tray-icon"
+                  ><img src="img/icon-192.png" alt="" width="18" height="18"
+                /></span>
+                <svg viewBox="0 0 16 16" width="15" height="15">
+                  <path d="M2 6.5a9 9 0 0 1 12 0M4.3 9a5.5 5.5 0 0 1 7.4 0M6.6 11.4a2 2 0 0 1 2.8 0" />
+                </svg>
+                <span class="desk-clock">Mon 9:41</span>
+              </span>
+            </div>
+            <div class="desk-panel">
+              <img
+                src="img/readme-panel.webp"
+                width="400"
+                height="600"
+                alt="The DevDock menu-bar panel: a search box for every action, tabs for Today, Repos, Tickets and Tools, and a list of my pull requests with build, review and comment status."
+                fetchpriority="high"
+              />
+            </div>
+            <figcaption id="desk-cap" class="visually-hidden">
+              The menu-bar panel opens when you click the DevDock icon.
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="section" id="tour" aria-labelledby="tour-title">
+        <div class="wrap">
+          <h2 id="tour-title">Everything a working day asks of you</h2>
+          <p class="section-lede">
+            Real screens from DevDock in demo mode. Open the app only when you need the detail;
+            the panel by the icon covers the rest.
+          </p>
+
+          <div class="tour" data-tour>
+            <div class="tour-tabs" role="tablist" aria-label="Features" hidden>
+              <button role="tab" id="tab-today" aria-controls="tp-today">Today</button>
+              <button role="tab" id="tab-repos" aria-controls="tp-repos">Repos</button>
+              <button role="tab" id="tab-prs" aria-controls="tp-prs">Pull requests</button>
+              <button role="tab" id="tab-builds" aria-controls="tp-builds">Builds</button>
+              <button role="tab" id="tab-tickets" aria-controls="tp-tickets">Tickets</button>
+              <button role="tab" id="tab-lessons" aria-controls="tp-lessons">Agent lessons</button>
+              <button role="tab" id="tab-palette" aria-controls="tp-palette">
+                Command palette
+              </button>
+              <button role="tab" id="tab-diag" aria-controls="tp-diag">Settings</button>
+            </div>
+
+            <article class="tour-panel" id="tp-today" aria-labelledby="tab-today">
+              <div class="tour-text">
+                <h3>Today</h3>
+                <p>
+                  Your pull requests with build, review and comment state; the PRs and builds you
+                  watch; tickets in progress; and every repo’s branch and sync status, on one
+                  screen.
+                </p>
+              </div>
+              <div class="shot">
+                <img
+                  class="shot-light"
+                  src="img/today-light.webp"
+                  width="1600"
+                  height="1017"
+                  loading="lazy"
+                  alt="The Today screen in the light theme: my pull requests with build and review badges, watched items, tickets in progress and repos with their branch and sync state."
+                />
+                <img
+                  class="shot-dark"
+                  src="img/today-dark.webp"
+                  width="1600"
+                  height="1017"
+                  loading="lazy"
+                  alt="The Today screen in the dark theme: my pull requests with build and review badges, watched items, tickets in progress and repos with their branch and sync state."
+                />
+              </div>
+            </article>
+
+            <article class="tour-panel" id="tp-repos" aria-labelledby="tab-repos">
+              <div class="tour-text">
+                <h3>Repos</h3>
+                <p>
+                  Add your local git repos. Fetch, sync the base branch, update your branch (merge
+                  or rebase, stashing if needed), make a branch and push. Every git command is
+                  shown before it runs, protected branches are refused, and a conflict stops
+                  safely with Abort. Start the dev server and read its log.
+                </p>
+              </div>
+              <div class="shot">
+                <img
+                  src="img/readme-repos.webp"
+                  width="1600"
+                  height="1017"
+                  loading="lazy"
+                  alt="The Repos screen: a list of local repositories with branch, ahead and behind counts, and buttons for Fetch, Sync base, Update my branch, Push and the dev server."
+                />
+              </div>
+            </article>
+
+            <article class="tour-panel" id="tp-prs" aria-labelledby="tab-prs">
+              <div class="tour-text">
+                <h3>Pull requests</h3>
+                <p>
+                  Yours, the ones waiting for your review, recently merged, and any you watch by
+                  pasting a link. You get a notification when a build, review or comment changes.
+                  Approve, needs work and merge are there when you turn them on.
+                </p>
+              </div>
+              <div class="shot">
+                <img
+                  src="img/readme-prs.webp"
+                  width="1600"
+                  height="1017"
+                  loading="lazy"
+                  alt="The Pull requests screen with tabs for Mine, Reviewing, Merged and Watched, and a pull request's builds, reviewers and comments."
+                />
+              </div>
+            </article>
+
+            <article class="tour-panel" id="tp-builds" aria-labelledby="tab-builds">
+              <div class="tour-text">
+                <h3>Builds</h3>
+                <p>
+                  Jenkins builds of your branches and your pull requests’ pipelines, with stages
+                  and the live console. Watch a build, a job or your branch’s deploy and hear when
+                  it finishes. Triggering builds is off by default and never offered for protected
+                  jobs.
+                </p>
+              </div>
+              <div class="shot">
+                <img
+                  src="img/readme-builds.webp"
+                  width="1600"
+                  height="1017"
+                  loading="lazy"
+                  alt="The Builds screen: Jenkins builds of my branches with their result, duration and stages."
+                />
+              </div>
+            </article>
+
+            <article class="tour-panel" id="tp-tickets" aria-labelledby="tab-tickets">
+              <div class="tour-text">
+                <h3>Tickets and Start work</h3>
+                <p>
+                  Your Jira issues, the current sprint and saved queries. <strong>Start work</strong>
+                  makes the branch from a fresh base, writes a ticket brief into the repo and
+                  copies a ready message for your coding agent.
+                </p>
+              </div>
+              <div class="shot">
+                <img
+                  src="img/readme-tickets.webp"
+                  width="1600"
+                  height="1017"
+                  loading="lazy"
+                  alt="The Tickets screen: my Jira issues with status and priority, and the detail of one issue with a Start work button."
+                />
+              </div>
+            </article>
+
+            <article class="tour-panel" id="tp-lessons" aria-labelledby="tab-lessons">
+              <div class="tour-text">
+                <h3>Agent lessons</h3>
+                <p>
+                  DevDock gathers what reviewers keep asking for on your pull requests. You pick
+                  and edit the ones worth keeping and they’re added to
+                  <code>docs/ai/LESSONS.md</code> in the repo, so your coding agent reads them
+                  before it starts. DevDock makes no AI calls itself.
+                </p>
+              </div>
+              <div class="shot">
+                <img
+                  src="img/readme-lessons.webp"
+                  width="1600"
+                  height="1017"
+                  loading="lazy"
+                  alt="The Agent lessons screen: review comments grouped into suggested lessons, each with a checkbox and an editable wording."
+                />
+              </div>
+            </article>
+
+            <article class="tour-panel" id="tp-palette" aria-labelledby="tab-palette">
+              <div class="tour-text">
+                <h3>Command palette</h3>
+                <p>
+                  Every action, searchable: <kbd>⌘K</kbd> in the app, or a global shortcut from
+                  any app. It takes arguments, like <code>watch &lt;PR link&gt;</code>,
+                  <code>branch NM-1234</code> or <code>kill 5173</code>. Recent commands come
+                  first, and one that can’t run says why.
+                </p>
+              </div>
+              <div class="shot">
+                <img
+                  src="img/readme-palette.webp"
+                  width="1600"
+                  height="1017"
+                  loading="lazy"
+                  alt="The command palette open over the app, listing matching actions with their shortcuts."
+                />
+              </div>
+            </article>
+
+            <article class="tour-panel" id="tp-diag" aria-labelledby="tab-diag">
+              <div class="tour-text">
+                <h3>Settings and diagnostics</h3>
+                <p>
+                  Five themes, font size and density; notifications with quiet hours; your
+                  services and credentials. Diagnostics shows versions and the proxy in use, tests
+                  every connection, and writes a report with names and tokens removed.
+                </p>
+              </div>
+              <div class="shot">
+                <img
+                  src="img/readme-diagnostics.webp"
+                  width="1600"
+                  height="1017"
+                  loading="lazy"
+                  alt="Settings, Diagnostics: app and system versions, the proxy in use, a Test all connections button and Export report."
+                />
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section section-subtle" id="how" aria-labelledby="how-title">
+        <div class="wrap">
+          <h2 id="how-title">How it works</h2>
+          <ol class="steps">
+            <li class="card">
+              <h3>Try it in demo mode</h3>
+              <p>
+                Install and open DevDock. Jira, Bitbucket and Jenkins answer from sample data
+                inside the app, so nothing leaves your computer. Git on the repos you add and the
+                Ports tool are always real, and ask before they act.
+              </p>
+            </li>
+            <li class="card">
+              <h3>Click the icon</h3>
+              <p>
+                The menu-bar panel (the tray on Windows) shows your PRs, watched builds, tickets in
+                progress and each repo with Sync base, Update my branch, Push and its dev server,
+                one click each. Right-click the icon for the menu.
+              </p>
+            </li>
+            <li class="card">
+              <h3>Press <kbd>⌘⇧Space</kbd> from anywhere</h3>
+              <p>
+                The command palette opens over whatever you’re in. Type
+                <code>branch NM-1234</code> or <code>kill 5173</code> and press Enter.
+              </p>
+            </li>
+            <li class="card">
+              <h3>Start work on a ticket</h3>
+              <p>
+                Pick a Jira issue and choose Start work: a branch from a fresh base, a brief in
+                <code>docs/ai/specs/&lt;KEY&gt;/TICKET.md</code> and a message ready to paste into
+                your coding agent.
+              </p>
+            </li>
+            <li class="card">
+              <h3>Keep what reviewers teach you</h3>
+              <p>
+                Review comments on your PRs turn into lessons you choose and edit. Start work tells
+                your agent to read them first.
+              </p>
+            </li>
+            <li class="card">
+              <h3>Connect your services</h3>
+              <p>
+                When you’re ready, turn off demo mode in Settings and add your Jira, Bitbucket and
+                Jenkins addresses and tokens. Test connection tells you what’s missing.
+              </p>
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <section class="section" id="download" aria-labelledby="download-title">
+        <div class="wrap">
+          <h2 id="download-title">Download DevDock</h2>
+          <div class="download" id="download-root" aria-live="polite">
+            <div class="card download-primary">
+              <p>
+                Get the installers from the
+                <a href="https://github.com/code08-ind/devdock/releases">releases page on GitHub</a>.
+              </p>
+            </div>
+          </div>
+          <p class="requirements">
+            Needs macOS 12 Monterey or later (Apple silicon or Intel), or Windows 10 or 11
+            (64-bit). DevDock isn’t code-signed yet; the steps after downloading show how to open
+            it the first time.
+          </p>
+        </div>
+      </section>
+
+      <section class="section section-subtle" id="privacy" aria-labelledby="privacy-title">
+        <div class="wrap">
+          <h2 id="privacy-title">Security and privacy in plain words</h2>
+          <ul class="facts">
+            <li class="card">
+              <h3>Your tokens stay locked</h3>
+              <p>
+                They’re encrypted by your operating system (macOS Keychain, Windows DPAPI) and read
+                only by DevDock’s background process; the screens never see them. They’re never in
+                settings files, exports, logs or diagnostics.
+              </p>
+            </li>
+            <li class="card">
+              <h3>Nothing changes without you</h3>
+              <p>
+                Pushing, merging, approving, triggering a build, moving an issue or stopping a
+                process always shows exactly what will happen and waits for you. Protected
+                branches and jobs are refused.
+              </p>
+            </li>
+            <li class="card">
+              <h3>Only your services</h3>
+              <p>
+                DevDock talks to the Jira, Bitbucket and Jenkins addresses you enter, and opens
+                links only on hosts you allow. No telemetry, no account, no AI service. Demo mode
+                makes no network calls at all.
+              </p>
+            </li>
+            <li class="card">
+              <h3>Your files stay yours</h3>
+              <p>
+                It writes only where you ask: ticket briefs and lessons in your repo, env profile
+                backups, its settings and logs. Env profile values are encrypted and masked until
+                you reveal one. Clear all data removes everything DevDock stored.
+              </p>
+            </li>
+          </ul>
+          <p class="section-foot">
+            This website has no cookies, no analytics and no third-party scripts or fonts.
+          </p>
+        </div>
+      </section>
+
+      <section class="section" id="shortcuts" aria-labelledby="shortcuts-title">
+        <div class="wrap narrow">
+          <h2 id="shortcuts-title">Keyboard shortcuts</h2>
+          <div class="table-scroll" tabindex="0" role="region" aria-labelledby="shortcuts-title">
+            <table class="keys">
+              <thead>
+                <tr>
+                  <th scope="col">macOS</th>
+                  <th scope="col">Windows</th>
+                  <th scope="col">Does</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><kbd>⌘K</kbd></td>
+                  <td><kbd>Ctrl+K</kbd></td>
+                  <td>Command palette in the app</td>
+                </tr>
+                <tr>
+                  <td><kbd>⌘⇧Space</kbd></td>
+                  <td><kbd>Ctrl+Shift+Space</kbd></td>
+                  <td>Command palette from any app (change it in Settings)</td>
+                </tr>
+                <tr>
+                  <td><kbd>⌘1</kbd> … <kbd>⌘8</kbd></td>
+                  <td><kbd>Ctrl+1</kbd> … <kbd>Ctrl+8</kbd></td>
+                  <td>Home, Today, Repos, Pull requests, Builds, Tickets, Utilities, Settings</td>
+                </tr>
+                <tr>
+                  <td><kbd>⌘,</kbd></td>
+                  <td><kbd>Ctrl+,</kbd></td>
+                  <td>Settings</td>
+                </tr>
+                <tr>
+                  <td colspan="2"><kbd>↑</kbd> <kbd>↓</kbd> <kbd>Enter</kbd></td>
+                  <td>Move through and run palette results</td>
+                </tr>
+                <tr>
+                  <td colspan="2"><kbd>Esc</kbd></td>
+                  <td>Close the palette, a dialog or the menu-bar panel</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="section section-subtle" id="faq" aria-labelledby="faq-title">
+        <div class="wrap narrow">
+          <h2 id="faq-title">Questions</h2>
+          <div class="faq">
+            <details>
+              <summary>Does it cost anything?</summary>
+              <p>No. DevDock is free to download and use, and its source is on GitHub.</p>
+            </details>
+            <details>
+              <summary>Why does my computer warn me when I open it?</summary>
+              <p>
+                DevDock isn’t code-signed yet, so macOS (Gatekeeper) and Windows (SmartScreen) ask
+                you to confirm the first time. On a Mac: System Settings → Privacy &amp; Security →
+                Open Anyway. On Windows: More info → Run anyway. You do this once.
+              </p>
+            </details>
+            <details>
+              <summary>Do I need Jira, Bitbucket or Jenkins to try it?</summary>
+              <p>
+                No. Demo mode is on until you turn it off, and every screen works on sample data.
+                Git on your own repos and the Ports tool work for real, with or without the
+                services.
+              </p>
+            </details>
+            <details>
+              <summary>Which Mac do I have?</summary>
+              <p>
+                Choose Apple menu → About This Mac. “Chip: Apple M1” (or M2, M3, …) means Apple
+                silicon; “Processor: Intel” means Intel. Most Macs sold since late 2020 have Apple
+                silicon.
+              </p>
+            </details>
+            <details>
+              <summary>My company laptop won’t let me open it.</summary>
+              <p>
+                Managed computers often block unsigned apps outright. Ask your IT team to approve
+                DevDock and send them the GitHub repository: the source is public, the build is
+                reproducible, it needs no admin rights, and it only talks to the addresses you
+                enter.
+              </p>
+            </details>
+            <details>
+              <summary>Does DevDock send my code or data anywhere?</summary>
+              <p>
+                No. There’s no telemetry and no DevDock server. It talks only to the Jira,
+                Bitbucket and Jenkins addresses you enter, using tokens stored in your system’s
+                keychain.
+              </p>
+            </details>
+            <details>
+              <summary>Is there a Linux version?</summary>
+              <p>Not yet. DevDock is built and tested on macOS and Windows.</p>
+            </details>
+            <details>
+              <summary>How do I update or uninstall it?</summary>
+              <p>
+                To update, download the new version and install it over the old one; your settings
+                stay. To uninstall, drag DevDock from Applications to the Bin on a Mac, or use
+                Settings → Apps on Windows. To remove its data first, use Settings → Data → Clear
+                all data in DevDock.
+              </p>
+            </details>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap footer-row">
+        <p class="brand">
+          <img src="img/icon-192.png" alt="" width="20" height="20" />
+          <span>DevDock</span>
+        </p>
+        <ul class="footer-links">
+          <li><a href="https://github.com/code08-ind/devdock">Source on GitHub</a></li>
+          <li><a href="https://github.com/code08-ind/devdock/releases">Releases</a></li>
+          <li>
+            <a href="https://github.com/code08-ind/devdock/blob/main/CHANGELOG.md">Changelog</a>
+          </li>
+          <li><a href="https://github.com/code08-ind/devdock/issues">Report a problem</a></li>
+        </ul>
+        <p class="footer-note">
+          © 2026 Aryan Garg. All rights reserved; no open-source licence has been chosen yet.
+        </p>
+      </div>
+    </footer>
+
+    <dialog id="thanks" aria-labelledby="thanks-title">
+      <div class="dialog-head">
+        <h2 id="thanks-title">Thanks for downloading DevDock</h2>
+        <button type="button" class="icon-btn" data-close aria-label="Close">
+          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+            <path d="M4 4l8 8M12 4l-8 8" />
+          </svg>
+        </button>
+      </div>
+      <div class="dialog-body" id="thanks-body"></div>
+      <div class="dialog-foot">
+        <button type="button" class="btn btn-primary" data-close>Done</button>
+      </div>
+    </dialog>
+  </body>
+</html>
