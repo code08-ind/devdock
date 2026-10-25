@@ -4,6 +4,7 @@ import { BITBUCKET_FLAVORS } from './bitbucket'
 import { DEFAULT_JQL, JIRA_FLAVORS, SavedQuerySchema } from './jira'
 import { DEFAULT_PROTECTED_JOBS, JobPathSchema } from './jenkins'
 import { MAX_QUICK_LINKS, QuickLinkSchema } from './links'
+import { DEFAULT_LESSONS_PATH, LessonsPathSchema } from './lessons'
 import { HolidaySchema } from './standup'
 
 export const SETTINGS_VERSION = 1
@@ -232,6 +233,21 @@ export const SettingsSchema = z.object({
     .prefault({}),
   /** SPEC 6.6 quick links launcher. */
   quickLinks: z.array(QuickLinkSchema).max(MAX_QUICK_LINKS).default([]),
+  /** Workflow options the user ticks (P6-F, owner request): lessons and Start work follow-ups. */
+  workflow: z
+    .object({
+      /** The agent lessons file, repo-relative. */
+      lessonsPath: LessonsPathSchema.default(DEFAULT_LESSONS_PATH),
+      /** The Start work message tells the agent to read the lessons file (when it exists). */
+      pointAgentToLessons: z.boolean().default(true),
+      /** The Start work message asks the agent to add what it learned to the lessons file. */
+      askAgentForLessons: z.boolean().default(true),
+      /** "Open the repo in VS Code afterwards" starts ticked in Start work. */
+      openEditorAfterStart: z.boolean().default(true),
+      /** Start the repo's dev server once Start work has made the branch. */
+      startDevServerAfterStart: z.boolean().default(false),
+    })
+    .prefault({}),
   repos: z.array(RepoConfigSchema).default([]),
 })
 
@@ -276,6 +292,7 @@ export const SettingsPatchSchema = z.object({
   jenkins: patchOf(SettingsSchema.shape.jenkins),
   standup: patchOf(SettingsSchema.shape.standup),
   quickLinks: z.array(QuickLinkSchema).max(MAX_QUICK_LINKS).optional(),
+  workflow: patchOf(SettingsSchema.shape.workflow),
 })
 
 export type SettingsPatch = z.infer<typeof SettingsPatchSchema>

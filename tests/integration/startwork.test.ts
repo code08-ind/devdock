@@ -73,6 +73,7 @@ function setup(features: Partial<Settings['features']> = {}) {
     git,
     repo: () => repo,
     settings: () => settings,
+    lessonsExist: async () => existsSync(join(repo.path, settings.workflow.lessonsPath)),
     briefsDir: join(dataDir, 'briefs'),
     writeClipboard: (t) => void clipboard.push(t),
     openEditor,
@@ -90,7 +91,7 @@ function setup(features: Partial<Settings['features']> = {}) {
       confirmTransition: opts.confirmTransition ?? true,
     })
   }
-  return { svc, repo, http, git, clipboard, openEditor, head, run, repos: repos! }
+  return { svc, repo, http, git, clipboard, openEditor, head, run, repos: repos!, settings }
 }
 
 describe('Start work (real repos, demo Jira)', { timeout: 30_000 }, () => {
@@ -104,7 +105,8 @@ describe('Start work (real repos, demo Jira)', { timeout: 30_000 }, () => {
       briefLocation: 'repo',
       briefWouldBeCommitted: true,
       transitionEnabled: false,
-      message: 'Use the bug-fixer agent. Ticket brief: docs/ai/specs/DD-101/TICKET.md.',
+      message:
+        'Use the bug-fixer agent. Ticket brief: docs/ai/specs/DD-101/TICKET.md. When you finish, add what you learned to docs/ai/LESSONS.md, one line each.',
     })
     expect(plan.commands.map((c) => c.args.join(' '))).toEqual([
       'fetch origin develop',
@@ -142,7 +144,7 @@ describe('Start work (real repos, demo Jira)', { timeout: 30_000 }, () => {
     expect(r.agent).toBe('spec-writer')
     expect(r.branch).toBe('feature/DD-103-make-the-dashboard-feel-faster')
     expect(s.clipboard).toEqual([
-      'Use the spec-writer agent. Ticket brief: docs/ai/specs/DD-103/TICKET.md.',
+      'Use the spec-writer agent. Ticket brief: docs/ai/specs/DD-103/TICKET.md. When you finish, add what you learned to docs/ai/LESSONS.md, one line each.',
     ])
   })
 
@@ -151,7 +153,39 @@ describe('Start work (real repos, demo Jira)', { timeout: 30_000 }, () => {
     const r = await s.run('DD-102')
     expect(r.agent).toBe('feature-builder')
     expect(s.clipboard[0]).toBe(
-      'Use the feature-builder agent. Ticket brief: docs/ai/specs/DD-102/TICKET.md. Figma: https://www.figma.com/design/DEMOfile123/Profile?node-id=12-34.',
+      'Use the feature-builder agent. Ticket brief: docs/ai/specs/DD-102/TICKET.md. Figma: https://www.figma.com/design/DEMOfile123/Profile?node-id=12-34. When you finish, add what you learned to docs/ai/LESSONS.md, one line each.',
+    )
+  })
+
+  it('lessons (Settings → Workflow): read when the file exists, add when done; both can be off', async () => {
+    const s = setup()
+    mkdirSync(join(s.repos.clone, 'docs', 'ai'), { recursive: true })
+    writeFileSync(
+      join(s.repos.clone, 'docs', 'ai', 'LESSONS.md'),
+      '# Lessons\n\n- Keep PRs small\n',
+    )
+    expect((await s.svc.plan({ key: 'DD-104', repoId: 'r1' })).message).toBe(
+      'Use the spec-writer agent. Ticket brief: docs/ai/specs/DD-104/TICKET.md. Read docs/ai/LESSONS.md first. When you finish, add what you learned to docs/ai/LESSONS.md, one line each.',
+    )
+    // The dialog's ticks for this run win over Settings.
+    expect(
+      (await s.svc.plan({ key: 'DD-104', repoId: 'r1', lessons: { read: false, add: true } }))
+        .message,
+    ).toBe(
+      'Use the spec-writer agent. Ticket brief: docs/ai/specs/DD-104/TICKET.md. When you finish, add what you learned to docs/ai/LESSONS.md, one line each.',
+    )
+    // The brief carries the same lines, under "Before you start".
+    await s.run('DD-104')
+    const brief = readFileSync(join(s.repos.clone, 'docs/ai/specs/DD-104/TICKET.md'), 'utf8')
+    expect(brief).toContain('## Before you start\n\nRead docs/ai/LESSONS.md first.')
+    s.repos.git(s.repos.clone, 'checkout', '-q', 'develop')
+    s.settings.workflow = {
+      ...s.settings.workflow,
+      pointAgentToLessons: false,
+      askAgentForLessons: false,
+    }
+    expect((await s.svc.plan({ key: 'DD-104', repoId: 'r1' })).message).toBe(
+      'Use the spec-writer agent. Ticket brief: docs/ai/specs/DD-104/TICKET.md.',
     )
   })
 
@@ -319,7 +353,7 @@ describe('startwork:* IPC', () => {
     )
     expect(run).toMatchObject({ ok: true, data: { agent: 'bug-fixer' } })
     expect(deps.writeClipboard).toHaveBeenCalledWith(
-      'Use the bug-fixer agent. Ticket brief: docs/ai/specs/DD-101/TICKET.md.',
+      'Use the bug-fixer agent. Ticket brief: docs/ai/specs/DD-101/TICKET.md. When you finish, add what you learned to docs/ai/LESSONS.md, one line each.',
     )
     expect(deps.openRepo).toHaveBeenCalledWith(
       expect.objectContaining({ id: added.data.id }),

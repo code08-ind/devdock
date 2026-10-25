@@ -9,6 +9,7 @@ import {
   type PullRequest,
   type RepoRef,
 } from '@shared/bitbucket'
+import { MIN_COMMENT_LENGTH, type ReviewComment } from '@shared/lessons'
 import type { HttpClient } from '../http'
 import { mapLimit } from '../async'
 import { requestJson } from '../rest'
@@ -27,6 +28,12 @@ export interface BitbucketConfig {
 
 /** Build-status lookups in flight at once (one per PR). */
 const BUILD_CONCURRENCY = 4
+/** Lessons: PR comment reads in flight at once. */
+const COMMENT_CONCURRENCY = 4
+/** Lessons: comments are read from this many of my most recently updated PRs. */
+export const LESSON_PRS = 15
+/** …and at most this many comments are offered. */
+export const LESSON_COMMENTS = 100
 
 /** One Bitbucket site. Cloud and Data Center differ only in their BitbucketAdapter. */
 export class BitbucketClient {
@@ -97,6 +104,47 @@ export class BitbucketClient {
       throw withServerWords(err)
     }
     return { pr: await this.pr(ref), actor: me.user.displayName }
+  }
+
+  /**
+   * Review comments on my open and recently merged PRs (P6-F lessons): other people's, longer
+   * than a quick "LGTM", newest first. A PR whose comments can't be read is skipped.
+   */
+  async reviewComments(now = Date.now()): Promise<ReviewComment[]> {
+    const me = await this.myself()
+    const since = new Date(now - MERGED_WINDOW_DAYS * 86_400_000)
+    const [open, merged] = await Promise.all([
+      this.adapter.list('mine', me, since),
+      this.adapter.list('merged', me, since),
+    ])
+    const prs = [...new Map([...open, ...merged].map((p) => [p.key, p])).values()]
+      .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt))
+      .slice(0, LESSON_PRS)
+    // A PR whose comments can't be read is skipped; if none can be, that's the error to show.
+    let failure: unknown = null
+    const perPr = await mapLimit(prs, COMMENT_CONCURRENCY, async (pr) => {
+      const comments = await this.adapter.comments(pr.ref).catch((err: unknown) => {
+        failure ??= err
+        return null
+      })
+      return comments
+        ?.filter((c) => c.authorId !== me.id && c.text.trim().length >= MIN_COMMENT_LENGTH)
+        .map((c, i): ReviewComment => ({
+          // A comment without an id still gets a unique one.
+          id: `${pr.key}:${c.id || `n${i}`}`,
+          pr: `${pr.ref.repo} #${pr.ref.id}`,
+          prTitle: pr.title,
+          author: c.author,
+          text: c.text.trim(),
+          path: c.path,
+          createdAt: c.createdAt,
+        }))
+    })
+    if (prs.length > 0 && perPr.every((c) => c === undefined)) throw failure
+    return perPr
+      .flatMap((c) => c ?? [])
+      .sort((a, b) => Date.parse(b.createdAt ?? '0') - Date.parse(a.createdAt ?? '0'))
+      .slice(0, LESSON_COMMENTS)
   }
 
   private async withBuilds(pr: PrBase): Promise<PullRequest> {

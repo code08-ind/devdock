@@ -13,6 +13,18 @@ import { obj, text, type JsonObject } from '../json'
 import type { RestResponse } from '../rest'
 import { ServiceError } from '../service-error'
 
+/** A comment on a pull request, as the lessons list needs it (P6-F). */
+export interface PrComment {
+  id: string
+  /** Cloud account UUID / Data Center user name: compared with `Me.id` to leave mine out. */
+  authorId: string | null
+  author: string
+  text: string
+  /** The file an inline comment is on. */
+  path: string | null
+  createdAt: string | null
+}
+
 /** A pull request before its build statuses are fetched. */
 export type PrBase = Omit<PullRequest, 'build'>
 
@@ -41,6 +53,8 @@ export interface BitbucketAdapter {
   pr(ref: PrRef): Promise<PrBase>
   /** Build statuses posted against the PR's head commit (by Jenkins and friends). */
   builds(pr: PrBase): Promise<BuildStatus[]>
+  /** Comments on a PR (not deleted), replies included, oldest first as the API gives them. */
+  comments(ref: PrRef): Promise<PrComment[]>
   /**
    * Approve, needs work / request changes, or merge into `targetBranch` (already checked by
    * BitbucketClient.act; an adapter that re-reads the PR checks it again).

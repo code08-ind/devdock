@@ -44,6 +44,13 @@ import {
 } from './jira'
 import { VIEWS } from './channels'
 import { EnvDiffRowSchema, EnvSourceSchema, EnvStateSchema, ProfileNameSchema } from './envprofiles'
+import {
+  LessonsAddResultSchema,
+  LessonsAddSchema,
+  LessonsRequestSchema,
+  LessonsStateSchema,
+  ReviewCommentSchema,
+} from './lessons'
 import { StandupDraftSchema } from './standup'
 import {
   CachePlanSchema,
@@ -269,6 +276,10 @@ export const contract = {
   /** Settings → Clear all data. */
   'envprofiles:clearAll': { req: z.object({ confirmed: z.literal(true) }), res: none },
   'standup:draft': { req: none, res: StandupDraftSchema },
+  'lessons:comments': { req: none, res: z.array(ReviewCommentSchema) },
+  'lessons:state': { req: LessonsRequestSchema, res: LessonsStateSchema },
+  /** Writes only the lessons the user picked, inside the repo (local file, no remote). */
+  'lessons:add': { req: LessonsAddSchema, res: LessonsAddResultSchema },
   'utilities:request': { req: UtilityRequestSchema, res: none },
   /** Read-only: branch name, commands, brief path + .gitignore check, agent and message. */
   'startwork:plan': { req: StartWorkRequestSchema, res: StartWorkPlanSchema },

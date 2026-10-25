@@ -15,7 +15,7 @@ export const ListeningPortSchema = z.object({
 export type ListeningPort = z.infer<typeof ListeningPortSchema>
 
 /** The Utilities view's tabs; the palette opens one (`kill 5173` → Ports, that port). */
-export const UTILITY_TABS = ['ports', 'caches', 'env', 'links', 'standup'] as const
+export const UTILITY_TABS = ['ports', 'caches', 'env', 'links', 'standup', 'lessons'] as const
 export const UtilityRequestSchema = z.object({
   tab: z.enum(UTILITY_TABS),
   stopPort: z.number().int().min(1).max(65535).optional(),

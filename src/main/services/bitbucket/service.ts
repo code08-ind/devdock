@@ -1,3 +1,4 @@
+import type { ReviewComment } from '@shared/lessons'
 import type {
   BitbucketConnection,
   BitbucketDetection,
@@ -56,6 +57,11 @@ export class BitbucketService {
 
   async pr(ref: PrRef): Promise<PullRequest> {
     return this.client().pr(ref)
+  }
+
+  /** Review comments on my recent PRs, for agent lessons (P6-F). */
+  async reviewComments(): Promise<ReviewComment[]> {
+    return this.client().reviewComments()
   }
 
   /** The handler has already checked `features.prActions` and the confirmation. */

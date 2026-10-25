@@ -66,7 +66,10 @@ test('Start work: Bug and vague Story → branch, TICKET.md, agent message on th
     )
     // The temp repo doesn't ignore docs/ai/specs: warned before anything happens.
     await expect(dialog.getByRole('alert')).toContainText("docs/ai/specs isn't ignored by git")
-    const bugMessage = 'Use the bug-fixer agent. Ticket brief: docs/ai/specs/DD-101/TICKET.md.'
+    // The lessons line is on by default (Settings → Workflow, P6-F).
+    const bugMessage =
+      'Use the bug-fixer agent. Ticket brief: docs/ai/specs/DD-101/TICKET.md.' +
+      ' When you finish, add what you learned to docs/ai/LESSONS.md, one line each.'
     await expect(dialog.locator('.code')).toContainText(bugMessage)
     await snap(win, 'p2-startwork-preview')
 
@@ -97,7 +100,8 @@ test('Start work: Bug and vague Story → branch, TICKET.md, agent message on th
         .getByText('Started work on feature/DD-103-make-the-dashboard-feel-faster'),
     ).toBeVisible()
     expect(await readClipboard(app)).toBe(
-      'Use the spec-writer agent. Ticket brief: docs/ai/specs/DD-103/TICKET.md.',
+      'Use the spec-writer agent. Ticket brief: docs/ai/specs/DD-103/TICKET.md.' +
+        ' When you finish, add what you learned to docs/ai/LESSONS.md, one line each.',
     )
     expect(repos.git(repos.clone, 'rev-parse', '--abbrev-ref', 'HEAD').trim()).toBe(
       'feature/DD-103-make-the-dashboard-feel-faster',
@@ -125,7 +129,8 @@ test('Start work: Bug and vague Story → branch, TICKET.md, agent message on th
       dialog.getByRole('status').getByText(/^Started work on feature\/DD-102-/),
     ).toBeVisible()
     expect(await readClipboard(app)).toBe(
-      'Use the feature-builder agent. Ticket brief: docs/ai/specs/DD-102/TICKET.md. Figma: https://www.figma.com/design/DEMOfile123/Profile?node-id=12-34.',
+      'Use the feature-builder agent. Ticket brief: docs/ai/specs/DD-102/TICKET.md. Figma: https://www.figma.com/design/DEMOfile123/Profile?node-id=12-34.' +
+        ' When you finish, add what you learned to docs/ai/LESSONS.md, one line each.',
     )
   } finally {
     await writeClipboard(app, saved)

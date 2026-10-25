@@ -915,3 +915,22 @@
 .list-head {
   align-items: flex-end;
 }
+
+/* ---- Agent lessons (P6-F) ---------------------------------------------------------------- */
+.lessons-current {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding-left: var(--space-5);
+}
+.lesson-candidates {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.lesson-candidate {
+  display: grid;
+  gap: var(--space-1);
+}

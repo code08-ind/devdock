@@ -51,6 +51,33 @@ interface DemoPr {
   version?: number
 }
 
+/** What demo reviewers say (author, text, file); the lessons list picks from these (P6-F). */
+const REVIEW_COMMENTS: [string, string, string | null][] = [
+  [
+    'Priya Reviewer',
+    'Use the `formatMoney` helper here instead of toFixed: it rounds 3-decimal currencies correctly.',
+    'src/checkout/Total.tsx',
+  ],
+  ['Sam Lead', 'Please add a test for the empty state before we merge.', null],
+  [
+    'Priya Reviewer',
+    'Prefer `aria-busy` on the button itself over a separate live region.',
+    'src/ui/Button.tsx',
+  ],
+  [
+    'Alex Designer',
+    'Spacing should come from the tokens (space-3), not a hard-coded 12px.',
+    'src/ui/Card.css',
+  ],
+  ['Sam Lead', 'LGTM', null],
+  ['Demo Developer', 'Fixed in the latest commit, thanks!', null],
+  [
+    'Priya Reviewer',
+    'Name the test after the behaviour ("keeps focus when the month changes"), not the function.',
+    'src/DatePicker.test.tsx',
+  ],
+]
+
 const PRS: DemoPr[] = [
   {
     id: 412,
@@ -282,12 +309,26 @@ export function bitbucketHandlers(): RequestHandler[] {
     http.get(`${API}/projects/DEMO/repos/:repo/pull-requests/:id/activities`, ({ params }) => {
       const pr = find(params)
       if (!pr) return new HttpResponse(null, { status: 404 })
-      const threads = Array.from({ length: Math.min(pr.comments, 10) }, (_, i) => ({
-        id: pr.id * 100 + i,
-        action: 'COMMENTED',
-        commentAction: 'ADDED',
-        comment: { id: pr.id * 100 + i, text: 'Demo comment', threadResolved: i >= pr.unresolved },
-      }))
+      const threads = Array.from({ length: Math.min(pr.comments, 10) }, (_, i) => {
+        const [author, text, path] = REVIEW_COMMENTS[(pr.id + i) % REVIEW_COMMENTS.length]!
+        return {
+          id: pr.id * 100 + i,
+          action: 'COMMENTED',
+          commentAction: 'ADDED',
+          commentAnchor: path ? { path } : undefined,
+          comment: {
+            id: pr.id * 100 + i,
+            text,
+            author: {
+              // The demo user's own replies are "mine" (left out of the lessons list).
+              name: author === ME.displayName ? ME.name : author.toLowerCase().replace(/\s+/g, '.'),
+              displayName: author,
+            },
+            createdDate: Date.now() - (i + 1) * HOUR,
+            threadResolved: i >= pr.unresolved,
+          },
+        }
+      })
       return page(threads)
     }),
     http.get(`${API}/projects/DEMO/repos/:repo/pull-requests/:id`, ({ params }) => {

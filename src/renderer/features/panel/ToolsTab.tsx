@@ -1,4 +1,4 @@
-import { Copy, ExternalLink } from 'lucide-react'
+import { BookOpenCheck, Copy, ExternalLink } from 'lucide-react'
 import { draftMarkdown, draftText } from '@shared/standup'
 import { bridge, unwrap, useSettings } from '../../lib/devdock'
 import { useAction } from '../../lib/useAction'
@@ -40,6 +40,17 @@ export function ToolsTab({ stopPort }: { stopPort?: number }) {
             onClick={() => copyStandup('Markdown')}
           >
             Copy as Markdown
+          </Button>
+        </div>
+      </PanelSection>
+      <PanelSection title="Agent lessons">
+        <div className="button-row">
+          <Button
+            size="sm"
+            icon={<BookOpenCheck size={16} aria-hidden="true" />}
+            onClick={() => openUtility({ tab: 'lessons' })}
+          >
+            Pick lessons from reviews
           </Button>
         </div>
       </PanelSection>

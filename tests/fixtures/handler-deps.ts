@@ -47,6 +47,7 @@ export async function handlerSetup(
   const { BitbucketService } = await import('../../src/main/services/bitbucket/service')
   const { DEMO_BITBUCKET } = await import('../../src/main/demo/bitbucket')
   const { StartWorkService } = await import('../../src/main/services/startwork')
+  const { LessonsService } = await import('../../src/main/services/lessons')
   const { PrWatcher } = await import('../../src/main/services/bitbucket/watcher')
   const { JenkinsService } = await import('../../src/main/services/jenkins/service')
   const { DEMO_JENKINS } = await import('../../src/main/demo/jenkins')
@@ -78,6 +79,11 @@ export async function handlerSetup(
   const git = new GitRunner()
   const output: RepoOutputEvent[] = []
   const repos = new RepoService(settings, git)
+  const lessons = new LessonsService({
+    repo: (id) => repos.get(id),
+    settings: () => settings.get(),
+    git,
+  })
   const actions = new GitActions(git)
   const openRepo = vi.fn<HandlerDeps['openRepo']>(async () => undefined)
   const writeClipboard = vi.fn<(text: string) => void>()
@@ -144,6 +150,7 @@ export async function handlerSetup(
     }),
     jenkins,
     envProfiles: new EnvProfiles({ dir: join(dir, 'env-profiles'), cipher }),
+    lessons,
     standupDraft: () =>
       standupDraft(
         {
@@ -174,6 +181,7 @@ export async function handlerSetup(
       git,
       repo: (id) => repos.get(id),
       settings: () => settings.get(),
+      lessonsExist: (id) => lessons.exists(id),
       briefsDir: join(dir, 'briefs'),
       writeClipboard,
       openEditor: (repo) => openRepo(repo, 'editor'),

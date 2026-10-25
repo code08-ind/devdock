@@ -215,8 +215,11 @@ describe('Utilities in the palette (SPEC 6.1 / 6.6)', () => {
       'util:env',
       'util:links',
       'util:standup',
+      'util:lessons',
     ])
     void filterCommands(utils, 'standup')[0]!.run()
     expect(c.utility).toHaveBeenCalledWith({ tab: 'standup' })
+    void filterCommands(utils, 'review comments')[0]!.run()
+    expect(c.utility).toHaveBeenCalledWith({ tab: 'lessons' })
   })
 })

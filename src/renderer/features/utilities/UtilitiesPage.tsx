@@ -9,6 +9,7 @@ import { Field, Select, SegmentedControl } from '../../ui/Field'
 import { FolderGit2 } from 'lucide-react'
 import { CachesPanel } from './CachesPanel'
 import { EnvPanel } from './EnvPanel'
+import { LessonsPanel } from './LessonsPanel'
 import { LinksPanel } from './LinksPanel'
 import { PortsPanel } from './PortsPanel'
 import { StandupPanel } from './StandupPanel'
@@ -21,9 +22,10 @@ const TABS: { value: UtilityTab; label: string }[] = [
   { value: 'env', label: 'Env profiles' },
   { value: 'links', label: 'Quick links' },
   { value: 'standup', label: 'Standup' },
+  { value: 'lessons', label: 'Lessons' },
 ]
 
-/** SPEC 6.6 Utilities: ports, clean caches, env profiles, quick links, standup draft. */
+/** SPEC 6.6 Utilities: ports, clean caches, env profiles, quick links, standup draft; lessons (P6-F). */
 export function UtilitiesPage({
   request,
   onView,
@@ -37,7 +39,7 @@ export function UtilitiesPage({
   const [repoId, setRepoId] = useState<string | null>(null)
   const repo = repos.find((r) => r.id === repoId) ?? repos[0]
   if (!settings) return null
-  const needsRepo = tab === 'caches' || tab === 'env'
+  const needsRepo = tab === 'caches' || tab === 'env' || tab === 'lessons'
 
   return (
     <div className="prs">
@@ -59,7 +61,7 @@ export function UtilitiesPage({
       {needsRepo && !repo ? (
         <EmptyState
           icon={<FolderGit2 size={18} aria-hidden="true" />}
-          title="Add a repo first: clean caches and env profiles work on a registered repo."
+          title="Add a repo first: clean caches, env profiles and lessons work on a registered repo."
           action={<Button onClick={() => onView('repos')}>Open Repos</Button>}
         />
       ) : tab === 'ports' ? (
@@ -68,6 +70,8 @@ export function UtilitiesPage({
         <CachesPanel key={repo!.id} repoId={repo!.id} />
       ) : tab === 'env' ? (
         <EnvPanel key={repo!.id} repoId={repo!.id} />
+      ) : tab === 'lessons' ? (
+        <LessonsPanel key={repo!.id} repoId={repo!.id} onView={onView} />
       ) : tab === 'links' ? (
         <LinksPanel settings={settings} />
       ) : (

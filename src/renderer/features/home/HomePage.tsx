@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
+  BookOpenCheck,
   CalendarCheck,
   Command as CommandIcon,
   Eraser,
@@ -138,6 +139,12 @@ export function HomePage({
           'Standup',
           'A draft of yesterday, today and blockers from your own activity',
           MessageSquareText,
+        ),
+        utilityTool(
+          'lessons',
+          'Agent lessons',
+          'Turn review comments into lessons your agent reads before it starts',
+          BookOpenCheck,
         ),
       ],
     },

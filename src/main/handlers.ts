@@ -1,4 +1,5 @@
 /** One handler per IPC channel in @shared/ipc `contract`. Electron-free: adapters are injected. */
+import { LessonsError, type LessonsService } from './services/lessons'
 import type { View } from '@shared/channels'
 import type { ErrorCode, Req, Res } from '@shared/ipc'
 import type { ActionRequest, OpenTarget, RepoOutputEvent } from '@shared/repos'
@@ -67,6 +68,7 @@ export interface HandlerDeps {
   envProfiles: EnvProfiles
   /** SPEC 6.6 standup draft for today. */
   standupDraft: () => Promise<StandupDraft>
+  lessons: LessonsService
   buildWatcher: BuildWatcher
   startWork: StartWorkService
   /** Shows PRs in the main window and hands it a link to watch (from the palette window). */
@@ -155,6 +157,24 @@ const ENV_CODES: Record<EnvProfileError['kind'], ErrorCode> = {
   'no-file': 'PRECONDITION_FAILED',
   'no-backup': 'PRECONDITION_FAILED',
   symlink: 'PRECONDITION_FAILED',
+}
+
+const LESSON_CODES: Record<LessonsError['kind'], ErrorCode> = {
+  outside: 'NOT_ALLOWED',
+  symlink: 'PRECONDITION_FAILED',
+  io: 'PRECONDITION_FAILED',
+}
+
+/** Agent lessons: an unknown repo, a path out of the repo, or a file that can't be written. */
+function withLessons<T>(fn: () => Promise<T>): Promise<T> {
+  return withGit(async () => {
+    try {
+      return await fn()
+    } catch (err) {
+      if (err instanceof LessonsError) throw new IpcError(LESSON_CODES[err.kind], err.message)
+      throw err
+    }
+  })
 }
 
 /** Env profiles: an unknown repo, a missing profile/file, or no OS encryption. */
@@ -399,6 +419,9 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
       withEnv(() => deps.envProfiles.diff(deps.repos.get(id), a, b)),
     'envprofiles:clearAll': () => withEnv(() => deps.envProfiles.clearAll()),
     'standup:draft': () => deps.standupDraft(),
+    'lessons:comments': () => withService(() => deps.bitbucket.reviewComments()),
+    'lessons:state': ({ repoId }) => withLessons(() => deps.lessons.state(repoId)),
+    'lessons:add': ({ repoId, lessons }) => withLessons(() => deps.lessons.add(repoId, lessons)),
     'utilities:request': (request) => deps.requestUtility(request),
     'startwork:plan': (request) => withStartWork(() => deps.startWork.plan(request)),
     'startwork:run': (request) =>

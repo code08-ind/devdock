@@ -1,6 +1,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { isInProgress, type JiraIssueDetail } from '@shared/jira'
+import { lessonsNote } from '@shared/lessons'
 import type { RepoConfig, Settings } from '@shared/settings'
 import type {
   Agent,
@@ -20,6 +21,8 @@ export interface StartWorkDeps {
   git: GitRunner
   repo: (id: string) => RepoConfig
   settings: () => Settings
+  /** Whether the repo has an agent lessons file (P6-F): the message says to read it. */
+  lessonsExist: (repoId: string) => Promise<boolean>
   /** DevDock's own folder for briefs when Settings → brief location is "DevDock data". */
   briefsDir: string
   writeClipboard: (text: string) => void
@@ -77,7 +80,7 @@ export class StartWorkService {
       briefLocation: target.location,
       briefWouldBeCommitted:
         target.location === 'repo' ? await this.wouldBeCommitted(repo, target.ref) : null,
-      message: agentMessage(agent, target.ref, issue),
+      message: await this.message(repo, agent, target.ref, issue, req.lessons),
       transitionEnabled: this.deps.settings().features.jiraTransition,
     }
   }
@@ -104,7 +107,12 @@ export class StartWorkService {
     const target = this.briefTarget(repo, req.key)
     try {
       mkdirSync(dirname(target.file), { recursive: true })
-      writeFileSync(target.file, buildBrief(issue, (this.deps.now ?? (() => new Date()))()), 'utf8')
+      const note = await this.lessonsNote(repo, req.lessons)
+      writeFileSync(
+        target.file,
+        buildBrief(issue, (this.deps.now ?? (() => new Date()))(), note),
+        'utf8',
+      )
     } catch (err) {
       throw new StartWorkError(
         'brief',
@@ -114,7 +122,7 @@ export class StartWorkService {
 
     // 5. Ready message on the clipboard.
     const warnings: string[] = []
-    const message = agentMessage(agent, target.ref, issue)
+    const message = await this.message(repo, agent, target.ref, issue, req.lessons)
     try {
       this.deps.writeClipboard(message)
     } catch (err) {
@@ -134,6 +142,38 @@ export class StartWorkService {
       }
     }
     return { branch, briefFile: target.file, agent, message, transition, warnings }
+  }
+
+  /**
+   * The ready message, plus the lessons note (P6-F): read the repo's lessons file when it
+   * exists, and add to it when done — as the dialog ticked them, else Settings → Workflow.
+   */
+  private async message(
+    repo: RepoConfig,
+    agent: Agent,
+    briefRef: string,
+    issue: JiraIssueDetail,
+    lessons: StartWorkRequest['lessons'],
+  ): Promise<string> {
+    const note = await this.lessonsNote(repo, lessons)
+    const base = agentMessage(agent, briefRef, issue)
+    return note ? `${base} ${note}` : base
+  }
+
+  /** The lessons lines as this run ticked them, else as Settings → Workflow has them. */
+  private async lessonsNote(
+    repo: RepoConfig,
+    lessons: StartWorkRequest['lessons'],
+  ): Promise<string | null> {
+    const { lessonsPath, pointAgentToLessons, askAgentForLessons } = this.deps.settings().workflow
+    return lessonsNote(
+      {
+        pointToLessons: lessons?.read ?? pointAgentToLessons,
+        askForLessons: lessons?.add ?? askAgentForLessons,
+      },
+      lessonsPath,
+      await this.deps.lessonsExist(repo.id),
+    )
   }
 
   /** The issue, refusing a response for a different key (the key becomes a file path). */

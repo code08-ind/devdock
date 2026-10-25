@@ -56,6 +56,15 @@ const SCREENS: [string, (win: Page) => Promise<void>][] = [
   ['util-env', async (w) => (await nav(w, 'Utilities'), tab(w, 'Env profiles'))],
   ['util-links', async (w) => (await nav(w, 'Utilities'), tab(w, 'Quick links'))],
   ['util-standup', async (w) => (await nav(w, 'Utilities'), tab(w, 'Standup'))],
+  [
+    'util-lessons',
+    async (w) => {
+      await nav(w, 'Utilities')
+      await tab(w, 'Lessons')
+      const collect = w.getByRole('button', { name: 'Collect review comments' })
+      if (await collect.isVisible()) await collect.click()
+    },
+  ],
   ['settings', (w) => nav(w, 'Settings')],
 ]
 

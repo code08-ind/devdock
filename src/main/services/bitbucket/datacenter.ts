@@ -21,6 +21,7 @@ import {
   type Call,
   type Me,
   type PrBase,
+  type PrComment,
 } from './adapter'
 
 export const dcHints: ServiceHints = {
@@ -114,6 +115,14 @@ export class DataCenterAdapter implements BitbucketAdapter {
       collect(this.call, activitiesUrl, pager(activitiesUrl), obj, 5),
     ])
     return { ...normalise(body), unresolvedComments: unresolved(activities) }
+  }
+
+  async comments(ref: PrRef): Promise<PrComment[]> {
+    const url = `${this.prUrl(ref)}/activities?limit=100`
+    const activities = await collect(this.call, url, pager(url), obj, 5)
+    return activities
+      .filter((a) => a.action === 'COMMENTED' && a.commentAction === 'ADDED')
+      .flatMap((a) => dcComments(obj(a.comment), text(obj(a.commentAnchor).path)))
   }
 
   async act(ref: PrRef, action: PrAction, me: Me, targetBranch: string): Promise<void> {
@@ -238,3 +247,23 @@ function safeSlug(value: string | null): string | null {
 
 /** DC timestamps are epoch milliseconds. */
 const iso = (ms: unknown) => (typeof ms === 'number' ? new Date(ms).toISOString() : null)
+
+/** A Data Center comment and its replies (`comments`), flattened; the anchor gives the file. */
+export function dcComments(c: JsonObject, path: string | null): PrComment[] {
+  const body = text(c.text)
+  const author = obj(c.author)
+  const own: PrComment[] = body
+    ? [
+        {
+          id: String(c.id ?? ''),
+          authorId: text(author.name),
+          author: text(author.displayName) ?? text(author.name) ?? 'Someone',
+          text: body,
+          path: path ?? text(obj(c.anchor).path),
+          createdAt: iso(c.createdDate),
+        },
+      ]
+    : []
+  const replies = Array.isArray(c.comments) ? c.comments : []
+  return [...own, ...replies.flatMap((r) => dcComments(obj(r), path))]
+}

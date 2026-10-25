@@ -49,8 +49,15 @@ export function agentMessage(agent: Agent, briefRef: string, issue: JiraIssueDet
     .join(' ')
 }
 
-/** TICKET.md: summary, description, acceptance criteria, links, last 10 comments. */
-export function buildBrief(issue: JiraIssueDetail, generatedAt: Date): string {
+/**
+ * TICKET.md: summary, description, acceptance criteria, links, last 10 comments; `lessons` (the
+ * agent lessons lines, P6-F) goes under "Before you start".
+ */
+export function buildBrief(
+  issue: JiraIssueDetail,
+  generatedAt: Date,
+  lessons: string | null = null,
+): string {
   // Criteria taken from the description are shown once, in their own section.
   const fromDescription =
     issue.acceptanceCriteria !== null &&
@@ -88,6 +95,7 @@ export function buildBrief(issue: JiraIssueDetail, generatedAt: Date): string {
     '',
     ...meta,
     '',
+    ...(lessons ? ['## Before you start', '', lessons, ''] : []),
     '## Summary',
     '',
     issue.summary,

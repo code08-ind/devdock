@@ -49,7 +49,7 @@ const VIEW_KEYWORDS: Partial<Record<View, string[]>> = {
   builds: ['jenkins', 'pipeline', 'ci'],
   tickets: ['jira', 'issues'],
   repos: ['git', 'branches'],
-  utilities: ['ports', 'env', 'links', 'standup'],
+  utilities: ['ports', 'env', 'links', 'standup', 'lessons'],
   settings: ['preferences', 'options'],
 }
 
@@ -95,6 +95,11 @@ const UTILITY_COMMANDS: { tab: UtilityRequest['tab']; title: string; keywords: s
   { tab: 'env', title: 'Switch env profile…', keywords: ['env', '.env.local', 'dotenv'] },
   { tab: 'links', title: 'Manage quick links', keywords: ['links', 'bookmarks', 'aws'] },
   { tab: 'standup', title: 'Write standup draft', keywords: ['standup', 'yesterday', 'daily'] },
+  {
+    tab: 'lessons',
+    title: 'Pick agent lessons from review comments',
+    keywords: ['lessons', 'agent', 'review', 'comments', 'learn'],
+  },
 ]
 
 const REPO_ACTIONS: { key: string; label: string; request: ActionRequest; keywords: string[] }[] = [

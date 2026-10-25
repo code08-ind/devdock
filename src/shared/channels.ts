@@ -100,6 +100,10 @@ export const INVOKE_CHANNELS = [
   'envprofiles:clearAll',
   /** SPEC 6.6 standup draft from commits, PRs and Jira. */
   'standup:draft',
+  /** P6-F agent lessons: review comments to pick from, the repo's lessons file, add to it. */
+  'lessons:comments',
+  'lessons:state',
+  'lessons:add',
   /** Palette window → main window: show Utilities on a tab (`kill 5173` → that port). */
   'utilities:request',
 ] as const

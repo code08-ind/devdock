@@ -63,7 +63,15 @@ export function StartWorkDialog({
   const [pickedRepo, setRepoId] = useState(repos[0]?.id ?? '')
   // A repo removed while the dialog is open falls back to the first one.
   const repoId = repos.some((r) => r.id === pickedRepo) ? pickedRepo : (repos[0]?.id ?? '')
-  const [openEditor, setOpenEditor] = useState(true)
+  const workflow = settings?.workflow
+  const [openEditor, setOpenEditor] = useState(workflow?.openEditorAfterStart ?? true)
+  const [startServer, setStartServer] = useState(workflow?.startDevServerAfterStart ?? false)
+  const hasDevCommand = (repos.find((r) => r.id === repoId)?.devCommand ?? '') !== ''
+  // This run's lessons lines (P6-F), from Settings → Workflow; the preview follows them.
+  const [lessons, setLessons] = useState({
+    read: workflow?.pointAgentToLessons ?? true,
+    add: workflow?.askAgentForLessons ?? true,
+  })
   const [confirmTransition, setConfirmTransition] = useState(true)
   const [stage, setStage] = useState<Stage>({ kind: 'preview' })
   const runId = stage.kind === 'preview' ? null : stage.runId
@@ -74,8 +82,8 @@ export function StartWorkDialog({
 
   const location = settings?.features.briefLocation ?? 'repo'
   const plan = useQuery({
-    queryKey: jiraKeys.startWorkPlan(issue.key, repoId, location),
-    queryFn: () => unwrap(bridge.startwork.plan({ key: issue.key, repoId })),
+    queryKey: jiraKeys.startWorkPlan(issue.key, repoId, location, lessons),
+    queryFn: () => unwrap(bridge.startwork.plan({ key: issue.key, repoId, lessons })),
     enabled: stage.kind === 'preview' && repoId !== '',
     staleTime: 0,
     gcTime: 0,
@@ -93,11 +101,21 @@ export function StartWorkDialog({
           repoId,
           runId: id,
           openEditor,
+          lessons,
           agent: plan.data.agent,
           confirmTransition: plan.data.transitionEnabled && confirmTransition,
         }),
       )
       setStage({ kind: 'done', runId: id, result })
+      // Settings → Workflow: the branch exists, so the dev server runs on it.
+      if (startServer && hasDevCommand) {
+        void unwrap(bridge.devserver.start({ id: repoId, kind: 'dev' })).catch((err: unknown) =>
+          toast(
+            `The branch is ready, but the dev server didn't start (${err instanceof Error ? err.message : 'unknown error'}). Start it from Repos.`,
+            'warning',
+          ),
+        )
+      }
       const copied = !result.warnings.some((w) => w.includes('clipboard'))
       toast(
         copied
@@ -230,10 +248,31 @@ export function StartWorkDialog({
               ) : null}
               <CodeBlock code={plan.data.message} label="Will be copied to the clipboard" />
               <div className="checks">
+                {/* Lessons (P6-F): the message above follows these; defaults in Settings → Workflow. */}
+                <Checkbox
+                  label="Tell the agent to read the repo's lessons"
+                  checked={lessons.read}
+                  onChecked={(read) => setLessons({ ...lessons, read })}
+                />
+                <Checkbox
+                  label="Ask the agent to add what it learned"
+                  checked={lessons.add}
+                  onChecked={(add) => setLessons({ ...lessons, add })}
+                />
                 <Checkbox
                   label="Open the repo in VS Code afterwards"
                   checked={openEditor}
                   onChecked={setOpenEditor}
+                />
+                <Checkbox
+                  label={
+                    hasDevCommand
+                      ? 'Start the dev server afterwards'
+                      : 'Start the dev server afterwards (set a dev command in the repo settings)'
+                  }
+                  checked={startServer && hasDevCommand}
+                  disabled={!hasDevCommand}
+                  onChecked={setStartServer}
                 />
                 {plan.data.transitionEnabled ? (
                   <Checkbox

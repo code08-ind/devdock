@@ -41,6 +41,7 @@ import { StartWorkService } from './services/startwork'
 import { DevServerManager } from './services/process/devserver'
 import { PortService, runCommand } from './services/process/ports'
 import { EnvProfiles } from './services/envprofiles'
+import { LessonsService } from './services/lessons'
 import { gitCommits, standupDraft } from './services/standup'
 import { demoCommits } from './demo/standup'
 import { loginShellPath, mergePath } from './services/process/shell-path'
@@ -227,6 +228,11 @@ function start(): void {
 
   const git = new GitRunner()
   const repos = new RepoService(store, git)
+  const lessons = new LessonsService({
+    repo: (id) => repos.get(id),
+    settings: () => store.get(),
+    git,
+  })
   const watcher = new RepoWatcher(git, (id) => broadcast('repos:changed', { id }))
   // Finder-launched macOS apps don't get the shell PATH (npm, node, code). Dev servers wait for it.
   const envReady =
@@ -356,6 +362,7 @@ function start(): void {
       jenkins,
       buildWatcher,
       envProfiles: new EnvProfiles({ dir: join(userData, 'env-profiles'), cipher: safeStorage }),
+      lessons,
       standupDraft: () =>
         standupDraft(
           {
@@ -381,6 +388,7 @@ function start(): void {
         git,
         repo: (id) => repos.get(id),
         settings: () => store.get(),
+        lessonsExist: (id) => lessons.exists(id),
         briefsDir: join(userData, 'briefs'),
         writeClipboard: (text) => clipboard.writeText(text),
         openEditor: (repo) => openRepo(repo, 'editor'),

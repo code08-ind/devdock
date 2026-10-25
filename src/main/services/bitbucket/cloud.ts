@@ -22,6 +22,7 @@ import {
   type Call,
   type Me,
   type PrBase,
+  type PrComment,
 } from './adapter'
 
 /** The API for bitbucket.org; any other base URL (tests) is used as given. */
@@ -132,6 +133,12 @@ export class CloudAdapter implements BitbucketAdapter {
     return { ...pr, unresolvedComments: unresolved }
   }
 
+  async comments(ref: PrRef): Promise<PrComment[]> {
+    const url = `${this.repoUrl(ref.owner, ref.repo)}/pullrequests/${ref.id}/comments?pagelen=100`
+    const raw = await collect(this.call, url, this.page, obj, 5)
+    return raw.filter((c) => !c.deleted).flatMap(cloudComment)
+  }
+
   /** Cloud's merge takes no version: the target check in BitbucketClient.act is the last one. */
   async act(ref: PrRef, action: PrAction): Promise<void> {
     const url = `${this.repoUrl(ref.owner, ref.repo)}/pullrequests/${ref.id}`
@@ -202,3 +209,20 @@ function reviewStatus(p: JsonObject): 'approved' | 'needs_work' | 'unapproved' {
 }
 
 const branchOf = (side: unknown) => text(obj(obj(side).branch).name) ?? ''
+
+/** A Cloud comment (`content.raw`, `user`, `inline.path`); none when it has no text. */
+export function cloudComment(c: JsonObject): PrComment[] {
+  const body = text(obj(c.content).raw)
+  if (!body) return []
+  const user = obj(c.user)
+  return [
+    {
+      id: String(c.id ?? ''),
+      authorId: text(user.uuid),
+      author: text(user.display_name) ?? text(user.nickname) ?? 'Someone',
+      text: body,
+      path: text(obj(c.inline).path),
+      createdAt: text(c.created_on),
+    },
+  ]
+}

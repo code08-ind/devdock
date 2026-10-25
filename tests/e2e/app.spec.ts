@@ -28,7 +28,7 @@ test('opens on Home; every tile opens its feature', async ({ launched }) => {
   const { win, errors } = launched
   await expect(win.locator('main')).toHaveAttribute('data-view', 'home')
   const tiles = win.locator('.home-tile')
-  await expect(tiles).toHaveCount(12)
+  await expect(tiles).toHaveCount(13)
   const go = async (name: string) => {
     await win
       .getByRole('navigation', { name: 'Main' })
@@ -56,6 +56,7 @@ test('opens on Home; every tile opens its feature', async ({ launched }) => {
     ['Env profiles', 'Env profiles'],
     ['Quick links', 'Quick links'],
     ['Standup', 'Standup'],
+    ['Agent lessons', 'Lessons'],
   ] as const) {
     await go(name)
     await expect(win.locator('main')).toHaveAttribute('data-view', 'utilities')

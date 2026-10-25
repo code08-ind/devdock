@@ -10,8 +10,13 @@ export const jiraKeys = {
   list: (req: JiraListRequest) => ['jira', 'list', req] as const,
   issue: (key: string) => ['jira', 'issue', key] as const,
   /** The location is in the key only to re-plan when it changes (main reads it from Settings). */
-  startWorkPlan: (key: string, repoId: string, location: BriefLocation) =>
-    ['startwork', 'plan', key, repoId, location] as const,
+  /** `lessons`: this run's lessons lines, which change the message. */
+  startWorkPlan: (
+    key: string,
+    repoId: string,
+    location: BriefLocation,
+    lessons: { read: boolean; add: boolean },
+  ) => ['startwork', 'plan', key, repoId, location, lessons] as const,
 }
 
 type BriefLocation = Settings['features']['briefLocation']

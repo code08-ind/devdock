@@ -8,7 +8,15 @@ import { PlannedCommandSchema } from './repos'
 export const AGENTS = ['bug-fixer', 'spec-writer', 'feature-builder'] as const
 export type Agent = (typeof AGENTS)[number]
 
-export const StartWorkRequestSchema = z.object({ key: IssueKeySchema, repoId: z.string().min(1) })
+export const StartWorkRequestSchema = z.object({
+  key: IssueKeySchema,
+  repoId: z.string().min(1),
+  /**
+   * This run's lessons lines in the agent message (P6-F); Settings → Workflow when left out.
+   * `read`: "Read <lessons> first" (when the file exists); `add`: "add what you learned".
+   */
+  lessons: z.object({ read: z.boolean(), add: z.boolean() }).optional(),
+})
 export type StartWorkRequest = z.infer<typeof StartWorkRequestSchema>
 
 export const StartWorkPlanSchema = z.object({

@@ -9,6 +9,8 @@ export const utilityKeys = {
   caches: (id: string) => ['caches', id] as const,
   env: (id: string) => ['envprofiles', id] as const,
   standup: ['standup'] as const,
+  lessons: (id: string) => ['lessons', id] as const,
+  reviewComments: ['lessons', 'comments'] as const,
 }
 
 /** Listening ports: read on open and on Refresh (a scan runs lsof/netstat; not on a timer). */
@@ -73,5 +75,30 @@ export function useStandupDraft() {
     queryKey: utilityKeys.standup,
     queryFn: () => unwrap(bridge.standup.draft()),
     staleTime: Infinity,
+  })
+}
+
+/** The repo's agent lessons file (P6-F). */
+export function useLessons(repoId: string) {
+  return useQuery({
+    queryKey: utilityKeys.lessons(repoId),
+    queryFn: () => unwrap(bridge.lessons.state({ repoId })),
+    staleTime: 0,
+  })
+}
+
+/** Review comments on my recent PRs: read when asked for (several Bitbucket requests). */
+export function useReviewComments(enabled: boolean) {
+  return useQuery({
+    queryKey: utilityKeys.reviewComments,
+    queryFn: () => unwrap(bridge.lessons.comments()),
+    enabled,
+  })
+}
+
+export function useAddLessons(repoId: string) {
+  return useMutation({
+    mutationFn: (lessons: string[]) => unwrap(bridge.lessons.add({ repoId, lessons })),
+    onSuccess: (state) => queryClient.setQueryData(utilityKeys.lessons(repoId), state),
   })
 }
