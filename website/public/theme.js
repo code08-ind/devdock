@@ -4,7 +4,7 @@
   try {
     var t = localStorage.getItem('devdock-site-theme')
     if (t && /^(light|dark|hc|paper|slate)$/.test(t)) document.documentElement.dataset.theme = t
-  } catch (e) {
+  } catch {
     // Storage blocked: follow the system theme.
   }
 })()

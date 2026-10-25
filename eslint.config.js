@@ -6,7 +6,19 @@ import prettier from 'eslint-config-prettier'
 import globals from 'globals'
 
 export default tseslint.config(
-  { ignores: ['out', 'dist', 'release', 'coverage', 'test-results', 'playwright-report'] },
+  {
+    ignores: [
+      'out',
+      'dist',
+      'release',
+      'coverage',
+      'test-results',
+      'playwright-report',
+      'website/dist',
+      'website/test-results',
+      'website/playwright-report',
+    ],
+  },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
@@ -19,6 +31,15 @@ export default tseslint.config(
       '*.ts',
       '*.js',
     ],
+    languageOptions: { globals: globals.node },
+  },
+  {
+    // The landing page (website/, P7-D): browser code, and node for its build/test tooling.
+    files: ['website/src/**/*.ts', 'website/public/**/*.js'],
+    languageOptions: { globals: globals.browser },
+  },
+  {
+    files: ['website/scripts/**/*.mjs', 'website/tests/**/*.ts', 'website/*.ts'],
     languageOptions: { globals: globals.node },
   },
   {

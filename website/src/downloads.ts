@@ -1,4 +1,10 @@
-import { RELEASE_CONFIG, REPO_URL, type AssetId, type AssetNaming, type ReleaseConfig } from './config'
+import {
+  RELEASE_CONFIG,
+  REPO_URL,
+  type AssetId,
+  type AssetNaming,
+  type ReleaseConfig,
+} from './config'
 
 export interface Installer {
   id: AssetId
@@ -93,8 +99,7 @@ export function releaseFromManifest(data: unknown): Release | null {
   const installers: Installer[] = []
   for (const id of ASSET_IDS) {
     const a = (assets as Record<string, unknown>)[id] as
-      | { name?: unknown; url?: unknown; size?: unknown }
-      | undefined
+      { name?: unknown; url?: unknown; size?: unknown } | undefined
     if (!a || typeof a.name !== 'string' || typeof a.url !== 'string') return null
     if (!a.url.startsWith(`${REPO_URL}/releases/`)) return null
     installers.push({

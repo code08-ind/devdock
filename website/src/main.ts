@@ -291,7 +291,8 @@ function initDialog(): void {
 function initDownloads(release: Release, d: Detected): void {
   document.documentElement.dataset.os = d.os
   const root = document.getElementById('download-root')
-  if (root) root.replaceChildren(...(release.available ? renderAvailable(release, d) : renderSoon(release)))
+  if (root)
+    root.replaceChildren(...(release.available ? renderAvailable(release, d) : renderSoon(release)))
   renderHero(release, d)
 
   // One listener for every download link: the browser's own download starts (we don't cancel the

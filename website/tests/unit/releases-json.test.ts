@@ -35,9 +35,12 @@ describe('releases.json from the GitHub API (deploy workflow)', () => {
   it('works with version-less names too', () => {
     const m = toManifest({
       ...release,
-      assets: ['DevDock-arm64.dmg', 'DevDock-x64.dmg', 'DevDock-Setup.exe', 'DevDock-Portable.exe'].map(
-        (n) => asset(n),
-      ),
+      assets: [
+        'DevDock-arm64.dmg',
+        'DevDock-x64.dmg',
+        'DevDock-Setup.exe',
+        'DevDock-Portable.exe',
+      ].map((n) => asset(n)),
     })
     expect(m?.assets['mac-x64']?.name).toBe('DevDock-x64.dmg')
   })
