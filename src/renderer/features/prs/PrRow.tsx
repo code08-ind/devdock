@@ -46,25 +46,26 @@ export function PrRow({
         <StatePill pr={pr} />
         <BuildPill pr={pr} />
         <ReviewState pr={pr} />
-        <span className="spacer" />
-        <IconButton
-          label={watchKey ? `Stop watching ${label}` : `Watch ${label}`}
-          icon={
-            watchKey ? (
-              <EyeOff size={16} aria-hidden="true" />
-            ) : (
-              <Eye size={16} aria-hidden="true" />
-            )
-          }
-          // One toggle at a time: a double click mustn't send a second add/remove.
-          disabled={pending}
-          onClick={toggleWatch}
-        />
-        <IconButton
-          label={`Open ${label} in Bitbucket`}
-          icon={<ExternalLink size={16} aria-hidden="true" />}
-          onClick={() => void run(unwrap(bridge.app.openExternal({ url: pr.url })))}
-        />
+        <span className="row-actions">
+          <IconButton
+            label={watchKey ? `Stop watching ${label}` : `Watch ${label}`}
+            icon={
+              watchKey ? (
+                <EyeOff size={16} aria-hidden="true" />
+              ) : (
+                <Eye size={16} aria-hidden="true" />
+              )
+            }
+            // One toggle at a time: a double click mustn't send a second add/remove.
+            disabled={pending}
+            onClick={toggleWatch}
+          />
+          <IconButton
+            label={`Open ${label} in Bitbucket`}
+            icon={<ExternalLink size={16} aria-hidden="true" />}
+            onClick={() => void run(unwrap(bridge.app.openExternal({ url: pr.url })))}
+          />
+        </span>
       </div>
       <h3 className="pr-title">{pr.title}</h3>
       <p className="pr-meta">

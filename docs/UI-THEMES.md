@@ -34,7 +34,7 @@ renders natively on macOS and Windows).
 ## Spacing, shape, motion
 ```css
 --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 24px; --space-6: 32px;
---radius-sm: 4px; --radius-md: 6px;
+--radius-sm: 4px; --radius-md: 6px; --radius-lg: 10px; /* cards (DevDock) */
 --border-w: 1px;
 --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--focus);
 --motion: 120ms ease-out;   /* 0ms when prefers-reduced-motion */
@@ -83,3 +83,10 @@ Splitter (resizable panes), CommandPalette, Tooltip, Kbd.
 - Errors say what failed, why (if known), and what to do next. Never show raw stack traces
   without a "Details" disclosure.
 - Destructive or remote-changing actions ask for confirmation stating exactly what will happen.
+
+## Surfaces (DevDock, owner's decision 2026-10-25)
+DevDock uses a flat card look modelled on DevToys, in every theme: the page is `--bg`, content
+sits in solid `--surface` cards with 10px corners (`--radius-lg`) and a subtle border, no
+shadows or transparency; the nav rail marks the current view as a solid `--accent` pill with
+`--accent-contrast` text; Home opens with a banner tinted from `--accent`. Styles live in
+`src/renderer/ui/surfaces.css`. (A glass/soft-shadow look was tried and dropped.)

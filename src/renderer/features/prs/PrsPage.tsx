@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
-import { Eye, GitPullRequest, RefreshCw } from 'lucide-react'
+import { Eye, GitPullRequest } from 'lucide-react'
 import {
   PR_LISTS,
   isLive,
@@ -21,7 +20,8 @@ import {
   useWatches,
 } from '../../lib/bitbucket'
 import { isNotConfigured, useSettings } from '../../lib/devdock'
-import { Button, IconButton } from '../../ui/Button'
+import { Button } from '../../ui/Button'
+import { RefreshButton } from '../../ui/RefreshButton'
 import { EmptyState, ErrorNotice, useToast } from '../../ui/Feedback'
 import { Field, Input, SegmentedControl } from '../../ui/Field'
 import { ago, prLabel } from './PrBits'
@@ -55,15 +55,21 @@ export function PrsPage({ onView }: { onView: (v: View) => void }) {
   return (
     <div className="prs">
       <WatchField onWatched={() => setTab('watched')} />
-      <SegmentedControl
-        label="List"
-        options={[
-          ...PR_LISTS.map((l) => ({ value: l as Tab, label: LIST_LABELS[l] })),
-          { value: 'watched' as Tab, label: `Watched (${watches.length})` },
-        ]}
-        value={tab}
-        onValue={setTab}
-      />
+      <div className="row-between list-head">
+        <SegmentedControl
+          label="List"
+          options={[
+            ...PR_LISTS.map((l) => ({ value: l as Tab, label: LIST_LABELS[l] })),
+            { value: 'watched' as Tab, label: `Watched (${watches.length})` },
+          ]}
+          value={tab}
+          onValue={setTab}
+        />
+        {tab === 'watched' ? null : (
+          // Beside the list switcher (as in Tickets), not on a row of its own.
+          <RefreshButton queryKey={prKeys.list(tab)} label="Refresh from Bitbucket" />
+        )}
+      </div>
       {tab === 'watched' ? (
         <WatchedList items={watches} actionsFor={allowed} />
       ) : (
@@ -84,24 +90,17 @@ function PrListView({
   actionsFor: (pr: PullRequest) => readonly PrAction[]
   onView: (v: View) => void
 }) {
-  const qc = useQueryClient()
   const query = usePrList(list)
   const prs = query.data ?? []
   const label = LIST_LABELS[list]
 
   return (
     <section className="prs-list">
-      <div className="row-between">
+      {query.isFetching && !query.isPending ? (
         <p className="muted" role="status">
-          {query.isFetching && !query.isPending ? 'Refreshing…' : ''}
+          Refreshing…
         </p>
-        <IconButton
-          label="Refresh from Bitbucket"
-          icon={<RefreshCw size={16} aria-hidden="true" />}
-          disabled={query.isFetching}
-          onClick={() => void qc.invalidateQueries({ queryKey: prKeys.list(list) })}
-        />
-      </div>
+      ) : null}
       {isNotConfigured(query.error) ? (
         <EmptyState
           icon={<GitPullRequest size={18} aria-hidden="true" />}

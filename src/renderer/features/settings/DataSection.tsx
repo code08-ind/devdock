@@ -6,7 +6,7 @@ import { bridge, keys, unwrap, useUpdateSettings, DevDockError } from '../../lib
 import { useAction } from '../../lib/useAction'
 import { Button } from '../../ui/Button'
 import { ConfirmDialog, Dialog } from '../../ui/Dialog'
-import { ErrorNotice, useToast } from '../../ui/Feedback'
+import { ErrorDetails, ErrorNotice, useToast } from '../../ui/Feedback'
 import { Field, Textarea } from '../../ui/Field'
 import { CodeBlock } from '../../ui/Text'
 import { Section } from './Section'
@@ -36,6 +36,7 @@ function LinksField({ hosts }: { hosts: string[] }) {
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
           />
+          <ErrorDetails error={update.error} />
           <div>
             <Button
               disabled={unchanged || update.isPending}

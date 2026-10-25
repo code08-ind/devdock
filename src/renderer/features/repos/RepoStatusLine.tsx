@@ -2,7 +2,7 @@ import { ArrowDown, ArrowUp, GitBranch, Clock, Package, TriangleAlert } from 'lu
 import type { RepoStatus } from '@shared/repos'
 import type { RepoConfig } from '@shared/settings'
 import { relativeTime } from '../../lib/repos'
-import { StatusPill } from '../../ui/Feedback'
+import { ErrorDetails, StatusPill } from '../../ui/Feedback'
 
 const ICON = { size: 14, 'aria-hidden': true } as const
 
@@ -76,11 +76,14 @@ export function RepoStatusLine({ repo, status }: { repo: RepoConfig; status: Rep
   )
 }
 
-export function RepoStatusError({ message }: { message: string }) {
+export function RepoStatusError({ error }: { error: Error }) {
   return (
-    <p className="repo-status-error">
-      <TriangleAlert {...ICON} />
-      {message}
-    </p>
+    <div>
+      <p className="repo-status-error">
+        <TriangleAlert {...ICON} />
+        {error.message}
+      </p>
+      <ErrorDetails error={error} />
+    </div>
   )
 }

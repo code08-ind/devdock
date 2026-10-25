@@ -56,20 +56,26 @@ export function EmptyState({
 /** What failed and what to do, with the technical part behind "Details". */
 export function ErrorNotice({ error }: { error: unknown }) {
   const message = error instanceof Error ? error.message : String(error)
-  const details = error instanceof DevDockError ? error.details : undefined
   return (
     <div className="notice notice-danger" role="alert">
       <CircleX size={16} aria-hidden="true" />
       <div>
         <p>{message}</p>
-        {details ? (
-          <details>
-            <summary>Details</summary>
-            <pre className="mono wrap">{details}</pre>
-          </details>
-        ) : null}
+        <ErrorDetails error={error} />
       </div>
     </div>
+  )
+}
+
+/** The technical detail behind an error (command output, HTTP body), folded away. */
+export function ErrorDetails({ error }: { error: unknown }) {
+  const details = error instanceof DevDockError ? error.details : undefined
+  if (!details) return null
+  return (
+    <details className="error-details">
+      <summary>Details</summary>
+      <pre className="mono wrap">{details}</pre>
+    </details>
   )
 }
 

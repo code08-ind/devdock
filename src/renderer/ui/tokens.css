@@ -16,6 +16,7 @@
   --fw-regular: 400;
   --fw-medium: 500;
   --fw-semibold: 600;
+  --fw-bold: 700;
 
   --space-1: 4px;
   --space-2: 8px;
@@ -25,6 +26,7 @@
   --space-6: 32px;
   --radius-sm: 4px;
   --radius-md: 6px;
+  --radius-lg: 10px;
   --border-w: 1px;
   --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--focus);
   --motion: 120ms ease-out;
@@ -238,6 +240,9 @@ p {
   position: absolute;
   width: 1px;
   height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;

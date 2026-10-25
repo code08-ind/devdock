@@ -178,7 +178,7 @@ function RepoRow({ repo }: { repo: RepoConfig }) {
     <li className="today-repo">
       <span className="today-repo-name">{repo.name}</span>
       {status.data ? <RepoStatusLine repo={repo} status={status.data} /> : null}
-      {status.error ? <RepoStatusError message={status.error.message} /> : null}
+      {status.error ? <RepoStatusError error={status.error} /> : null}
     </li>
   )
 }

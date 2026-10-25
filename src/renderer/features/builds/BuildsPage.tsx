@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
-import { Eye, EyeOff, ExternalLink, Hammer, RefreshCw } from 'lucide-react'
+import { Eye, EyeOff, ExternalLink, Hammer } from 'lucide-react'
 import type { View } from '@shared/channels'
 import {
   jobLabel,
@@ -25,6 +24,7 @@ import {
 } from '../../lib/jenkins'
 import { useAction } from '../../lib/useAction'
 import { Button, IconButton } from '../../ui/Button'
+import { RefreshButton } from '../../ui/RefreshButton'
 import { EmptyState, ErrorNotice, StatusPill, useToast } from '../../ui/Feedback'
 import { Field, Input, SegmentedControl } from '../../ui/Field'
 import { BuildDialog } from './BuildDialog'
@@ -55,15 +55,20 @@ export function BuildsPage({ onView }: { onView: (v: View) => void }) {
   return (
     <div className="prs">
       <PipelineField onWatched={() => setTab('watched')} />
-      <SegmentedControl
-        label="List"
-        options={[
-          { value: 'mine' as Tab, label: 'My branches' },
-          { value: 'watched' as Tab, label: `Watched (${watches.length})` },
-        ]}
-        value={tab}
-        onValue={setTab}
-      />
+      <div className="row-between list-head">
+        <SegmentedControl
+          label="List"
+          options={[
+            { value: 'mine' as Tab, label: 'My branches' },
+            { value: 'watched' as Tab, label: `Watched (${watches.length})` },
+          ]}
+          value={tab}
+          onValue={setTab}
+        />
+        {tab === 'mine' ? (
+          <RefreshButton queryKey={jenkinsKeys.branches} label="Refresh from Jenkins" />
+        ) : null}
+      </div>
       {tab === 'mine' ? (
         <MyBranches
           settings={settings}
@@ -94,7 +99,6 @@ function MyBranches({
   onOpen: (ref: BuildRef) => void
   onTrigger: (row: BranchBuild) => void
 }) {
-  const qc = useQueryClient()
   const query = useBranches()
   const rows = query.data?.builds ?? []
   const skipped = query.data?.skipped ?? []
@@ -102,17 +106,11 @@ function MyBranches({
 
   return (
     <section className="prs-list">
-      <div className="row-between">
+      {query.isFetching && !query.isPending ? (
         <p className="muted" role="status">
-          {query.isFetching && !query.isPending ? 'Refreshing…' : ''}
+          Refreshing…
         </p>
-        <IconButton
-          label="Refresh from Jenkins"
-          icon={<RefreshCw size={16} aria-hidden="true" />}
-          disabled={query.isFetching}
-          onClick={() => void qc.invalidateQueries({ queryKey: jenkinsKeys.branches })}
-        />
-      </div>
+      ) : null}
       {skipped.map((s) => (
         <p key={s.job} className="pr-watch-error">
           Couldn't read <span className="mono">{s.job}</span>: {s.message}
@@ -199,20 +197,21 @@ function BranchRow({
         <BuildPill build={last} />
         {last ? <span className="muted">#{last.number}</span> : null}
         {watch ? <StatusPill tone="info">Watched</StatusPill> : null}
-        <span className="spacer" />
-        <IconButton
-          label={watch ? `Stop watching ${label}` : `Watch ${label}`}
-          icon={
-            watch ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />
-          }
-          disabled={pending}
-          onClick={toggleWatch}
-        />
-        <IconButton
-          label={`Open ${label} in Jenkins`}
-          icon={<ExternalLink size={16} aria-hidden="true" />}
-          onClick={() => void run(unwrap(bridge.app.openExternal({ url: last?.url ?? row.url })))}
-        />
+        <span className="row-actions">
+          <IconButton
+            label={watch ? `Stop watching ${label}` : `Watch ${label}`}
+            icon={
+              watch ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />
+            }
+            disabled={pending}
+            onClick={toggleWatch}
+          />
+          <IconButton
+            label={`Open ${label} in Jenkins`}
+            icon={<ExternalLink size={16} aria-hidden="true" />}
+            onClick={() => void run(unwrap(bridge.app.openExternal({ url: last?.url ?? row.url })))}
+          />
+        </span>
       </div>
       <h3 className="pr-title mono">{row.branch}</h3>
       <p className="pr-meta">
@@ -301,20 +300,23 @@ function WatchedBuilds({
             <li key={w.key} className="pr-row">
               <div className="pr-row-head">
                 <WatchHead watch={w} />
-                <span className="spacer" />
-                <IconButton
-                  label={`Stop watching ${label}`}
-                  icon={<EyeOff size={16} aria-hidden="true" />}
-                  disabled={pending}
-                  onClick={() => void run(remove.mutateAsync(w.key), `Stopped watching ${label}`)}
-                />
-                {w.build ? (
+                <span className="row-actions">
                   <IconButton
-                    label={`Open ${label} in Jenkins`}
-                    icon={<ExternalLink size={16} aria-hidden="true" />}
-                    onClick={() => void run(unwrap(bridge.app.openExternal({ url: w.build!.url })))}
+                    label={`Stop watching ${label}`}
+                    icon={<EyeOff size={16} aria-hidden="true" />}
+                    disabled={pending}
+                    onClick={() => void run(remove.mutateAsync(w.key), `Stopped watching ${label}`)}
                   />
-                ) : null}
+                  {w.build ? (
+                    <IconButton
+                      label={`Open ${label} in Jenkins`}
+                      icon={<ExternalLink size={16} aria-hidden="true" />}
+                      onClick={() =>
+                        void run(unwrap(bridge.app.openExternal({ url: w.build!.url })))
+                      }
+                    />
+                  ) : null}
+                </span>
               </div>
               {w.label ? <p className="pr-meta mono">{w.job}</p> : null}
               {/* Stored state, not news: no live region (it would re-announce on every change). */}

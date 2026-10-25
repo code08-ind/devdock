@@ -67,7 +67,7 @@ export function EnvPanel({ repoId }: { repoId: string }) {
       )}
 
       <form
-        className="inline-form"
+        className="inline-form field-row"
         onSubmit={(e) => {
           e.preventDefault()
           if (!name.trim() || nameError) return
@@ -104,24 +104,25 @@ export function EnvPanel({ repoId }: { repoId: string }) {
                 <span className="muted">
                   {p.keys.length} key{p.keys.length === 1 ? '' : 's'}, saved {ago(p.savedAt)}
                 </span>
-                <span className="spacer" />
-                <Button
-                  size="sm"
-                  disabled={act.isPending || current.matches === p.name}
-                  aria-label={`Switch ${ENV_FILE} to ${p.name}`}
-                  onClick={() => setConfirm({ kind: 'switch', name: p.name })}
-                >
-                  Switch to this
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  disabled={act.isPending}
-                  aria-label={`Delete profile ${p.name}`}
-                  onClick={() => setConfirm({ kind: 'delete', name: p.name })}
-                >
-                  Delete
-                </Button>
+                <span className="row-actions">
+                  <Button
+                    size="sm"
+                    disabled={act.isPending || current.matches === p.name}
+                    aria-label={`Switch ${ENV_FILE} to ${p.name}`}
+                    onClick={() => setConfirm({ kind: 'switch', name: p.name })}
+                  >
+                    Switch to this
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    disabled={act.isPending}
+                    aria-label={`Delete profile ${p.name}`}
+                    onClick={() => setConfirm({ kind: 'delete', name: p.name })}
+                  >
+                    Delete
+                  </Button>
+                </span>
               </div>
               <EnvValues repoId={repoId} profile={p.name} keys={p.keys} collapsed />
             </li>
@@ -324,7 +325,7 @@ function EnvDiff({
   return (
     <div className="stack">
       <h3 className="field-label">Compare (key names only)</h3>
-      <div className="inline-form">
+      <div className="inline-form field-row">
         <Select
           aria-label="From"
           options={options}

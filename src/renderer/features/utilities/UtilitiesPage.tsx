@@ -5,7 +5,7 @@ import { useSettings } from '../../lib/devdock'
 import { useRepos } from '../../lib/repos'
 import { Button } from '../../ui/Button'
 import { EmptyState } from '../../ui/Feedback'
-import { Select, SegmentedControl } from '../../ui/Field'
+import { Field, Select, SegmentedControl } from '../../ui/Field'
 import { FolderGit2 } from 'lucide-react'
 import { CachesPanel } from './CachesPanel'
 import { EnvPanel } from './EnvPanel'
@@ -42,13 +42,19 @@ export function UtilitiesPage({
   return (
     <div className="prs">
       <SegmentedControl label="Utility" options={TABS} value={tab} onValue={setTab} />
-      {needsRepo && repos.length > 1 && repo ? (
-        <Select
-          aria-label="Repo"
-          options={repos.map((r) => ({ value: r.id, label: r.name }))}
-          value={repo.id}
-          onValue={setRepoId}
-        />
+      {needsRepo && repo ? (
+        // Shown with one repo too: it says which repo these actions touch.
+        <Field label="Repo">
+          {({ id }) => (
+            <Select
+              id={id}
+              options={repos.map((r) => ({ value: r.id, label: r.name }))}
+              value={repo.id}
+              disabled={repos.length === 1}
+              onValue={setRepoId}
+            />
+          )}
+        </Field>
       ) : null}
       {needsRepo && !repo ? (
         <EmptyState

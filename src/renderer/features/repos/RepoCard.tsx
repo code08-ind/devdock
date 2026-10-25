@@ -63,7 +63,7 @@ export function RepoCard({ repo }: { repo: RepoConfig }) {
       </header>
 
       {s ? <RepoStatusLine repo={repo} status={s} /> : null}
-      {status.error ? <RepoStatusError message={status.error.message} /> : null}
+      {status.error ? <RepoStatusError error={status.error} /> : null}
       {status.isPending ? <p className="muted">Reading status…</p> : null}
 
       <div className="button-row repo-actions">

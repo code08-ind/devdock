@@ -3,7 +3,11 @@
 .app {
   display: grid;
   grid-template-columns: minmax(168px, max-content) 1fr;
-  height: 100%;
+  /* Exactly the window: only the content pane (and the rail, if it must) scrolls. Without a
+     shrinkable row the grid grew to the page's height and the whole window scrolled. */
+  grid-template-rows: minmax(0, 1fr);
+  height: 100vh;
+  overflow: hidden;
 }
 
 /* ---- Nav rail -------------------------------------------------------------------------- */
@@ -12,8 +16,8 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-2);
+  gap: var(--space-2);
+  padding: var(--space-3);
   border-right: var(--border-w) solid var(--border);
   background: var(--bg-subtle);
   overflow-y: auto;
@@ -28,10 +32,9 @@
 .rail-foot {
   display: grid;
   gap: var(--space-2);
-  padding-left: var(--space-2);
 }
-.rail-foot .rail-item {
-  margin-left: calc(-1 * var(--space-2));
+.rail-foot .pill {
+  margin-left: var(--space-3);
 }
 .rail-item {
   display: flex;
@@ -39,10 +42,9 @@
   gap: var(--space-2);
   width: 100%;
   min-height: var(--control-h);
-  padding: 0 var(--space-3) 0 var(--space-2);
+  padding: 0 var(--space-3);
   border: 0;
-  border-left: 3px solid transparent;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   background: transparent;
   color: var(--text-muted);
   font: inherit;
@@ -50,12 +52,13 @@
   cursor: pointer;
 }
 .rail-item:hover {
-  color: var(--text);
-}
-.rail-item[aria-current='page'] {
-  border-left-color: var(--accent);
   background: var(--selection);
   color: var(--text);
+}
+/* The current view: a solid accent pill (flat look, DECISIONS P6-A). */
+.rail-item[aria-current='page'] {
+  background: var(--accent);
+  color: var(--accent-contrast);
   font-weight: var(--fw-medium);
 }
 .rail-item .kbd {
@@ -65,6 +68,10 @@
 /* ---- Content --------------------------------------------------------------------------- */
 
 .content {
+  /* The containing block for anything absolutely positioned inside a view (visually hidden
+     inputs, tooltips): without it they were placed against the window and, far down a long
+     page like Settings, made the whole window scroll. */
+  position: relative;
   min-width: 0;
   padding: var(--space-5) var(--space-6) var(--space-6);
   overflow-y: auto;
@@ -76,26 +83,21 @@
   line-height: 1.25;
 }
 .view-title:focus,
-.view-title:focus-visible {
-  outline: none;
-  box-shadow: none;
-}
+.view-title:focus-visible,
 
 /* ---- Settings -------------------------------------------------------------------------- */
 
 .settings {
   display: grid;
   gap: var(--space-5);
-  max-width: 720px;
 }
 .settings-section {
   display: grid;
   gap: var(--space-3);
-  padding-bottom: var(--space-5);
-  border-bottom: var(--border-w) solid var(--border);
-}
-.settings-section:last-child {
-  border-bottom: 0;
+  padding: var(--space-5);
+  border: var(--border-w) solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
 }
 .settings-section-head h2 {
   font-size: var(--fs-lg);
@@ -280,7 +282,6 @@
 .repos {
   display: grid;
   gap: var(--space-4);
-  max-width: 960px;
 }
 .repo-card {
   display: grid;
@@ -338,7 +339,6 @@
 .today-section {
   display: grid;
   gap: var(--space-3);
-  max-width: 960px;
 }
 .today-section h2 {
   font-size: var(--fs-lg);
@@ -600,7 +600,6 @@
 .prs {
   display: grid;
   gap: var(--space-4);
-  max-width: 960px;
 }
 .prs-list {
   display: grid;
@@ -632,9 +631,6 @@
   align-items: center;
   gap: var(--space-1) var(--space-2);
   font-size: var(--fs-sm);
-}
-.pr-row-head .spacer {
-  flex: 1;
 }
 .pr-ref {
   font-weight: var(--fw-semibold);
@@ -775,4 +771,147 @@
   padding: var(--space-3);
   border: var(--border-w) solid var(--border);
   border-radius: var(--radius-md);
+}
+
+/* ---- Home (launcher) --------------------------------------------------------------------- */
+.home {
+  display: grid;
+  gap: var(--space-6);
+  max-width: 1400px;
+  margin: 0 auto;
+}
+.home-hero {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+  padding: var(--space-6) var(--space-5);
+  border: var(--border-w) solid var(--border);
+  border-radius: var(--radius-lg);
+  /* A banner tinted with the theme's accent (solid colours only). */
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  text-align: center;
+}
+.home-logo {
+  width: 88px;
+  height: 88px;
+  border-radius: calc(var(--radius-lg) * 2);
+}
+.home-title {
+  font-size: calc(var(--fs-base) * 2.3);
+  font-weight: var(--fw-bold);
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+.home-title:focus,
+.home-title:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+.home-version {
+  margin-left: var(--space-2);
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-regular);
+  letter-spacing: 0;
+  vertical-align: super;
+}
+.home-lede {
+  max-width: 62ch;
+  color: var(--text-muted);
+  font-size: var(--fs-lg);
+}
+.home-group {
+  display: grid;
+  gap: var(--space-3);
+}
+.home-group-title,
+.group-title {
+  margin: 0;
+  padding-bottom: var(--space-2);
+  border-bottom: var(--border-w) solid var(--border);
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
+}
+.home-tiles {
+  display: grid;
+  /* Two wide cards a row in the default window (four columns would squeeze the text). */
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.home-tile {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: start;
+  gap: var(--space-4);
+  width: 100%;
+  height: 100%;
+  padding: var(--space-4);
+  border: var(--border-w) solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color var(--motion),
+    border-color var(--motion);
+}
+.home-tile:hover {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+}
+.home-tile-icon {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-lg);
+  background: var(--bg-subtle);
+  color: var(--accent);
+}
+.home-tile-text {
+  display: grid;
+  gap: var(--space-1);
+  padding-top: var(--space-1);
+}
+.home-tile-label {
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
+}
+.home-tile-hint {
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+  line-height: 1.45;
+}
+
+/* ---- Shared row and form alignment (rows, inline forms, Ports) ------------------------- */
+/* A row's actions stay together on the right, whatever wraps before them. */
+.row-actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-1);
+  margin-left: auto;
+}
+/* A tooltip wrapper around a pill must not shift it off the row's centre line. */
+.pill-wrap {
+  display: inline-flex;
+}
+/* A form whose field has a label above: the button lines up with the input. */
+.inline-form.field-row {
+  align-items: flex-end;
+}
+/* Long command lines: two lines, the rest in the tooltip. */
+.port-command {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+.list-head {
+  align-items: flex-end;
 }

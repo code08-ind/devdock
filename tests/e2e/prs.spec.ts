@@ -33,6 +33,7 @@ test('P3.D4: Today shows my PRs in mixed states, in-progress tickets and repos',
   launched,
 }) => {
   const { win } = launched
+  await win.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Today' }).click()
   const mine = list(win, 'My pull requests')
   await expect(mine.getByRole('listitem')).toHaveCount(4)
   await expect(row(win, 'My pull requests', 'web-app #412')).toContainText('Build passed')

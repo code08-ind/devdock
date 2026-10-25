@@ -126,7 +126,9 @@ export const EVENT_CHANNELS = [
 export type InvokeChannel = (typeof INVOKE_CHANNELS)[number]
 export type EventChannel = (typeof EVENT_CHANNELS)[number]
 
+/** Nav rail order (⌘1…); Home first, the view DevDock opens on. */
 export const VIEWS = [
+  'home',
   'today',
   'repos',
   'prs',

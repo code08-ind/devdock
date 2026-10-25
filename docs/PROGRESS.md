@@ -14,8 +14,8 @@ Contract docs: `docs/SPEC.md`, `docs/UI-THEMES.md`, `docs/BUILD-PROMPTS.md` (pha
 
 | Field        | Value                                                         |
 | ------------ | ------------------------------------------------------------- |
-| Phase        | **Phase 5 closed** — P5-A (da4976f), P5-B (fc65716), P5-C (b551481) pushed; CI 40181751867 green on macOS + Windows. Phase 6 starts next. |
-| Next step    | **Phase 6 — Command palette completeness, polish, packaging, docs** (`docs/BUILD-PROMPTS.md`): split into sub-phases first; carry over the deferred palette entries (PR actions, build actions, stop watching — DECISIONS P3-C/P4-C) |
+| Phase        | **Phase 6 — P6-A done** (Home launcher, flat look, UI audit, scroll/width fixes, P6.02, P6.03, code-review fixes). Not committed. |
+| Next step    | Owner review → commit P6-A → P6-B (palette) → P6-C (diagnostics, perf) → P6-D (packaging, README, QA) |
 | Blockers     | None                                                          |
 | Last updated | 2026-10-25                                                    |
 
@@ -434,9 +434,16 @@ Done criteria:
 
 ## Phase 6 — Palette completeness, polish, packaging, docs
 
+### Sub-phases (pause points)
+
+- [x] **P6-A — Home, look, UI audit** — Home launcher, flat DevToys-style cards in every theme, window 1240×820, switch/select fixes, audit fixes, only the content pane scrolls, views use the full width (DECISIONS P6-A). code-review run (Standards + Spec); fixes applied. Evidence: `npm run lint` exit 0; `npm test` → 51 files, 736 passed, 1 skipped; `npm run e2e` → 40 passed, 2 skipped (opt-in audit and screenshot specs); audit screenshots (14 screens × 7 looks) reviewed.
+- [ ] **P6-B — Palette completeness** (P6.01)
+- [ ] **P6-C — Diagnostics + performance** (P6.04, P6.05)
+- [ ] **P6-D — Packaging, CHANGELOG, README, QA** (P6.06, P6.07, Done)
+
 - [ ] `P6.01` Palette registry: title, keywords, arg parsers (`watch`, `branch`, `kill`, `open`), enabled reason, recents first
-- [ ] `P6.02` Empty / loading / error states everywhere + "error with Details" pattern
-- [ ] `P6.03` Font 12 + 18 in every theme; keyboard-only pass on every screen
+- [x] `P6.02` Empty / loading / error states everywhere + "error with Details" pattern — sweep of every view and panel; repo status errors and the allowed-hosts field gained Details (shared `ErrorDetails`). Evidence: `tests/renderer/feedback-ui.test.ts` (fails with Details removed).
+- [x] `P6.03` Font 12 + 18 in every theme; keyboard-only pass on every screen — Evidence: `tests/e2e/a11y.spec.ts`: 5 themes × 12/18px × 8 views (no sideways overflow, window never scrolls); Tab round on 8 views + PRs Reviewing, 4 Utilities tabs, Tickets details, palette and Start work dialog — every stop visible with the theme's focus colour, focus trapped in dialogs, Escape closes and returns focus (fails with the ring removed or recoloured).
 - [ ] `P6.04` Diagnostics screen (versions, proxy, Test all connections, redacted export)
 - [ ] `P6.05` Perf check: 5 repos + 10 watches in demo — idle CPU/memory
 - [ ] `P6.06` Packaging: icons, version + CHANGELOG, unsigned-app README section
@@ -481,3 +488,6 @@ Done criteria:
 | 2026-10-25 | P5-B  | Committed P5-A (da4976f) on the user's "sure". Env profiles (encrypted per repo, byte-exact switch with backup + swapping restore, key-only state/diff, per-value reveal), quick links (settings + import/export/search/group helpers, hosts allowed), standup (working-day window with holidays, git log by author, PRs opened/merged, Jira status changes, Today from in-progress; demo commits), IPC `envprofiles:*`, `standup:draft`. code-review run; 8 fixes, mutation-checked. Not committed. | User review → commit → P5-C |
 | 2026-10-25 | P5-C  | Committed P5-B (fc65716) on the user's "Sure". Utilities view (ports, caches, env profiles, quick links, standup), Settings → Standup, palette `kill <port>`/utilities/links in both windows, Clear all data + env profiles, README with the Windows check, utilities e2e incl. P5.D2. code-review run; 12 fixes. lint/test/e2e/dist green. Phase 5 Done criteria all met. Not committed. | User review → commit/push/CI → Phase 6 |
 | 2026-10-25 | P5 close | Committed P5-C (b551481), pushed. CI run 40181751867: macOS + Windows green — macOS unit 50 files, e2e 36 passed; Windows unit 49 files + 1 skipped (real-process ports test), e2e 30 passed (utilities.spec skipped there by design; Windows stop path covered by mocked unit tests). Phase 5 closed. | Phase 6 |
+| 2026-10-25 | P6-A (partial) | Phase 5 closed (CI 40181751867). Split Phase 6 (P6-A–D); owner added a Home launcher and a cosmetic audit. Home (DevToys-style: logo, welcome, tool cards), flat card look in every theme (a glass/soft-shadow look was built, shown and dropped at the owner's request), window 1240×820, switch + select redesign, audit fixes across screens (row actions, refresh placement, labels, Ports text, repo picker…). lint/test green; e2e green bar one teardown timeout. Not committed. | Owner review of the look → finish P6-A |
+| 2026-10-25 | P6-A (partial) | Fixed the whole window scrolling on Settings (hidden radio inputs positioned against the window; `.content` now the containing block) with a regression e2e that fails without the fix; removed the content width caps so views use the 1240px window, Settings sections laid out title-left/controls-right on wide windows. lint, test (734 passed), e2e (38 passed, 2 skipped) green; audit screenshots reviewed. Not committed. | Owner review → P6.02 states, P6.03 keyboard pass, code-review |
+| 2026-10-25 | P6-A done | P6.02 states sweep (repo status + allowed hosts errors get Details via shared `ErrorDetails`), P6.03 e2e (12/18px every theme; keyboard round on every screen, palette and a dialog). code-review: Standards (radius/bold tokens into tokens.css, rail + Settings card rules folded into shell.css, dead CSS removed, shared `RefreshButton`, Home ids fixed, names) and Spec (keyboard test widened and made strict) fixes applied. Renderer component tests live in `tests/renderer/` (web tsconfig). lint/test/e2e green. Not committed. | Owner review → commit → P6-B |

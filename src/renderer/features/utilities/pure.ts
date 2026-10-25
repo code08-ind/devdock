@@ -27,3 +27,13 @@ export const fromLines = (text: string) =>
     .split('\n')
     .map((l) => l.replace(/^\s*[-*•]\s+/, '').trim())
     .filter(Boolean)
+
+const ANY = new Set(['*', '0.0.0.0', '::', '[::]'])
+const LOOPBACK = new Set(['127.0.0.1', '::1', 'localhost'])
+
+/** Who can reach a listener, in words: "all interfaces", "this machine only", or the addresses. */
+export function reach(addresses: readonly string[]): string {
+  if (addresses.some((a) => ANY.has(a))) return 'all interfaces'
+  if (addresses.length && addresses.every((a) => LOOPBACK.has(a))) return 'this machine only'
+  return addresses.join(', ')
+}

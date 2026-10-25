@@ -15,7 +15,7 @@ export function BuildPill({ pr }: { pr: PullRequest }) {
   const [tone, text] = BUILD[pr.build.state]
   const failed = pr.build.statuses.filter((s) => s.state === 'failed').map((s) => s.name)
   return (
-    <span title={failed.length ? `Failed: ${failed.join(', ')}` : undefined}>
+    <span className="pill-wrap" title={failed.length ? `Failed: ${failed.join(', ')}` : undefined}>
       <StatusPill tone={tone}>{text}</StatusPill>
     </span>
   )

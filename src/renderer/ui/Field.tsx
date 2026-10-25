@@ -1,3 +1,4 @@
+import { ChevronDown } from 'lucide-react'
 import {
   useId,
   type InputHTMLAttributes,
@@ -64,21 +65,25 @@ export function Select<T extends string | number>({
   onValue: (v: T) => void
 }) {
   return (
-    <select
-      {...props}
-      className="input select"
-      value={String(value)}
-      onChange={(e) => {
-        const picked = options.find((o) => String(o.value) === e.target.value)
-        if (picked) onValue(picked.value)
-      }}
-    >
-      {options.map((o) => (
-        <option key={String(o.value)} value={String(o.value)}>
-          {o.label}
-        </option>
-      ))}
-    </select>
+    // The native arrow sits flush against the border on macOS; draw our own inside the field.
+    <span className="select-wrap">
+      <select
+        {...props}
+        className="input select"
+        value={String(value)}
+        onChange={(e) => {
+          const picked = options.find((o) => String(o.value) === e.target.value)
+          if (picked) onValue(picked.value)
+        }}
+      >
+        {options.map((o) => (
+          <option key={String(o.value)} value={String(o.value)}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+      <ChevronDown className="select-chevron" size={16} aria-hidden="true" />
+    </span>
   )
 }
 
@@ -143,7 +148,9 @@ export function Toggle({
         disabled={disabled}
         onClick={() => onChecked(!checked)}
       >
-        <span className="toggle-thumb" />
+        <span className="toggle-track">
+          <span className="toggle-thumb" />
+        </span>
         <span className="toggle-text">{checked ? 'On' : 'Off'}</span>
       </button>
     </div>

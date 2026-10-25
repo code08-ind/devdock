@@ -20,10 +20,11 @@ function load(win: BrowserWindow, page: Page): Promise<void> {
 export function createMainWindow(): BrowserWindow {
   const win = new BrowserWindow({
     title: 'DevDock',
-    width: 900,
-    height: 600,
-    minWidth: 720,
-    minHeight: 480,
+    // Roomy like other desktop toolboxes (user request, P6-A); still fits a 1280×800 screen.
+    width: 1240,
+    height: 820,
+    minWidth: 860,
+    minHeight: 580,
     show: false,
     webPreferences: { ...WEB_PREFERENCES, preload },
   })

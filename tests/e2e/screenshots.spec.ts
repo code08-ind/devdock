@@ -16,6 +16,10 @@ test('screenshots: Today in Light and Dark', async ({ launched }) => {
   for (const theme of ['light', 'dark'] as const) {
     await win.evaluate((t) => window.devdock.settings.update({ appearance: { theme: t } }), theme)
     await expect(win.locator('html')).toHaveAttribute('data-theme', theme)
+    await win
+      .getByRole('navigation', { name: 'Main' })
+      .getByRole('button', { name: 'Today' })
+      .click()
     await expect(win.locator('main')).toHaveAttribute('data-view', 'today')
     await win.screenshot({ path: join(out, `today-${theme}.png`), animations: 'disabled' })
   }

@@ -1,0 +1,52 @@
+/*
+ * Flat card look, every theme (owner's decision, P6-A; modelled on DevToys): the page is the
+ * theme's `--bg`, content sits in solid `--surface` cards with larger corners and a subtle
+ * border, no shadows, no transparency. (The rail's accent pill and the Settings section cards
+ * are in shell.css.) Tokens only; loaded after the component and shell styles so it can restyle them.
+ */
+
+/* ---- Cards ------------------------------------------------------------------------------- */
+
+.pr-list,
+.stage-list,
+.repo-card,
+.issue-pane,
+.link-form,
+.code {
+  border-color: var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+/* Rows inside a card keep the card's corners. */
+.pr-list > li:first-child {
+  border-top-left-radius: var(--radius-lg);
+  border-top-right-radius: var(--radius-lg);
+}
+.pr-list > li:last-child {
+  border-bottom-left-radius: var(--radius-lg);
+  border-bottom-right-radius: var(--radius-lg);
+}
+
+/* Wide windows: what a section is on the left, its controls on the right, so the page uses the
+   width without stretching inputs across it. */
+@media (min-width: 1100px) {
+  .settings-section {
+    grid-template-columns: minmax(180px, 1fr) minmax(0, 2.4fr);
+    column-gap: var(--space-6);
+    align-items: start;
+  }
+}
+
+.dialog,
+.palette {
+  border-radius: var(--radius-lg);
+}
+.toast {
+  border-radius: var(--radius-md);
+}
+
+/* ---- Controls ---------------------------------------------------------------------------- */
+
+.segmented-options {
+  border-radius: var(--radius-md);
+}

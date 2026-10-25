@@ -14,6 +14,7 @@ import {
 } from './fixtures'
 
 const NAV = [
+  ['Home', 'home'],
   ['Today', 'today'],
   ['Repos', 'repos'],
   ['Pull requests', 'prs'],
@@ -23,13 +24,58 @@ const NAV = [
   ['Settings', 'settings'],
 ] as const
 
+test('opens on Home; every tile opens its feature', async ({ launched }) => {
+  const { win, errors } = launched
+  await expect(win.locator('main')).toHaveAttribute('data-view', 'home')
+  const tiles = win.locator('.home-tile')
+  await expect(tiles).toHaveCount(12)
+  const go = async (name: string) => {
+    await win
+      .getByRole('navigation', { name: 'Main' })
+      .getByRole('button', { name: 'Home' })
+      .click()
+    await win
+      .locator('main')
+      .getByRole('button', { name: new RegExp(`^${name}\\b`) })
+      .click()
+  }
+  for (const [name, view] of [
+    ['Today', 'today'],
+    ['Repos', 'repos'],
+    ['Pull requests', 'prs'],
+    ['Builds', 'builds'],
+    ['Tickets', 'tickets'],
+    ['Settings', 'settings'],
+  ] as const) {
+    await go(name)
+    await expect(win.locator('main')).toHaveAttribute('data-view', view)
+  }
+  for (const [name, tab] of [
+    ['Ports', 'Ports'],
+    ['Clean caches', 'Clean caches'],
+    ['Env profiles', 'Env profiles'],
+    ['Quick links', 'Quick links'],
+    ['Standup', 'Standup'],
+  ] as const) {
+    await go(name)
+    await expect(win.locator('main')).toHaveAttribute('data-view', 'utilities')
+    await expect(win.getByRole('radio', { name: tab })).toBeChecked()
+  }
+  await go('Command palette')
+  await expect(win.getByTestId('command-palette')).toBeVisible()
+  expect(errors).toEqual([])
+})
+
 test('opens each nav item', async ({ launched }) => {
   const { win, errors } = launched
   const nav = win.getByRole('navigation', { name: 'Main' })
   for (const [label, view] of NAV) {
     await nav.getByRole('button', { name: label, exact: true }).click()
     await expect(win.locator('main')).toHaveAttribute('data-view', view)
-    await expect(win.getByRole('heading', { level: 1 })).toHaveText(label)
+    await expect(win.getByRole('heading', { level: 1 })).toHaveText(
+      // Home's heading is its welcome line.
+      view === 'home' ? /^Welcome to DevDock/ : label,
+    )
     await expect(nav.getByRole('button', { name: label, exact: true })).toHaveAttribute(
       'aria-current',
       'page',
@@ -144,4 +190,27 @@ test('a secret saved in Settings is encrypted on disk', async ({ launched }) => 
   const files = filesUnder(userData)
   expect(files).toContain(secretsFile)
   for (const file of files) expect(readFileSync(file).includes(needle), file).toBe(false)
+})
+
+test('the window never scrolls: only the content pane does, on every view (18px)', async ({
+  launched,
+}) => {
+  const { win } = launched
+  // Large text makes every view taller than the window.
+  await win.evaluate(() => window.devdock.settings.update({ appearance: { fontSize: 18 } }))
+  const nav = win.getByRole('navigation', { name: 'Main' })
+  for (const [label] of NAV) {
+    await nav.getByRole('button', { name: label, exact: true }).click()
+    await win.locator('main').evaluate((m) => m.scrollTo(0, m.scrollHeight))
+    const layout = await win.evaluate(() => {
+      const rail = document.querySelector('nav[aria-label="Main"]')!.getBoundingClientRect()
+      const page = document.scrollingElement!
+      return {
+        pageScrolls: page.scrollHeight > page.clientHeight + 1,
+        railTop: Math.round(rail.top),
+        railFillsHeight: Math.abs(rail.height - window.innerHeight) <= 1,
+      }
+    })
+    expect(layout, label).toEqual({ pageScrolls: false, railTop: 0, railFillsHeight: true })
+  }
 })

@@ -119,29 +119,30 @@ export function LinksPanel({ settings }: { settings: Settings }) {
       ) : (
         shown.map((g) => (
           <div key={g.group || '(none)'} className="stack">
-            <h3 className="field-label">{g.group || 'Other'}</h3>
+            <h3 className="group-title">{g.group || 'Other'}</h3>
             <ul className="pr-list" aria-label={g.group || 'Other links'}>
               {g.links.map((l) => (
                 <li key={l.id} className="pr-row">
                   <div className="pr-row-head">
                     <span className="pr-ref">{l.name}</span>
                     <span className="muted mono port-command">{l.url}</span>
-                    <span className="spacer" />
-                    <IconButton
-                      label={`Open ${l.name}`}
-                      icon={<ExternalLink size={16} aria-hidden="true" />}
-                      onClick={() => void run(unwrap(bridge.app.openExternal({ url: l.url })))}
-                    />
-                    <IconButton
-                      label={`Edit ${l.name}`}
-                      icon={<Pencil size={16} aria-hidden="true" />}
-                      onClick={() => setEditing(l)}
-                    />
-                    <IconButton
-                      label={`Delete ${l.name}`}
-                      icon={<Trash2 size={16} aria-hidden="true" />}
-                      onClick={() => setDeleting(l)}
-                    />
+                    <span className="row-actions">
+                      <IconButton
+                        label={`Open ${l.name}`}
+                        icon={<ExternalLink size={16} aria-hidden="true" />}
+                        onClick={() => void run(unwrap(bridge.app.openExternal({ url: l.url })))}
+                      />
+                      <IconButton
+                        label={`Edit ${l.name}`}
+                        icon={<Pencil size={16} aria-hidden="true" />}
+                        onClick={() => setEditing(l)}
+                      />
+                      <IconButton
+                        label={`Delete ${l.name}`}
+                        icon={<Trash2 size={16} aria-hidden="true" />}
+                        onClick={() => setDeleting(l)}
+                      />
+                    </span>
                   </div>
                 </li>
               ))}

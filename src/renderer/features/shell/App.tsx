@@ -21,6 +21,7 @@ import { ActionDialog } from '../repos/ActionDialog'
 import { ReposPage } from '../repos/ReposPage'
 import { SettingsPage } from '../settings/SettingsPage'
 import { TicketsPage } from '../tickets/TicketsPage'
+import { HomePage } from '../home/HomePage'
 import { TodayPage } from '../today/TodayPage'
 import type { UtilityRequest } from '@shared/utilities'
 import { UtilitiesPage } from '../utilities/UtilitiesPage'
@@ -33,7 +34,9 @@ function ViewBody({
   onPalette,
   buildsKey,
   utility,
+  onUtility,
 }: {
+  onUtility: (request: UtilityRequest) => void
   buildsKey: number
   /** The palette's last request for Utilities (remounts the view on its tab). */
   utility: { n: number; request: UtilityRequest } | null
@@ -43,6 +46,9 @@ function ViewBody({
 }) {
   if (view === 'settings') return <SettingsPage />
   if (view === 'repos') return <ReposPage />
+  if (view === 'home') {
+    return <HomePage onView={onView} onUtility={onUtility} onPalette={onPalette} />
+  }
   if (view === 'today') return <TodayPage onView={onView} />
   if (view === 'tickets') return <TicketsPage onView={onView} />
   if (view === 'prs') return <PrsPage onView={onView} />
@@ -87,7 +93,8 @@ function PaletteOverlay({
 
 export function App() {
   const settings = useSettings().data
-  const [view, setView] = useState<View>('today')
+  // DevDock opens on Home, the launcher (user request, P6-A).
+  const [view, setView] = useState<View>('home')
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [buildsKey, setBuildsKey] = useState(0)
   const [utility, setUtility] = useState<{ n: number; request: UtilityRequest } | null>(null)
@@ -174,15 +181,19 @@ export function App() {
         demoMode={settings?.general.demoMode ?? false}
       />
       <main ref={main} className="content" data-view={view}>
-        <h1 className="view-title" tabIndex={-1}>
-          {VIEW_LABELS[view]}
-        </h1>
+        {/* Home has its own heading, in its welcome header. */}
+        {view === 'home' ? null : (
+          <h1 className="view-title" tabIndex={-1}>
+            {VIEW_LABELS[view]}
+          </h1>
+        )}
         <ViewBody
           view={view}
           onView={setView}
           onPalette={() => setPaletteOpen(true)}
           buildsKey={buildsKey}
           utility={utility}
+          onUtility={openUtility}
         />
       </main>
       {requested && requestedRepo ? (

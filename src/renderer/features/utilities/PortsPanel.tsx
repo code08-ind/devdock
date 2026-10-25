@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { Network, RefreshCw } from 'lucide-react'
 import { PORT_FILTERS, type ListeningPort } from '@shared/utilities'
-import { filterPorts, type PortFilter as Filter } from './pure'
+import { filterPorts, reach, type PortFilter as Filter } from './pure'
 import { DevDockError, bridge } from '../../lib/devdock'
 import { usePorts, useStop, utilityKeys } from '../../lib/utilities'
 import { Button, IconButton } from '../../ui/Button'
@@ -92,18 +92,23 @@ export function PortsPanel({ stopPort }: { stopPort?: number }) {
                 <span className="mono pr-ref">:{r.port}</span>
                 <span>{r.process}</span>
                 <span className="muted">PID {r.pid}</span>
-                <span className="muted mono">{r.addresses.join(', ')}</span>
-                <span className="spacer" />
-                <Button
-                  size="sm"
-                  variant="danger"
-                  aria-label={`Stop ${r.process} on port ${r.port}`}
-                  onClick={() => setStopping(r)}
-                >
-                  Stop
-                </Button>
+                <span className="muted">{reach(r.addresses)}</span>
+                <span className="row-actions">
+                  <Button
+                    size="sm"
+                    variant="danger"
+                    aria-label={`Stop ${r.process} on port ${r.port}`}
+                    onClick={() => setStopping(r)}
+                  >
+                    Stop
+                  </Button>
+                </span>
               </div>
-              {r.command ? <p className="pr-meta mono port-command">{r.command}</p> : null}
+              {r.command ? (
+                <p className="pr-meta mono port-command" title={r.command}>
+                  {r.command}
+                </p>
+              ) : null}
             </li>
           ))}
         </ul>

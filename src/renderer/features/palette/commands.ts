@@ -33,6 +33,7 @@ export interface Command {
 }
 
 export const VIEW_LABELS: Record<View, string> = {
+  home: 'Home',
   today: 'Today',
   repos: 'Repos',
   prs: 'Pull requests',
@@ -43,6 +44,7 @@ export const VIEW_LABELS: Record<View, string> = {
 }
 
 const VIEW_KEYWORDS: Partial<Record<View, string[]>> = {
+  home: ['start', 'launcher', 'features'],
   prs: ['bitbucket', 'review'],
   builds: ['jenkins', 'pipeline', 'ci'],
   tickets: ['jira', 'issues'],
