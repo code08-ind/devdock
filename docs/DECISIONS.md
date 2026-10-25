@@ -428,3 +428,13 @@ store with migrations).
 | README: install table, unsigned-app warnings (Gatekeeper, SmartScreen, company IT approval), demo mode (what stays real: git on your repos, Ports), every feature with a demo-mode screenshot (`npm run screenshots`), per-service tokens and minimal permissions (from the services' own hints), security in plain words, keyboard shortcuts. CHANGELOG in Keep a Changelog form. | P6.06, P6.07. |
 | Verified packages: macOS arm64 app built and launched (log "started", proxy applied) on macOS 27; arm64 + x64 DMGs built by `npm run dist`. Windows NSIS + portable are built by CI on windows-latest; not launched by hand. | P6.D2 "state which ones were verified on which OS". |
 
+## Phase 7 — Terminal, providers, AI agents, website (2026-10-26, planned)
+
+| Decision | Why |
+| --- | --- |
+| **AI is now in scope** (reverses SPEC 3's "No AI API calls"): the owner wants Claude, Gemini, Codex and Copilot. Two ways, both opt-in: (1) **agent CLIs** the user has installed run in DevDock's terminal with the ticket brief and lessons — no keys in DevDock; (2) **bring-your-own API keys** (Anthropic, OpenAI, Google) stored in the OS keychain like other tokens, for a few in-app features; nothing is sent until a key is added, and each call is shown and confirmable. | Owner's decision, 2026-10-26. Keeps the security model: keys never reach the renderer, no telemetry. |
+| **In-app terminal** with a real pseudo-terminal (`node-pty`, the one native module) and xterm.js. It runs the user's own login shell and config, so an existing oh-my-zsh prompt and plugins appear as they are; DevDock adds per-theme ANSI palettes and an optional robbyrussell-style prompt for people without oh-my-zsh (it never edits `~/.zshrc`). Native module → per-architecture builds, `asarUnpack`, Windows ConPTY; packages grow by a few MB. | Owner: "fully functional … theme of oh my zsh with proper colour highlights". |
+| **Providers behind adapters**: GitHub (+ Actions) and GitLab (+ CI/CD) join Bitbucket and Jenkins; github.com/GitHub Enterprise and gitlab.com/self-managed. Others (Azure DevOps, CircleCI, Buildkite) fit the same adapters later. | Owner: "reach more users … features used in big companies". |
+| **Landing website** in `website/` (static, no tracking), downloads from GitHub Releases with OS detection. Hosting, domain and publishing releases are outward-facing: done only after the owner confirms. | Owner: "a landing website … download for Windows and Mac". |
+| Parallel work: one agent per track in its own git worktree and branch; merged one at a time after lint/test/e2e and code-review. | Avoids agents editing the same files at once. |
+

@@ -467,6 +467,35 @@ Done criteria:
 
 ---
 
+## Phase 7 — Terminal, more integrations, AI agents, website (owner request 2026-10-26)
+
+Owner: "In-built terminal … fully functional … in the theme of oh my zsh with proper colour
+highlights"; "integration with GitHub Actions, GitLab CI/CD etc … features used in big MNCs";
+"integrate multiple AI agents and service providers along with Copilot such as Claude, Gemini,
+Codex"; "a landing website … download for Windows and Mac … as a full-fledged application".
+Tracks run in parallel in separate git worktrees (one agent each) and are merged one at a time
+after review. Decisions in DECISIONS.md "Phase 7".
+
+### Tracks (pause points)
+
+- [ ] **P7-A — In-app terminal** (branch `p7-terminal`)
+  - [ ] `P7.01` Terminal view + panel: real PTY (`node-pty`) running the user's login shell (zsh/bash/fish; PowerShell/cmd on Windows), xterm.js with fit, links, search, copy/paste, resize, tabs; opens in a repo's folder from Repos/palette
+  - [ ] `P7.02` Looks: an ANSI palette per DevDock theme (oh-my-zsh-friendly colours), font/size from Settings; optional DevDock prompt (robbyrussell-style, git branch and status) for people without oh-my-zsh; the user's own `.zshrc`/oh-my-zsh untouched and used when present
+  - [ ] `P7.03` Safety + packaging: PTY only in main, input/output over IPC, sessions killed on quit; native module packaged per arch (asarUnpack), Windows ConPTY; tests (unit, e2e typing a command and reading its output)
+- [ ] **P7-B — CI / Git provider integrations** (branch `p7-providers`)
+  - [ ] `P7.04` Provider model: repos and CI behind adapters (Bitbucket + Jenkins today); a repo's remote decides its provider
+  - [ ] `P7.05` GitHub: pull requests (mine, reviewing, merged, watch, actions behind the same confirmations) and GitHub Actions (workflow runs for my branches/PRs, jobs/steps, logs, watch, re-run behind confirmation); github.com and GitHub Enterprise
+  - [ ] `P7.06` GitLab: merge requests and GitLab CI/CD pipelines (jobs, logs, watch, retry behind confirmation); gitlab.com and self-managed
+  - [ ] `P7.07` Settings, demo data, Today/panel/palette/Diagnostics cover the new providers; tests
+- [ ] **P7-C — AI agents and providers** (branch `p7-agents`, after P7-A merges)
+  - [ ] `P7.08` Agent launcher: detect installed agent CLIs (Claude Code, Codex, Gemini CLI, GitHub Copilot CLI) and start one in the terminal in the repo with the ticket brief/lessons; Start work offers "Start <agent> now"
+  - [ ] `P7.09` Optional AI providers with your own key (Anthropic Claude, OpenAI, Google Gemini) in the keychain; first features: PR summary, review-comment → lesson wording, standup polish — off until a key is added, every call shown and confirmable
+- [ ] **P7-D — Landing website** (folder `website/`, branch `p7-website`)
+  - [ ] `P7.10` Static site: hero, features with real screenshots, download section that detects macOS (Apple silicon / Intel) or Windows and offers the right installer, unsigned-app help, privacy, FAQ; light/dark; accessible; fast
+  - [ ] `P7.11` Downloads wired to GitHub Releases (latest); a release workflow building and attaching the installers on a version tag — publishing and hosting only after the owner confirms
+
+---
+
 ## Session log (append-only)
 
 | Date       | Phase | Summary                                                                                                             | Next    |
@@ -510,3 +539,4 @@ Done criteria:
 | 2026-10-25 | P6-C | Settings → Diagnostics: versions, proxy in use, manual proxy override (SPEC 5), Test all connections, redacted export (+ Save as file). Perf check: CPU 0.34 % avg, 614 MB summed working sets; panel window lazy (−130 MB). code-review run; fixes applied. lint/test/e2e green (one flaky unit run noted). Not committed. | Owner review → commit → P6-D |
 | 2026-10-25 | P6-C close | Committed P6-C (8a071d7) and pushed; CI 40203873707 green on macOS (6m02s) and Windows (10m16s). | P6-D |
 | 2026-10-25 | P6-D | Small packages (no runtime node_modules, English-only locales, max compression: DMG 121.5 → 103.5 MB arm64, asar 50 → 1.9 MB), THIRD_PARTY_NOTICES, README rewrite with demo screenshots, CHANGELOG, login-item noise fix. Packaged arm64 app launched. code-review run (both reviewers hit a usage limit once and were resumed); fixes applied. Not committed. | Owner review → commit → D3/D4 |
+| 2026-10-26 | P7 plan | Owner asked for an in-app terminal (oh-my-zsh look), GitHub/GitLab CI and more providers, multiple AI agents/providers (Claude, Gemini, Codex, Copilot), and a landing website with downloads. Planned Phase 7 tracks P7-A (terminal), P7-B (providers), P7-C (AI agents, after P7-A), P7-D (website); A, B, D started in parallel worktrees. Phase 6 D3/D4 QA run and P6-D CI in progress. | Merge tracks after review |
