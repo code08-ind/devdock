@@ -7,11 +7,13 @@ export const SERVICES = [
   ['Jira', 'jira'],
   ['Bitbucket', 'bitbucket'],
   ['Jenkins', 'jenkins'],
+  ['GitHub', 'github'],
+  ['GitLab', 'gitlab'],
 ] as const
 export type ServiceName = (typeof SERVICES)[number][0]
 
 export const ProxyRouteSchema = z.object({
-  service: z.enum(['Jira', 'Bitbucket', 'Jenkins']),
+  service: z.enum(['Jira', 'Bitbucket', 'Jenkins', 'GitHub', 'GitLab']),
   /** The service's origin, or null when it isn't set up. */
   origin: z.string().nullable(),
   /** Chromium's answer for that origin ("DIRECT", "PROXY host:port; DIRECT"), credentials removed. */

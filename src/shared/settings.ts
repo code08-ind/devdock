@@ -7,6 +7,7 @@ import { MAX_QUICK_LINKS, QuickLinkSchema } from './links'
 import { ProxyServerSchema } from './diagnostics'
 import { DEFAULT_LESSONS_PATH, LessonsPathSchema } from './lessons'
 import { HolidaySchema } from './standup'
+import { CI_PROVIDERS, GITHUB_WEB, GITLAB_WEB, PROVIDERS, type Provider } from './providers'
 
 export const SETTINGS_VERSION = 1
 
@@ -169,6 +170,8 @@ export const SettingsSchema = z.object({
     .object({
       prActions: z.boolean().default(false),
       jobTriggers: z.boolean().default(false),
+      /** P7: re-run / retry / cancel GitHub Actions runs and GitLab pipelines (off, confirmed). */
+      ciActions: z.boolean().default(false),
       allowedJobs: z.array(z.string()).default([]),
       jiraTransition: z.boolean().default(false),
       briefLocation: z.enum(['repo', 'appData']).default('repo'),
@@ -203,6 +206,8 @@ export const SettingsSchema = z.object({
   /** SPEC 6.3 / 6.7. The token is a secret (`bitbucket.token`), never stored here. */
   bitbucket: z
     .object({
+      /** P7.04: PRs come from Bitbucket (on by default: every install before P7 used it). */
+      enabled: z.boolean().default(true),
       flavor: z.enum(BITBUCKET_FLAVORS).default('cloud'),
       baseUrl: serviceUrl.default(''),
       /**
@@ -215,6 +220,25 @@ export const SettingsSchema = z.object({
         .max(200)
         .refine((u) => !u.includes(':'), 'A user name or email has no ":"')
         .default(''),
+    })
+    .prefault({}),
+  /**
+   * P7.05 GitHub: github.com, or GitHub Enterprise Server at `baseUrl`. The token is a secret
+   * (`github.token`), never stored here.
+   */
+  github: z
+    .object({
+      enabled: z.boolean().default(false),
+      /** '' = github.com. */
+      baseUrl: serviceUrl.default(''),
+    })
+    .prefault({}),
+  /** P7.06 GitLab: gitlab.com, or self-managed at `baseUrl`. Token: secret `gitlab.token`. */
+  gitlab: z
+    .object({
+      enabled: z.boolean().default(false),
+      /** '' = gitlab.com. */
+      baseUrl: serviceUrl.default(''),
     })
     .prefault({}),
   /** SPEC 6.4 / 6.7. The API token is a secret (`jenkins.token`), never stored here. */
@@ -313,6 +337,8 @@ export const SettingsPatchSchema = z.object({
   git: patchOf(SettingsSchema.shape.git),
   jira: patchOf(SettingsSchema.shape.jira),
   bitbucket: patchOf(SettingsSchema.shape.bitbucket),
+  github: patchOf(SettingsSchema.shape.github),
+  gitlab: patchOf(SettingsSchema.shape.gitlab),
   jenkins: patchOf(SettingsSchema.shape.jenkins),
   standup: patchOf(SettingsSchema.shape.standup),
   quickLinks: z.array(QuickLinkSchema).max(MAX_QUICK_LINKS).optional(),
@@ -324,4 +350,18 @@ export type SettingsPatch = z.infer<typeof SettingsPatchSchema>
 
 export function defaultSettings(): Settings {
   return SettingsSchema.parse({ version: SETTINGS_VERSION })
+}
+
+/** Providers whose pull requests DevDock shows (P7.04), in a fixed order. */
+export function enabledProviders(s: Pick<Settings, Provider>): Provider[] {
+  return PROVIDERS.filter((p) => s[p].enabled)
+}
+
+/** Providers whose CI DevDock shows (GitHub Actions, GitLab pipelines). */
+export const enabledCi = (s: Pick<Settings, Provider>) =>
+  CI_PROVIDERS.filter((p) => s[p].enabled)
+
+/** The site a GitHub / GitLab setting points at: its base URL, or the public site. */
+export function providerWeb(s: Pick<Settings, 'github' | 'gitlab'>, p: 'github' | 'gitlab'): string {
+  return s[p].baseUrl || (p === 'github' ? GITHUB_WEB : GITLAB_WEB)
 }

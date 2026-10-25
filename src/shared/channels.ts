@@ -64,6 +64,28 @@ export const INVOKE_CHANNELS = [
   'watch:remove',
   /** Palette window → main window: show PRs and watch this link there (result as a toast). */
   'watch:request',
+  /** P7.04: PRs from any provider (Bitbucket, GitHub, GitLab), routed by the ref's provider. */
+  'prs:list',
+  'prs:pr',
+  /** Approve / request changes / merge on any provider. Rejected unless `features.prActions`. */
+  'prs:action',
+  /** P7.07: hosts in the registered repos' remotes, and the provider each one means. */
+  'providers:detect',
+  'github:testConnection',
+  'gitlab:testConnection',
+  /** P7.05 / P7.06: GitHub Actions runs and GitLab pipelines for my branches. */
+  'ci:runs',
+  /** One run with its jobs (and GitHub steps). */
+  'ci:run',
+  /** The tail of one job's log. */
+  'ci:log',
+  /** Re-run failed jobs / retry / cancel. Rejected unless `features.ciActions`. */
+  'ci:action',
+  'ciwatch:list',
+  /** Watch a run (from the list, or its link in the palette). */
+  'ciwatch:add',
+  'ciwatch:remove',
+  'ciwatch:clearFinished',
   'jenkins:testConnection',
   /** SPEC 6.4 "My branches": last build of each branch I have locally or in open PRs. */
   'jenkins:branches',
@@ -133,6 +155,8 @@ export const EVENT_CHANNELS = [
   'watch:requested',
   /** The build watch list or a watched build changed. */
   'buildwatch:changed',
+  /** The run watch list (GitHub Actions / GitLab pipelines) or a watched run changed. */
+  'ciwatch:changed',
   'utilities:requested',
   'tickets:requested',
 ] as const

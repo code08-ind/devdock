@@ -514,6 +514,17 @@ exact resume steps. Nothing pushed.
 
 ---
 
+## Phase 7 — P7-B CI / Git provider integrations (branch `p7-providers`, WIP)
+
+Status: **paused mid P7.04/P7.05 at the owner's request (2026-10-26). Nothing type-checked or tested yet — run `npm run lint` first on resume.**
+
+- [~] `P7.04` Provider model — written: `src/shared/providers.ts` (providers, remote → provider), `PrRef.provider` (absent = Bitbucket; GitLab namespaces with `/`), `prKey`/`refLabel`/`PROVIDER_ACTIONS` in `shared/bitbucket.ts`, `parseAnyPrLink` + `withinSite` in `shared/prlink.ts`, `services/watch.ts` `prRefFromLink(link, siteFor)`, PR + build watchers take the hub (`site(provider)`), `services/providers/hub.ts` (`PrHub`), settings `bitbucket.enabled`, `github`, `gitlab`, `features.ciActions`, `enabledProviders`/`providerWeb`, secrets `github.token`/`gitlab.token`, IPC channels + contract (`prs:*`, `providers:detect`, `github:/gitlab:testConnection`, `ci:*`, `ciwatch:*`, event `ciwatch:changed`), diagnostics SERVICES + proxy route, link allow-list (provider hosts + demo hosts). **Not yet:** handlers.ts for the new channels, index.ts wiring (HostService ×2, PrHub, CiWatcher + scheduler, tray `watchedForTray` with CI watches), renderer (PRs provider filter/merged lists, Today, panel, palette `watch <link>`/run links, `prLabel` → `refLabel`).
+- [~] `P7.05` GitHub — written: `services/providers/{rest,common,service}.ts` (ETag cache, rate-limit pause, redirect-safe log tail, HostService), `services/github/{map,client}.ts`, `shared/ci.ts`, `shared/hosting.ts`, `services/ci/watcher.ts`, `demo/github.ts` (+ `demo/origin.ts` demo hosts). **Not yet:** register `githubHandlers` in `demo/handlers.ts`, Builds view tab + run dialog + re-run confirmation, Settings → GitHub section, tests.
+- [~] `P7.06` GitLab — written: `services/gitlab/{map,client}.ts`. **Not yet:** `demo/gitlab.ts`, UI, tests.
+- [ ] `P7.07` Settings sections, Detect (`providers:detect` from remotes), README "Connect your services", CHANGELOG, DECISIONS (P7 decisions: provider on ref, enabled switches, ciActions switch off by default, GitLab has no request-changes, demo hosts, ETag/rate-limit pause), e2e, code-review.
+
+Next step on resume: `npm run lint` and fix type errors → handlers.ts + index.ts wiring → `demo/gitlab.ts` + register demo handlers → unit tests (map fixtures, link parsing, rate limits) → renderer → e2e → docs.
+
 ## Session log (append-only)
 
 | Date       | Phase | Summary                                                                                                             | Next    |
@@ -564,3 +575,4 @@ exact resume steps. Nothing pushed.
 | 2026-10-26 | P7.13 | Settings → Accessibility (reduce motion, larger targets, underline links, focus ring always, read out events). Fixed the palette click-outside e2e (clicked below the page). Checks: lint ok; unit 785 passed; e2e 51 passed, 4 skipped (opt-in). | code-review P7-E |
 | 2026-10-26 | P7-E review, pause | code-review (Standards + Spec): fixed DECISIONS installer names, SPEC §6.7 + UI-THEMES motion note, announcer also in the menu-bar panel, axe on panel + palette window in all 5 themes, computed underline check, shared e2e helpers in fixtures.ts, MOTION_MODES + label map, `--target-min` token. Open: Slate muted vs text hierarchy (asked owner). Checks: lint ok; vitest 785 passed; e2e 51 passed, 4 skipped. Owner paused. | Resume per Next step |
 | 2026-10-26 | Resume | Owner: Slate `--text` lightened #ADBAC7 → #CDD9E5 so it stays brighter than the AA muted #A6B1BC (UI-THEMES, DECISIONS). lint ok; vitest 785 passed, 1 skipped (contrast 32). | Resume P7-A/B/D agents |
+| 2026-10-26 | P7-B (WIP) | Branch p7-providers. Provider model (PrRef.provider, any-provider links, PrHub, watchers via hub), settings/secrets/IPC contract for GitHub + GitLab + CI, GitHub + GitLab clients and mappers, provider REST helper (ETag, rate-limit pause, log redirect), CI watcher, GitHub demo. Untested, not wired. Paused at owner request. | Lint → handlers/index wiring → GitLab demo → tests → renderer |

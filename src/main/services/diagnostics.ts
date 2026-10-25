@@ -1,7 +1,7 @@
 /** Diagnostics screen data and the redacted export (P6.04). */
 import { readFile } from 'node:fs/promises'
 import { SERVICES, type Diagnostics, type ProxyRoute, type ServiceName } from '@shared/diagnostics'
-import type { Settings } from '@shared/settings'
+import { providerWeb, type Settings } from '@shared/settings'
 import { REDACTED, redact } from './logger'
 import type { CommandRunner } from './process/ports'
 
@@ -46,7 +46,7 @@ export class DiagnosticsService {
     const [git, nodeOut, proxies] = await Promise.all([
       this.version('git', ['--version']),
       this.version('node', ['--version']),
-      Promise.all(SERVICES.map(([service, key]) => this.route(service, settings[key].baseUrl))),
+      Promise.all(SERVICES.map(([service, key]) => this.route(service, siteOf(settings, key)))),
     ])
     return {
       ...this.deps.versions(),
@@ -206,6 +206,14 @@ export function diagnosticsReport(r: ReportInput): string {
     ...[settings.jira.email, settings.standup.authorEmail].map((e) => e.split('@')[0] ?? ''),
   ]
   return scrub(JSON.stringify(report, null, 2), { ...r.identity, names })
+}
+
+/** The address a service is reached at; GitHub / GitLab default to the public site when on. */
+function siteOf(settings: Settings, key: (typeof SERVICES)[number][1]): string {
+  if (key === 'github' || key === 'gitlab') {
+    return settings[key].enabled ? providerWeb(settings, key) : ''
+  }
+  return settings[key].baseUrl
 }
 
 const hostOf = (url: string) => {

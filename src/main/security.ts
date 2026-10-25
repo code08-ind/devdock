@@ -3,8 +3,8 @@
  * wires them into Electron.
  */
 import type { App, WebContents } from 'electron'
-import type { Settings } from '@shared/settings'
-import { DEMO_ORIGIN } from './demo/origin'
+import { providerWeb, type Settings } from '@shared/settings'
+import { DEMO_HOSTS, DEMO_ORIGIN } from './demo/origin'
 
 export const WEB_PREFERENCES = {
   contextIsolation: true,
@@ -153,7 +153,7 @@ export function linkHosts(settings: Settings, demo: boolean): string[] {
         return []
       }
     }),
-    ...(demo ? [new URL(DEMO_ORIGIN).hostname] : []),
+    ...(demo ? [new URL(DEMO_ORIGIN).hostname, ...DEMO_HOSTS] : []),
     'localhost',
     '127.0.0.1',
     '[::1]',
@@ -162,7 +162,16 @@ export function linkHosts(settings: Settings, demo: boolean): string[] {
 
 /** Hosts of the services configured in Settings (links to them may be opened). */
 function serviceHosts(settings: Settings): string[] {
-  return [settings.jira.baseUrl, settings.bitbucket.baseUrl, settings.jenkins.baseUrl].flatMap(
+  // GitHub / GitLab (P7): their site, public or self-hosted, while turned on.
+  const hosting = (['github', 'gitlab'] as const).flatMap((p) =>
+    settings[p].enabled ? [providerWeb(settings, p)] : [],
+  )
+  return [
+    settings.jira.baseUrl,
+    settings.bitbucket.baseUrl,
+    settings.jenkins.baseUrl,
+    ...hosting,
+  ].flatMap(
     (url) => {
       try {
         return url ? [new URL(url).hostname] : []

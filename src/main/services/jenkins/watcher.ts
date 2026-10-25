@@ -1,4 +1,5 @@
-import { prKey, type PrRef, type PullRequest } from '@shared/bitbucket'
+import { prKey, refLabel, type PrRef, type PullRequest } from '@shared/bitbucket'
+import type { Provider } from '@shared/providers'
 import {
   BuildWatchSchema,
   MAX_BUILD_WATCHES,
@@ -35,7 +36,8 @@ export interface BuildWatcherDeps {
     deployJob(): JobPath | null
     resolvePr(pr: PullRequest): Promise<PrJobResolution>
   }
-  bitbucket: { pr(ref: PrRef): Promise<PullRequest>; site(): string | null }
+  /** The provider hub (P7.04): a GitHub or GitLab PR's Jenkins pipeline is found the same way. */
+  bitbucket: { pr(ref: PrRef): Promise<PullRequest>; site(provider?: Provider): string | null }
   notify: (n: NotifyInput) => void
   onChange: () => void
   now?: () => number
@@ -152,11 +154,11 @@ export class BuildWatcher {
    * so then the job's next build is followed instead.
    */
   async addPr(link: string): Promise<BuildWatch> {
-    const { ref } = prRefFromLink(link, this.deps.bitbucket.site())
+    const { ref } = prRefFromLink(link, (p) => this.deps.bitbucket.site(p))
     const pr = await this.deps.bitbucket.pr(ref)
     const found = await this.deps.jenkins.resolvePr(pr)
     if (!found.ok) throw new WatchError('unresolved', found.message)
-    const from = { label: `${pr.ref.repo} #${pr.ref.id} pipeline`, pr: prKey(pr.ref) }
+    const from = { label: `${refLabel(pr.ref)} pipeline`, pr: prKey(pr.ref) }
     if (found.build !== null) {
       const linked = await this.deps.jenkins.buildInfo({ job: found.job, number: found.build })
       if (linked.state === 'running') {
