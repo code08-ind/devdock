@@ -6,6 +6,11 @@ directories:
 files:
   - out/**
   - package.json
+# Small packages (P6.14): every library is bundled into out/ (no node_modules; their licenses
+# are in out/THIRD_PARTY_NOTICES.txt), Electron's UI strings only in English (macOS keeps
+# en.lproj, Windows en-US.pak), maximum compression.
+electronLanguages: [en, en-US]
+compression: maximum
 asarUnpack: []
 mac:
   category: public.app-category.developer-tools

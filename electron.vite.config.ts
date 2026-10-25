@@ -34,6 +34,9 @@ export default defineConfig({
   main: {
     resolve: { alias: { '@shared': shared } },
     build: {
+      // Everything the main process needs (zod, msw) is bundled: the packaged app carries no
+      // node_modules at all (P6.14, small packages).
+      externalizeDeps: false,
       rolldownOptions: {
         input: { index: resolve(import.meta.dirname, 'src/main/index.ts') },
       },

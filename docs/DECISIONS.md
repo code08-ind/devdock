@@ -416,3 +416,15 @@ store with migrations).
 | The menu-bar panel window is made on the **first tray click** (was: at launch) — saves ~130 MB for people who don't open it (753 → 615 MB measured); the first open waits for the page to load (a second click meanwhile waits for the same load). The palette window stays made at launch: its global shortcut must open instantly. | P6.05 measurement; owner asked for an optimised app. |
 | Seen once in a full unit run while other work ran: `git-actions` rebase-conflict and `startwork` editor-warning integration tests failed, then passed alone and in two more full runs (774/774). Real-git tests under load; watching for it. | Recorded, not hidden. |
 
+## P6-D — Small packages, CHANGELOG, README (2026-10-25)
+
+| Decision | Why |
+| --- | --- |
+| **No runtime `node_modules` in the app**: every library moved to `devDependencies` (`dependencies` is empty); the renderer was already bundled by Vite, and the main process now bundles `zod` and `msw` too (`externalizeDeps: false`; the bundle imports only Electron and Node built-ins). `app.asar` 50 MB → 1.9 MB. | P6.14, owner: "take very less space". |
+| Their licenses ship as `out/THIRD_PARTY_NOTICES.txt` (59 packages: 49 MIT, 8 ISC, 1 BSD-3-Clause, plus Electron's own license files), written by `scripts/notices.mjs` after each build. | MIT and similar licenses require the notice with copies; code-review (Standards). |
+| `npm audit --omit=dev` now reports nothing even for shipped code: run plain `npm audit` (CI installs everything). | Side effect of an empty `dependencies`. |
+| `electronLanguages: [en, en-US]` (macOS keeps `en.lproj`, Windows `en-US.pak`) and `compression: maximum`. No source maps are produced, so crash stacks point into minified bundles; the logs and diagnostics report carry the messages. | P6.14; unpacked app 303 → 246 MB, DMG 121.5 → 103.5 MB (arm64), 125.6 → 106.2 MB (x64). The rest is Electron itself. |
+| Launch at login is applied only when the setting changes (off by default, so nothing at start). | Unsigned macOS copies log an error on every `setLoginItemSettings` call. |
+| README: install table, unsigned-app warnings (Gatekeeper, SmartScreen, company IT approval), demo mode (what stays real: git on your repos, Ports), every feature with a demo-mode screenshot (`npm run screenshots`), per-service tokens and minimal permissions (from the services' own hints), security in plain words, keyboard shortcuts. CHANGELOG in Keep a Changelog form. | P6.06, P6.07. |
+| Verified packages: macOS arm64 app built and launched (log "started", proxy applied) on macOS 27; arm64 + x64 DMGs built by `npm run dist`. Windows NSIS + portable are built by CI on windows-latest; not launched by hand. | P6.D2 "state which ones were verified on which OS". |
+

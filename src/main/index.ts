@@ -230,9 +230,14 @@ function applyProxy(s: Settings): void {
     .then(() => log.info(`proxy: ${manual ? 'manual' : 'system'}`))
 }
 
+let loginItemApplied: boolean | null = null
 function applyLoginItem(s: Settings): void {
   // In dev this would register the bare Electron binary, so only packaged builds touch it.
-  if (app.isPackaged) app.setLoginItemSettings({ openAtLogin: s.general.launchAtLogin })
+  // Only when it changes (off is the default, so nothing at start): macOS refuses login items
+  // for unsigned copies and logs an error on every call.
+  if (!app.isPackaged || s.general.launchAtLogin === (loginItemApplied ?? false)) return
+  loginItemApplied = s.general.launchAtLogin
+  app.setLoginItemSettings({ openAtLogin: s.general.launchAtLogin })
 }
 
 function start(): void {
