@@ -39,6 +39,9 @@ import { JiraService } from './services/jira/service'
 import { StartWorkService } from './services/startwork'
 import { DevServerManager } from './services/process/devserver'
 import { PortService, runCommand } from './services/process/ports'
+import { EnvProfiles } from './services/envprofiles'
+import { gitCommits, standupDraft } from './services/standup'
+import { demoCommits } from './demo/standup'
 import { loginShellPath, mergePath } from './services/process/shell-path'
 import { RepoWatcher } from './services/repo-watcher'
 import { RepoService } from './services/repos'
@@ -320,6 +323,20 @@ function start(): void {
       prWatcher,
       jenkins,
       buildWatcher,
+      envProfiles: new EnvProfiles({ dir: join(userData, 'env-profiles'), cipher: safeStorage }),
+      standupDraft: () =>
+        standupDraft(
+          {
+            holidays: () => store.get().standup.holidays,
+            commits: (from, to) =>
+              http.demo
+                ? Promise.resolve(demoCommits(from))
+                : gitCommits(git, store.get().repos, store.get().standup.authorEmail, from, to),
+            prs: (list) => bitbucket.list(list),
+            jira,
+          },
+          new Date(),
+        ),
       ports: new PortService({
         platform: process.platform,
         run: runCommand,

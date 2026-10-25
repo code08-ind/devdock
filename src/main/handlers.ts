@@ -24,6 +24,8 @@ import type { NotificationService } from './services/notifications'
 import { DevServerError, type DevServerManager } from './services/process/devserver'
 import { ProcessError, type ProcessErrorKind, type PortService } from './services/process/ports'
 import { CacheError, clean, planClean } from './services/caches'
+import { EnvProfileError, type EnvProfiles } from './services/envprofiles'
+import type { StandupDraft } from '@shared/standup'
 import { RepoNotFoundError, type RepoService } from './services/repos'
 import { SecretsUnavailableError, type SecretStore } from './services/secrets'
 import { ServiceError, type ServiceErrorKind } from './services/service-error'
@@ -61,6 +63,9 @@ export interface HandlerDeps {
   prWatcher: PrWatcher
   jenkins: JenkinsService
   ports: PortService
+  envProfiles: EnvProfiles
+  /** SPEC 6.6 standup draft for today. */
+  standupDraft: () => Promise<StandupDraft>
   buildWatcher: BuildWatcher
   startWork: StartWorkService
   /** Shows PRs in the main window and hands it a link to watch (from the palette window). */
@@ -139,6 +144,28 @@ function withCaches<T>(fn: () => Promise<T>): Promise<T> {
       throw err
     }
   })
+}
+
+const ENV_CODES: Record<EnvProfileError['kind'], ErrorCode> = {
+  'not-found': 'NOT_FOUND',
+  exists: 'PRECONDITION_FAILED',
+  'no-file': 'PRECONDITION_FAILED',
+  'no-backup': 'PRECONDITION_FAILED',
+  symlink: 'PRECONDITION_FAILED',
+}
+
+/** Env profiles: an unknown repo, a missing profile/file, or no OS encryption. */
+function withEnv<T>(fn: () => T): Promise<T> {
+  return withService(() =>
+    withGit(async () => {
+      try {
+        return fn()
+      } catch (err) {
+        if (err instanceof EnvProfileError) throw new IpcError(ENV_CODES[err.kind], err.message)
+        throw err
+      }
+    }),
+  )
 }
 
 const SERVICE_CODES: Record<ServiceErrorKind, ErrorCode> = {
@@ -353,6 +380,21 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
     'caches:plan': ({ id }) => withCaches(() => planClean(deps.repos.get(id).path)),
     'caches:clean': ({ id, includeNodeModules }) =>
       withCaches(() => clean(deps.repos.get(id).path, includeNodeModules)),
+    'envprofiles:state': ({ id }) => withEnv(() => deps.envProfiles.state(deps.repos.get(id))),
+    'envprofiles:save': ({ id, name, replace }) =>
+      withEnv(() => deps.envProfiles.save(deps.repos.get(id), name, replace)),
+    'envprofiles:switch': ({ id, name }) =>
+      withEnv(() => deps.envProfiles.switchTo(deps.repos.get(id), name)),
+    'envprofiles:restore': ({ id }) =>
+      withEnv(() => deps.envProfiles.restoreBackup(deps.repos.get(id))),
+    'envprofiles:delete': ({ id, name }) =>
+      withEnv(() => deps.envProfiles.remove(deps.repos.get(id), name)),
+    'envprofiles:reveal': ({ id, profile, key }) =>
+      withEnv(() => deps.envProfiles.reveal(deps.repos.get(id), profile, key)),
+    'envprofiles:diff': ({ id, a, b }) =>
+      withEnv(() => deps.envProfiles.diff(deps.repos.get(id), a, b)),
+    'envprofiles:clearAll': () => withEnv(() => deps.envProfiles.clearAll()),
+    'standup:draft': () => deps.standupDraft(),
     'startwork:plan': (request) => withStartWork(() => deps.startWork.plan(request)),
     'startwork:run': (request) =>
       withStartWork(() =>

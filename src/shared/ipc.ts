@@ -43,6 +43,8 @@ import {
   JiraListRequestSchema,
 } from './jira'
 import { VIEWS } from './channels'
+import { EnvDiffRowSchema, EnvSourceSchema, EnvStateSchema, ProfileNameSchema } from './envprofiles'
+import { StandupDraftSchema } from './standup'
 import {
   CachePlanSchema,
   CleanRequestSchema,
@@ -69,6 +71,7 @@ import {
 } from './settings'
 
 const none = z.undefined()
+const repoId = z.string().min(1).max(100)
 
 export const SECRET_KEYS = ['bitbucket.token', 'jenkins.token', 'jira.token'] as const
 export const SecretKeySchema = z.enum(SECRET_KEYS)
@@ -237,8 +240,33 @@ export const contract = {
   'buildwatch:clearFinished': { req: none, res: none },
   'ports:list': { req: none, res: z.array(ListeningPortSchema) },
   'ports:stop': { req: StopRequestSchema, res: StopResultSchema },
-  'caches:plan': { req: z.object({ id: z.string().min(1).max(100) }), res: CachePlanSchema },
+  'caches:plan': { req: z.object({ id: repoId }), res: CachePlanSchema },
   'caches:clean': { req: CleanRequestSchema, res: CleanResultSchema },
+  'envprofiles:state': { req: z.object({ id: repoId }), res: EnvStateSchema },
+  'envprofiles:save': {
+    req: z.object({ id: repoId, name: ProfileNameSchema, replace: z.boolean() }),
+    res: none,
+  },
+  'envprofiles:switch': {
+    req: z.object({ id: repoId, name: ProfileNameSchema, confirmed: z.literal(true) }),
+    res: none,
+  },
+  'envprofiles:restore': { req: z.object({ id: repoId, confirmed: z.literal(true) }), res: none },
+  'envprofiles:delete': {
+    req: z.object({ id: repoId, name: ProfileNameSchema, confirmed: z.literal(true) }),
+    res: none,
+  },
+  'envprofiles:reveal': {
+    req: z.object({ id: repoId, profile: EnvSourceSchema, key: z.string().min(1).max(200) }),
+    res: z.string(),
+  },
+  'envprofiles:diff': {
+    req: z.object({ id: repoId, a: EnvSourceSchema, b: EnvSourceSchema }),
+    res: z.array(EnvDiffRowSchema),
+  },
+  /** Settings → Clear all data. */
+  'envprofiles:clearAll': { req: z.object({ confirmed: z.literal(true) }), res: none },
+  'standup:draft': { req: none, res: StandupDraftSchema },
   /** Read-only: branch name, commands, brief path + .gitignore check, agent and message. */
   'startwork:plan': { req: StartWorkRequestSchema, res: StartWorkPlanSchema },
   'startwork:run': { req: StartWorkRunSchema, res: StartWorkResultSchema },

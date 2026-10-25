@@ -14,8 +14,8 @@ Contract docs: `docs/SPEC.md`, `docs/UI-THEMES.md`, `docs/BUILD-PROMPTS.md` (pha
 
 | Field        | Value                                                         |
 | ------------ | ------------------------------------------------------------- |
-| Phase        | **Phase 5 — P5-A done** (ports + clean caches, main), not committed. Split: P5-A ports + caches, P5-B env profiles + quick links + standup (main), P5-C Utilities UI + palette + e2e + README. |
-| Next step    | User review → commit P5-A → **P5-B**: env profiles (safeStorage-encrypted store, switch with backup, byte-for-byte round trip `P5.D3`, key-only diff), quick links (settings, groups, import/export), standup (previous working day + holidays, git log by author, PR/Jira activity, demo draft `P5.D4`) |
+| Phase        | **Phase 5 — P5-A committed (da4976f); P5-B done** (env profiles, quick links, standup — main), not committed. |
+| Next step    | User review → commit P5-B → **P5-C**: Utilities view (Ports with quick filters + stop/force dialogs, Clean caches with sizes + node_modules second confirmation, Env profiles with masked values/reveal/diff/switch/restore, Quick links with groups/search/import/export, Standup editable draft + copy text/Markdown), palette entries (`kill <port>`, quick links), Settings → Standup (email, holidays), Clear all data → `envprofiles:clearAll`, macOS kill-by-port e2e (`P5.D2`), README Windows note |
 | Blockers     | None                                                          |
 | Last updated | 2026-10-25                                                    |
 
@@ -391,10 +391,10 @@ Done criteria:
 
 - [x] `P5.01` Port scanner parsers: `lsof` (mac), `netstat -ano` + `tasklist /FO CSV` (win), IPv6, multi-PID — `services/process/ports-parse.ts` (+ `ps` for command lines, `-p tcpv6`), `tests/unit/ports.test.ts` on `tests/fixtures/port-outputs.ts` (incl. German netstat)
 - [~] `P5.02` Stop process with escalation confirmation — main done: `PortService.stop` (re-scan, own/system PIDs refused, `force` needs `forceConfirmed`), IPC `ports:list`/`ports:stop`; confirmation dialogs are P5-C
-- [ ] `P5.03` Env profiles: encrypted store, switch with backup, masked reveal, key-only diff
+- [~] `P5.03` Env profiles: encrypted store, switch with backup, masked reveal, key-only diff — main done: `services/envprofiles.ts`, IPC `envprofiles:*`; UI is P5-C
 - [~] `P5.04` Clean caches (size preview + confirm) — main done: `services/caches.ts` (sized plan, symlinks never followed, `node_modules` needs `nodeModulesConfirmed`, `CacheError` on partial removal), IPC `caches:plan`/`caches:clean`; dialogs are P5-C
-- [ ] `P5.05` Quick links launcher (groups, search, palette entries, import/export)
-- [ ] `P5.06` Standup: previous working day (Mon→Fri, holidays list), git log by author, PR/Jira activity, editable, copy text/MD
+- [~] `P5.05` Quick links launcher (groups, search, palette entries, import/export) — model + helpers done: `settings.quickLinks`, `shared/links.ts`; UI + palette are P5-C
+- [~] `P5.06` Standup: previous working day (Mon→Fri, holidays list), git log by author, PR/Jira activity, editable, copy text/MD — main done: `shared/standup.ts`, `services/standup.ts`, IPC `standup:draft`, settings `standup`; editable UI + copy are P5-C
 
 ### Sub-phases (pause points)
 
@@ -405,15 +405,22 @@ Done criteria:
   `code-review` (Standards + Spec) run; fixed: cache removal errors typed with what was removed, taskkill non-zero
   re-checked by scan, `failed`/`not-stopped` kinds, timeouts, second confirmations as `forceConfirmed` /
   `nodeModulesConfirmed` request flags, bounded repo id. Limits in DECISIONS P5-A.
-- [ ] **P5-B — Env profiles, quick links, standup (main)**
+- [x] **P5-B — Env profiles, quick links, standup (main)** (done 2026-10-25). Evidence: `npm run lint` exit 0;
+  `npm test` → 49 files, 727 passed, 1 skipped; `npm run e2e` → 30 passed, 1 skipped. New: `envprofiles` (10), `links` (5),
+  `standup` (8), `standup-demo` (2), integration `standup` (2, real repo: author by fixed string, merges and
+  others' commits left out). 14 + 5 + 6 mutations; survivors got stricter tests (non-UTF-8 byte, dot-email
+  lookalike, a merge commit) except the crash-only temp name. `code-review` (Standards + Spec) run; fixed:
+  symlinked `.env.local` refused, file mode kept, ignorable temp name, restore keeps what it replaces, quoted
+  value + inline comment, confirmations on delete/clear-all, typed clear-all errors, "Opened and merged". Limits
+  in DECISIONS P5-B.
 - [ ] **P5-C — Utilities UI, palette, e2e, README**
 
 Done criteria:
 
 - [x] `P5.D1` Parser tests both OSes — Evidence: `tests/unit/ports.test.ts` "port parsers: macOS (lsof + ps)" (IPv6, scoped `fe80::1%lo0`, `\x20` names, two PIDs on one port) and "port parsers: Windows (netstat + tasklist)" (tcp + tcpv6, established rows skipped, translated State column, quoted CSV)
 - [ ] `P5.D2` Kill-by-port e2e on macOS; Windows via mocked `execFile` + README note — Evidence:
-- [ ] `P5.D3` Env switch round trip byte-for-byte — Evidence:
-- [ ] `P5.D4` Standup from demo data matches expected — Evidence:
+- [x] `P5.D3` Env switch round trip byte-for-byte — Evidence: `tests/unit/envprofiles.test.ts` "P5.D3: switch away and back restores the original file byte-for-byte" (BOM, CRLF, non-UTF-8 byte, unicode, no final newline; `Buffer.equals` after switch → switch → restore); mutation-checked (a UTF-8 decode/encode fails it)
+- [x] `P5.D4` Standup from demo data matches expected — Evidence: `tests/unit/standup-demo.test.ts` "P5.D4: standup from demo data" (Monday 09:00 → Friday window: 3 demo commits, opened #412/#415/#419, opened-and-merged #401, DD-106/DD-107 moves, Today DD-101/DD-106/DD-108; exact draft) + holiday Friday → Thursday
 
 ---
 
@@ -463,3 +470,4 @@ Done criteria:
 | 2026-10-25 | P4-C  | Committed P4-B (43efc86) on the user's "Sure". Builds view, console tail, trigger dialog, Settings → Jenkins, Today watched builds, palette `pipeline <link>`, demo speed for e2e, P4.D2 e2e (green + red). code-review run; 9 fixes. lint/test/e2e/dist green. Phase 4 Done criteria all met. Not committed. | User review → commit/push/CI → Phase 5 |
 | 2026-10-25 | P4 close | Committed P4-C (0d06d55), pushed P4-A/B/C. CI run 40172300911: macOS + Windows green — lint/format/typecheck, unit (41 files), e2e 30 passed on each (incl. builds.spec P4.D2), package. Phase 4 closed. | Phase 5 |
 | 2026-10-25 | P5-A  | Phase 4 closed (CI 40172300911). Split Phase 5 into P5-A/B/C. Ports: lsof+ps / netstat tcp+tcpv6+tasklist parsers on captured outputs (incl. German netstat), PortService stop with re-scan, own/system PID refusal, /F or SIGKILL only with `forceConfirmed`; real kill-by-port integration test on macOS. Clean caches: sized plan, fixed paths, symlinks never followed, CacheError on partial removal. IPC `ports:*`, `caches:*`. code-review run; fixes applied and tested (5 mutations caught); DECISIONS P5-A written. lint/test/e2e green. Not committed. | User review → commit → P5-B |
+| 2026-10-25 | P5-B  | Committed P5-A (da4976f) on the user's "sure". Env profiles (encrypted per repo, byte-exact switch with backup + swapping restore, key-only state/diff, per-value reveal), quick links (settings + import/export/search/group helpers, hosts allowed), standup (working-day window with holidays, git log by author, PRs opened/merged, Jira status changes, Today from in-progress; demo commits), IPC `envprofiles:*`, `standup:draft`. code-review run; 8 fixes, mutation-checked. Not committed. | User review → commit → P5-C |

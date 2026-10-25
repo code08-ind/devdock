@@ -289,6 +289,9 @@ function raw(i: DemoIssue) {
   }
 }
 
+/** Issues the demo user moved (to In Review, to Done) on the previous working day. */
+const CHANGED_BY_ME = ['DD-106', 'DD-107']
+
 export const jiraHandlers: RequestHandler[] = [
   http.get(`${BASE}/rest/api/3/myself`, () => HttpResponse.json(people.me)),
   http.get(`${BASE}/rest/api/3/field`, () =>
@@ -308,9 +311,14 @@ export const jiraHandlers: RequestHandler[] = [
     const issues = ISSUES.filter((i) =>
       /sprint in/i.test(jql)
         ? i.inSprint
-        : /statusCategory\s*!=\s*Done/i.test(jql)
-          ? i.status !== 'done'
-          : true,
+        : /status CHANGED BY currentUser\(\)/i.test(jql)
+          ? // Standup: what the demo user moved on the previous working day.
+            CHANGED_BY_ME.includes(i.key)
+          : /statusCategory\s*=\s*"In Progress"/i.test(jql)
+            ? i.status === 'progress' || i.status === 'review'
+            : /statusCategory\s*!=\s*Done/i.test(jql)
+              ? i.status !== 'done'
+              : true,
     )
     return HttpResponse.json({ issues: issues.map(raw), isLast: true })
   }),

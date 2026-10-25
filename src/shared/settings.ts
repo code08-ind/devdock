@@ -3,6 +3,8 @@ import { isAllowedEditorPath, isValidBranchName, parseDevCommand } from './gitre
 import { BITBUCKET_FLAVORS } from './bitbucket'
 import { DEFAULT_JQL, JIRA_FLAVORS, SavedQuerySchema } from './jira'
 import { DEFAULT_PROTECTED_JOBS, JobPathSchema } from './jenkins'
+import { MAX_QUICK_LINKS, QuickLinkSchema } from './links'
+import { HolidaySchema } from './standup'
 
 export const SETTINGS_VERSION = 1
 
@@ -219,6 +221,17 @@ export const SettingsSchema = z.object({
         .default(() => [...DEFAULT_PROTECTED_JOBS]),
     })
     .prefault({}),
+  /** SPEC 6.6 standup draft. */
+  standup: z
+    .object({
+      /** `git log --author` across the registered repos; '' leaves commits out. */
+      authorEmail: z.string().trim().max(200).default(''),
+      /** Days off (`YYYY-MM-DD`): Yesterday skips them like weekends. */
+      holidays: z.array(HolidaySchema).max(366).default([]),
+    })
+    .prefault({}),
+  /** SPEC 6.6 quick links launcher. */
+  quickLinks: z.array(QuickLinkSchema).max(MAX_QUICK_LINKS).default([]),
   repos: z.array(RepoConfigSchema).default([]),
 })
 
@@ -261,6 +274,8 @@ export const SettingsPatchSchema = z.object({
   jira: patchOf(SettingsSchema.shape.jira),
   bitbucket: patchOf(SettingsSchema.shape.bitbucket),
   jenkins: patchOf(SettingsSchema.shape.jenkins),
+  standup: patchOf(SettingsSchema.shape.standup),
+  quickLinks: z.array(QuickLinkSchema).max(MAX_QUICK_LINKS).optional(),
 })
 
 export type SettingsPatch = z.infer<typeof SettingsPatchSchema>

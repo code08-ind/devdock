@@ -1,5 +1,6 @@
 import type { JiraConnection, JiraIssue, JiraIssueDetail, JiraListRequest } from '@shared/jira'
 import type { Settings } from '@shared/settings'
+import { dayKey } from '@shared/standup'
 import type { HttpClient } from '../http'
 import { ServiceError } from '../service-error'
 import { JiraClient, type JiraConfig } from './client'
@@ -43,6 +44,24 @@ export class JiraService {
         return this.client().search(query.jql)
       }
     }
+  }
+
+  /**
+   * Standup (SPEC 6.6): issues whose status I changed in the period. Jira's JQL can't find
+   * issues I only commented on (that needs an add-on), so comments aren't included.
+   */
+  async statusChangedByMe(from: Date, to: Date): Promise<JiraIssue[]> {
+    const at = (d: Date) => `"${dayKey(d).replace(/-/g, '/')} 00:00"`
+    return this.client().search(
+      `status CHANGED BY currentUser() DURING (${at(from)}, ${at(to)}) ORDER BY updated DESC`,
+    )
+  }
+
+  /** Standup "Today": my issues in an in-progress status. */
+  async inProgress(): Promise<JiraIssue[]> {
+    return this.client().search(
+      'assignee = currentUser() AND statusCategory = "In Progress" ORDER BY updated DESC',
+    )
   }
 
   async issue(key: string): Promise<JiraIssueDetail> {

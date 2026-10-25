@@ -145,6 +145,14 @@ export function linkHosts(settings: Settings, demo: boolean): string[] {
   return [
     ...settings.links.allowedHosts,
     ...serviceHosts(settings),
+    // Quick links the user added are theirs to open (SPEC 6.6).
+    ...settings.quickLinks.flatMap((l) => {
+      try {
+        return [new URL(l.url).hostname]
+      } catch {
+        return []
+      }
+    }),
     ...(demo ? [new URL(DEMO_ORIGIN).hostname] : []),
     'localhost',
     '127.0.0.1',

@@ -52,18 +52,18 @@ export async function handlerSetup(
   const { DEMO_JENKINS } = await import('../../src/main/demo/jenkins')
   const { BuildWatcher } = await import('../../src/main/services/jenkins/watcher')
   const { PortService, runCommand } = await import('../../src/main/services/process/ports')
+  const { EnvProfiles } = await import('../../src/main/services/envprofiles')
+  const { standupDraft } = await import('../../src/main/services/standup')
+  const { demoCommits } = await import('../../src/main/demo/standup')
 
   const dir = mkdtempSync(join(tmpdir(), 'devdock-handlers-'))
   const settings = new SettingsStore(join(dir, 'settings.json'))
-  const secrets = new SecretStore(
-    join(dir, 'secrets.bin'),
-    {
-      isEncryptionAvailable: () => opts.encryption ?? true,
-      encryptString: (s) => Buffer.from(s).reverse(),
-      decryptString: (b) => Buffer.from(b).reverse().toString(),
-    },
-    'darwin',
-  )
+  const cipher = {
+    isEncryptionAvailable: () => opts.encryption ?? true,
+    encryptString: (s: string) => Buffer.from(s).reverse(),
+    decryptString: (b: Buffer) => Buffer.from(b).reverse().toString(),
+  }
+  const secrets = new SecretStore(join(dir, 'secrets.bin'), cipher, 'darwin')
   const notifications = new NotificationService({
     file: join(dir, 'notifications.json'),
     getPrefs: () => settings.get().notifications,
@@ -141,6 +141,17 @@ export async function handlerSetup(
       onChange: vi.fn(),
     }),
     jenkins,
+    envProfiles: new EnvProfiles({ dir: join(dir, 'env-profiles'), cipher }),
+    standupDraft: () =>
+      standupDraft(
+        {
+          holidays: () => settings.get().standup.holidays,
+          commits: async (from) => demoCommits(from),
+          prs: (list) => bitbucket.list(list),
+          jira,
+        },
+        new Date(),
+      ),
     ports: new PortService({
       platform: process.platform,
       run: runCommand,

@@ -85,6 +85,20 @@ export const INVOKE_CHANNELS = [
   /** Clean caches: what would be removed, with sizes. */
   'caches:plan',
   'caches:clean',
+  /** SPEC 6.6 env profiles: key names, profiles, backups of a repo's `.env.local`. */
+  'envprofiles:state',
+  'envprofiles:save',
+  'envprofiles:switch',
+  /** Puts back the newest backup (undoes the last switch). */
+  'envprofiles:restore',
+  'envprofiles:delete',
+  /** One value, on request (values are masked otherwise). */
+  'envprofiles:reveal',
+  /** Key names only: added / removed / changed / same. */
+  'envprofiles:diff',
+  'envprofiles:clearAll',
+  /** SPEC 6.6 standup draft from commits, PRs and Jira. */
+  'standup:draft',
 ] as const
 
 /** Events pushed from main to renderer. */
