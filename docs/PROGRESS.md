@@ -14,8 +14,8 @@ Contract docs: `docs/SPEC.md`, `docs/UI-THEMES.md`, `docs/BUILD-PROMPTS.md` (pha
 
 | Field        | Value                                                         |
 | ------------ | ------------------------------------------------------------- |
-| Phase        | **Phase 6 done** (P6-D 2b8cfff, CI 40221500313 green). **Phase 7 in progress**: P7-A terminal, P7-B providers, P7-D website running in parallel worktrees; P7-C after P7-A. |
-| Next step    | Review and merge P7-A / P7-B / P7-D as each agent finishes → start P7-C (AI agents) → owner decisions: website hosting, release tag |
+| Phase        | **Paused 2026-10-26 (owner).** Phase 6 done. Phase 7 agents paused with WIP committed on their branches (p7-terminal, p7-providers, p7-website, in .claude/worktrees/). |
+| Next step    | Resume: (1) accessibility pass (owner request 2026-10-26, see P7-E); (2) resume the three agents from their branches' PROGRESS notes; (3) review/merge P7-A, P7-B, P7-D; (4) start P7-C |
 | Blockers     | None                                                          |
 | Last updated | 2026-10-25                                                    |
 
@@ -490,6 +490,9 @@ after review. Decisions in DECISIONS.md "Phase 7".
 - [ ] **P7-C — AI agents and providers** (branch `p7-agents`, after P7-A merges)
   - [ ] `P7.08` Agent launcher: detect installed agent CLIs (Claude Code, Codex, Gemini CLI, GitHub Copilot CLI) and start one in the terminal in the repo with the ticket brief/lessons; Start work offers "Start <agent> now"
   - [ ] `P7.09` Optional AI providers with your own key (Anthropic Claude, OpenAI, Google Gemini) in the keychain; first features: PR summary, review-comment → lesson wording, standup polish — off until a key is added, every call shown and confirmable
+- [ ] **P7-E — Accessibility** (owner request 2026-10-26: "add accessibility in the software")
+  - [ ] `P7.12` Audit against WCAG 2.2 AA: screen-reader names/roles/live regions on every view, the panel and dialogs (VoiceOver + NVDA pass), focus order and return, reduced motion, contrast in all five themes (extend tests/unit/contrast.test.ts), target sizes
+  - [ ] `P7.13` Settings → Accessibility: reduce motion (follow system or on), larger click targets, underline links, always-visible focus ring, screen-reader announcements for background events (build finished, PR changed); automated axe checks in e2e
 - [ ] **P7-D — Landing website** (folder `website/`, branch `p7-website`)
   - [ ] `P7.10` Static site: hero, features with real screenshots, download section that detects macOS (Apple silicon / Intel) or Windows and offers the right installer, unsigned-app help, privacy, FAQ; light/dark; accessible; fast
   - [ ] `P7.11` Downloads wired to GitHub Releases (latest); a release workflow building and attaching the installers on a version tag — publishing and hosting only after the owner confirms
@@ -541,3 +544,4 @@ after review. Decisions in DECISIONS.md "Phase 7".
 | 2026-10-25 | P6-D | Small packages (no runtime node_modules, English-only locales, max compression: DMG 121.5 → 103.5 MB arm64, asar 50 → 1.9 MB), THIRD_PARTY_NOTICES, README rewrite with demo screenshots, CHANGELOG, login-item noise fix. Packaged arm64 app launched. code-review run (both reviewers hit a usage limit once and were resumed); fixes applied. Not committed. | Owner review → commit → D3/D4 |
 | 2026-10-26 | P7 plan | Owner asked for an in-app terminal (oh-my-zsh look), GitHub/GitLab CI and more providers, multiple AI agents/providers (Claude, Gemini, Codex, Copilot), and a landing website with downloads. Planned Phase 7 tracks P7-A (terminal), P7-B (providers), P7-C (AI agents, after P7-A), P7-D (website); A, B, D started in parallel worktrees. Phase 6 D3/D4 QA run and P6-D CI in progress. | Merge tracks after review |
 | 2026-10-26 | P6 close | Committed P6-D (2b8cfff); CI 40221500313 green (Windows Setup 98.2 MB, Portable 98.0 MB). QA agent: README walk-through + full demo QA, 0 Fail. Fixed 3 QA observations; .claude/worktrees ignored by lint/prettier/git. Phase 6 closed (Windows installers still to launch by hand). | Phase 7 merges |
+| 2026-10-26 | Pause | Palette now closes on a press outside it (bug from owner; e2e `a click outside the palette closes it`, fails without the fix). Owner asked for accessibility → planned P7-E. Owner paused all agents until tomorrow: each committed WIP on its branch. | Resume per Next step |

@@ -87,8 +87,19 @@ function PaletteOverlay({
   const ref = useRef<HTMLDialogElement>(null)
   useModal(ref, open)
   return (
+    // A press on the dimmed area around it closes it, like Esc (keyboard users have Esc).
+    // Backdrop presses arrive on the dialog element itself, outside its box; on press, not
+    // click, so a text selection that ends outside doesn't close it.
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
     <dialog
       ref={ref}
+      onMouseDown={(e) => {
+        if (e.target !== e.currentTarget) return
+        const r = e.currentTarget.getBoundingClientRect()
+        const inside =
+          e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom
+        if (!inside) onClose()
+      }}
       className="palette-dialog"
       aria-label="Command palette"
       // The close event arrives a moment after closing: if the palette was opened again in
