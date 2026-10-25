@@ -476,6 +476,21 @@ Codex"; "a landing website … download for Windows and Mac … as a full-fledge
 Tracks run in parallel in separate git worktrees (one agent each) and are merged one at a time
 after review. Decisions in DECISIONS.md "Phase 7".
 
+### Where each track stopped (2026-10-26, paused by the owner)
+
+Each branch has its own worktree under `.claude/worktrees/` and its own PROGRESS notes with the
+exact resume steps. Nothing pushed.
+
+| Track | Branch @ commit | State | Resume with |
+| --- | --- | --- | --- |
+| P7-A Terminal | `p7-terminal` @ `577277b` | Main process (PTY manager, shell + DevDock prompt, batching, IPC), renderer (xterm view, tabs, palette, repo buttons) and packaging config written; node-pty 1.1.0 proven to spawn a real PTY here (postinstall fixes its macOS `spawn-helper` permission). Not yet built, run or tested. | Fix palette test context and view counts, Settings → Terminal, build + launch (CSP style shim, WebGL fallback), tests, docs, lint/test/e2e/dist, code-review |
+| P7-B Providers | `p7-providers` @ `9280edb` | Provider model, PR hub, GitHub + GitLab clients (PRs/MRs, Actions/pipelines, logs, re-run), rate limits + ETag cache, run watcher, settings/IPC/keychain written. Unwired, not type-checked or tested; GitHub demo data only. | Typecheck, handlers + index wiring, GitLab demo data, unit tests, renderer, e2e, docs, code-review |
+| P7-D Website | `p7-website` @ `07d377e` | Site built (Vite + TS), OS-aware downloads + install dialog, release + Pages workflows (not run); build, 21 unit + 9 browser tests, root lint/test pass; Lighthouse 99–100. | DECISIONS rows, code-review, tick P7.10/P7.11 |
+| P7-C AI agents | — | Not started (after P7-A merges). | — |
+| P7-E Accessibility | — | Not started (owner request). | — |
+
+**Owner decisions waiting:** website hosting (GitHub Pages proposed) and domain; installer file names without the version vs a `releases.json`; when to tag `v0.1.0` (makes a draft release); a licence (none yet — the site's FAQ says "free"); GitHub/GitLab "CI actions" switch (off by default) on top of confirmations; GitHub/GitLab off by default until set up.
+
 ### Tracks (pause points)
 
 - [ ] **P7-A — In-app terminal** (branch `p7-terminal`)
