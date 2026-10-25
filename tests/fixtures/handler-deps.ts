@@ -51,6 +51,7 @@ export async function handlerSetup(
   const { JenkinsService } = await import('../../src/main/services/jenkins/service')
   const { DEMO_JENKINS } = await import('../../src/main/demo/jenkins')
   const { BuildWatcher } = await import('../../src/main/services/jenkins/watcher')
+  const { PortService, runCommand } = await import('../../src/main/services/process/ports')
 
   const dir = mkdtempSync(join(tmpdir(), 'devdock-handlers-'))
   const settings = new SettingsStore(join(dir, 'settings.json'))
@@ -140,6 +141,12 @@ export async function handlerSetup(
       onChange: vi.fn(),
     }),
     jenkins,
+    ports: new PortService({
+      platform: process.platform,
+      run: runCommand,
+      signal: (pid, sig) => process.kill(pid, sig),
+      ownPids: () => [process.pid, process.ppid],
+    }),
     buildWatcher: new BuildWatcher({
       file: join(dir, 'build-watches.json'),
       jenkins,

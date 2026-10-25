@@ -38,6 +38,7 @@ import { BuildWatcher } from './services/jenkins/watcher'
 import { JiraService } from './services/jira/service'
 import { StartWorkService } from './services/startwork'
 import { DevServerManager } from './services/process/devserver'
+import { PortService, runCommand } from './services/process/ports'
 import { loginShellPath, mergePath } from './services/process/shell-path'
 import { RepoWatcher } from './services/repo-watcher'
 import { RepoService } from './services/repos'
@@ -319,6 +320,12 @@ function start(): void {
       prWatcher,
       jenkins,
       buildWatcher,
+      ports: new PortService({
+        platform: process.platform,
+        run: runCommand,
+        signal: (pid, sig) => process.kill(pid, sig),
+        ownPids: () => [process.pid, process.ppid],
+      }),
       startWork: new StartWorkService({
         jira,
         actions,

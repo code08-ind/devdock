@@ -22,6 +22,8 @@ import type { JiraService } from './services/jira/service'
 import { StartWorkError, type StartWorkService } from './services/startwork'
 import type { NotificationService } from './services/notifications'
 import { DevServerError, type DevServerManager } from './services/process/devserver'
+import { ProcessError, type ProcessErrorKind, type PortService } from './services/process/ports'
+import { CacheError, clean, planClean } from './services/caches'
 import { RepoNotFoundError, type RepoService } from './services/repos'
 import { SecretsUnavailableError, type SecretStore } from './services/secrets'
 import { ServiceError, type ServiceErrorKind } from './services/service-error'
@@ -58,6 +60,7 @@ export interface HandlerDeps {
   bitbucket: BitbucketService
   prWatcher: PrWatcher
   jenkins: JenkinsService
+  ports: PortService
   buildWatcher: BuildWatcher
   startWork: StartWorkService
   /** Shows PRs in the main window and hands it a link to watch (from the palette window). */
@@ -102,6 +105,40 @@ const TRIGGER_REFUSALS: Record<
     'Job triggers are turned off. Turn them on in Settings → Jenkins (only if your role permits).',
   'not-allowed': (job) =>
     `${job} isn't on the list of jobs DevDock may trigger. Add it in Settings → Jenkins.`,
+}
+
+const PROCESS_CODES: Record<ProcessErrorKind, ErrorCode> = {
+  'missing-tool': 'INTERNAL',
+  failed: 'INTERNAL',
+  refused: 'NOT_ALLOWED',
+  permission: 'NOT_ALLOWED',
+  changed: 'PRECONDITION_FAILED',
+  gone: 'NOT_FOUND',
+  'not-stopped': 'PRECONDITION_FAILED',
+}
+
+/** Port scanning and stopping: typed failures with what the OS said in Details. */
+async function withProcess<T>(fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn()
+  } catch (err) {
+    if (err instanceof ProcessError)
+      throw new IpcError(PROCESS_CODES[err.kind], err.message, err.details)
+    throw err
+  }
+}
+
+/** Clean caches: an unknown repo, or a file the OS wouldn't remove (held open, locked). */
+function withCaches<T>(fn: () => Promise<T>): Promise<T> {
+  return withGit(async () => {
+    try {
+      return await fn()
+    } catch (err) {
+      if (err instanceof CacheError)
+        throw new IpcError('PRECONDITION_FAILED', err.message, err.details)
+      throw err
+    }
+  })
 }
 
 const SERVICE_CODES: Record<ServiceErrorKind, ErrorCode> = {
@@ -311,6 +348,11 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
     'buildwatch:addPr': ({ link }) => withWatch(() => deps.buildWatcher.addPr(link)),
     'buildwatch:remove': ({ key }) => deps.buildWatcher.remove(key),
     'buildwatch:clearFinished': () => deps.buildWatcher.clearFinished(),
+    'ports:list': () => withProcess(() => deps.ports.list()),
+    'ports:stop': (request) => withProcess(() => deps.ports.stop(request)),
+    'caches:plan': ({ id }) => withCaches(() => planClean(deps.repos.get(id).path)),
+    'caches:clean': ({ id, includeNodeModules }) =>
+      withCaches(() => clean(deps.repos.get(id).path, includeNodeModules)),
     'startwork:plan': (request) => withStartWork(() => deps.startWork.plan(request)),
     'startwork:run': (request) =>
       withStartWork(() =>

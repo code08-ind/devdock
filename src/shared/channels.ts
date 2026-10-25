@@ -78,6 +78,13 @@ export const INVOKE_CHANNELS = [
   'buildwatch:clearFinished',
   'startwork:plan',
   'startwork:run',
+  /** SPEC 6.6 Ports: listening TCP ports with PID, process and command. */
+  'ports:list',
+  /** Stops a process; the handler re-checks it still listens on that port. */
+  'ports:stop',
+  /** Clean caches: what would be removed, with sizes. */
+  'caches:plan',
+  'caches:clean',
 ] as const
 
 /** Events pushed from main to renderer. */

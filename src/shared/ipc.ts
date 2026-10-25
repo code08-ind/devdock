@@ -44,6 +44,14 @@ import {
 } from './jira'
 import { VIEWS } from './channels'
 import {
+  CachePlanSchema,
+  CleanRequestSchema,
+  CleanResultSchema,
+  ListeningPortSchema,
+  StopRequestSchema,
+  StopResultSchema,
+} from './utilities'
+import {
   ActionOutcomeSchema,
   ActionRequestSchema,
   OPEN_TARGETS,
@@ -227,6 +235,10 @@ export const contract = {
   },
   'buildwatch:remove': { req: z.object({ key: z.string().min(1).max(1200) }), res: none },
   'buildwatch:clearFinished': { req: none, res: none },
+  'ports:list': { req: none, res: z.array(ListeningPortSchema) },
+  'ports:stop': { req: StopRequestSchema, res: StopResultSchema },
+  'caches:plan': { req: z.object({ id: z.string().min(1).max(100) }), res: CachePlanSchema },
+  'caches:clean': { req: CleanRequestSchema, res: CleanResultSchema },
   /** Read-only: branch name, commands, brief path + .gitignore check, agent and message. */
   'startwork:plan': { req: StartWorkRequestSchema, res: StartWorkPlanSchema },
   'startwork:run': { req: StartWorkRunSchema, res: StartWorkResultSchema },
