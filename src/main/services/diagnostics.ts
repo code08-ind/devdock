@@ -43,7 +43,7 @@ export class DiagnosticsService {
 
   async info(): Promise<Diagnostics> {
     const settings = this.deps.settings()
-    const [git, systemNode, proxies] = await Promise.all([
+    const [git, nodeOut, proxies] = await Promise.all([
       this.version('git', ['--version']),
       this.version('node', ['--version']),
       Promise.all(SERVICES.map(([service, key]) => this.route(service, settings[key].baseUrl))),
@@ -51,7 +51,8 @@ export class DiagnosticsService {
     return {
       ...this.deps.versions(),
       git,
-      systemNode,
+      // `node --version` prints "v22.20.0"; shown like the other versions.
+      systemNode: nodeOut?.replace(/^v/, '') ?? null,
       demoMode: settings.general.demoMode,
       proxies,
     }

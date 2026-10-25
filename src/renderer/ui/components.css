@@ -111,14 +111,14 @@
 }
 
 .kv {
+  /* One grid for every row, so all values start in the same column. */
   display: grid;
-  gap: var(--space-1);
+  grid-template-columns: minmax(8em, max-content) 1fr;
+  gap: var(--space-1) var(--space-4);
   margin: 0;
 }
 .kv-row {
-  display: grid;
-  grid-template-columns: minmax(8em, max-content) 1fr;
-  gap: var(--space-4);
+  display: contents;
 }
 .kv dd {
   margin: 0;

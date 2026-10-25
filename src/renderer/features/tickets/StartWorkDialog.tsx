@@ -250,7 +250,7 @@ export function StartWorkDialog({
               <div className="checks">
                 {/* Lessons (P6-F): the message above follows these; defaults in Settings → Workflow. */}
                 <Checkbox
-                  label="Tell the agent to read the repo's lessons"
+                  label="Tell the agent to read the repo's lessons (once it has a lessons file)"
                   checked={lessons.read}
                   onChecked={(read) => setLessons({ ...lessons, read })}
                 />

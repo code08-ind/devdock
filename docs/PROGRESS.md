@@ -14,8 +14,8 @@ Contract docs: `docs/SPEC.md`, `docs/UI-THEMES.md`, `docs/BUILD-PROMPTS.md` (pha
 
 | Field        | Value                                                         |
 | ------------ | ------------------------------------------------------------- |
-| Phase        | **Phase 6 — P6-D nearly done** (small packages, README, CHANGELOG). P6-C committed (8a071d7), CI green. P6-D not committed. |
-| Next step    | Owner review → commit P6-D → CI (Windows packages) → D3 README walk-through, D4 QA run (owner to confirm the QA agent) → close Phase 6 |
+| Phase        | **Phase 6 done** (P6-D 2b8cfff, CI 40221500313 green). **Phase 7 in progress**: P7-A terminal, P7-B providers, P7-D website running in parallel worktrees; P7-C after P7-A. |
+| Next step    | Review and merge P7-A / P7-B / P7-D as each agent finishes → start P7-C (AI agents) → owner decisions: website hosting, release tag |
 | Blockers     | None                                                          |
 | Last updated | 2026-10-25                                                    |
 
@@ -441,7 +441,7 @@ Done criteria:
 - [x] **P6-C — Diagnostics + performance** (P6.04, P6.05) — code-review run (Standards + Spec); fixes applied (incl. the SPEC 5 manual proxy override). Evidence: `npm run lint` exit 0; `npm test` → 56 files, 774 passed, 1 skipped (one run had 2 real-git flakes, DECISIONS P6-C); `npm run e2e` → 46 passed, 3 skipped (opt-in audit, screenshots, perf).
 - [x] **P6-E — Menu-bar / tray panel** (owner request 2026-10-25; P6.08–P6.10) — code-review run (Standards + Spec); fixes applied. Evidence: `npm run lint` exit 0; `npm test` → 52 files, 744 passed, 1 skipped; `npm run e2e` → 42 passed, 2 skipped (opt-in audit and screenshot specs); panel screenshots in every look reviewed.
 - [x] **P6-F — Agent lessons + workflow options** (owner request 2026-10-25; P6.11–P6.13) — code-review run (Standards + Spec); fixes applied. Evidence: `npm run lint` exit 0; `npm test` → 55 files, 760 passed, 1 skipped; `npm run e2e` → 43 passed, 2 skipped; Lessons tab screenshots reviewed.
-- [~] **P6-D — Packaging (small), CHANGELOG, README, QA** (P6.06, P6.07, P6.14, Done) — small packages, licenses notice, README + screenshots, CHANGELOG done; code-review run, fixes applied. Open: D3 README walk-through, D4 QA agent run, Windows packages launched by hand.
+- [x] **P6-D — Packaging (small), CHANGELOG, README, QA** (P6.06, P6.07, P6.14, Done) — small packages, licenses notice, README + screenshots, CHANGELOG; code-review run, fixes applied; QA run in demo mode: no Fail items. Open for the owner: launch the Windows installers on a Windows PC.
 
 - [x] `P6.01` Palette registry: title, keywords, arg parsers (`watch`, `branch`, `kill`, `open`), enabled reason, recents first — Evidence: `tests/unit/palette.test.ts` (disabled reasons, ranking, `branch`/`open` parsers, recents, dev server confirm, PR/build commands), `tests/e2e/palette.spec.ts` (recents, `open`, `branch` in both windows, disabled reason announced). Not yet: build trigger/deploy, baseline server, PR actions from the palette window (DECISIONS P6-B).
 - [x] `P6.02` Empty / loading / error states everywhere + "error with Details" pattern — sweep of every view and panel; repo status errors and the allowed-hosts field gained Details (shared `ErrorDetails`). Evidence: `tests/renderer/feedback-ui.test.ts` (fails with Details removed).
@@ -460,10 +460,10 @@ Done criteria:
 
 Done criteria:
 
-- [ ] `P6.D1` Full suite green — Evidence:
-- [ ] `P6.D2` Packages built (which verified on which OS) — Evidence:
-- [ ] `P6.D3` README verified step by step in demo mode — Evidence:
-- [ ] `P6.D4` qa-tester agent run in demo mode: no Fail items — Evidence:
+- [x] `P6.D1` Full suite green — Evidence: `npm run lint` exit 0; `npm test` → 56 files, 774 passed, 1 skipped; `npm run e2e` → 46 passed, 4 skipped (opt-in); CI 40221500313 green on macOS and Windows.
+- [x] `P6.D2` Packages built (which verified on which OS) — Evidence: macOS arm64 app built and launched on macOS (log "started"); DMGs arm64 103.5 MB + x64 106.2 MB built by `npm run dist` (x64 not launched); Windows NSIS Setup 98.2 MB + Portable 98.0 MB built by CI on windows-latest (not launched — needs a Windows PC).
+- [x] `P6.D3` README verified step by step in demo mode — Evidence: QA agent followed README.md step by step in demo mode (first run, every feature, palette arguments, panel, Settings, Diagnostics, shortcuts): all Pass; not checkable here: install/unsigned-warning steps, connecting real services, the OS-level global shortcut.
+- [x] `P6.D4` qa-tester agent run in demo mode: no Fail items — Evidence: QA agent run in demo mode (general-purpose agent; no "qa-tester" agent exists here — owner approved): 0 Fail items, `launched.errors` empty, no overflow at 14px Light/Dark; 6 minor observations, 3 fixed (disabled-button reason, Diagnostics alignment and Node "v", lessons tick wording), 3 noted in DECISIONS.
 
 ---
 
@@ -540,3 +540,4 @@ after review. Decisions in DECISIONS.md "Phase 7".
 | 2026-10-25 | P6-C close | Committed P6-C (8a071d7) and pushed; CI 40203873707 green on macOS (6m02s) and Windows (10m16s). | P6-D |
 | 2026-10-25 | P6-D | Small packages (no runtime node_modules, English-only locales, max compression: DMG 121.5 → 103.5 MB arm64, asar 50 → 1.9 MB), THIRD_PARTY_NOTICES, README rewrite with demo screenshots, CHANGELOG, login-item noise fix. Packaged arm64 app launched. code-review run (both reviewers hit a usage limit once and were resumed); fixes applied. Not committed. | Owner review → commit → D3/D4 |
 | 2026-10-26 | P7 plan | Owner asked for an in-app terminal (oh-my-zsh look), GitHub/GitLab CI and more providers, multiple AI agents/providers (Claude, Gemini, Codex, Copilot), and a landing website with downloads. Planned Phase 7 tracks P7-A (terminal), P7-B (providers), P7-C (AI agents, after P7-A), P7-D (website); A, B, D started in parallel worktrees. Phase 6 D3/D4 QA run and P6-D CI in progress. | Merge tracks after review |
+| 2026-10-26 | P6 close | Committed P6-D (2b8cfff); CI 40221500313 green (Windows Setup 98.2 MB, Portable 98.0 MB). QA agent: README walk-through + full demo QA, 0 Fail. Fixed 3 QA observations; .claude/worktrees ignored by lint/prettier/git. Phase 6 closed (Windows installers still to launch by hand). | Phase 7 merges |
