@@ -9,6 +9,7 @@
     "noUncheckedIndexedAccess": true,
     "noFallthroughCasesInSwitch": true,
     "isolatedModules": true,
+    "allowJs": true,
     "skipLibCheck": true,
     "noEmit": true
   },
