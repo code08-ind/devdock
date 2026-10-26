@@ -516,14 +516,16 @@ exact resume steps. Nothing pushed.
 
 ## Phase 7 — P7-B CI / Git provider integrations (branch `p7-providers`, WIP)
 
-Status: **paused mid P7.04/P7.05 at the owner's request (2026-10-26). Nothing type-checked or tested yet — run `npm run lint` first on resume.**
+Status: **resumed 2026-10-26; rebased onto `main` (P7-E, owner decisions, Slate).** Main process done and tested; renderer next.
 
-- [~] `P7.04` Provider model — written: `src/shared/providers.ts` (providers, remote → provider), `PrRef.provider` (absent = Bitbucket; GitLab namespaces with `/`), `prKey`/`refLabel`/`PROVIDER_ACTIONS` in `shared/bitbucket.ts`, `parseAnyPrLink` + `withinSite` in `shared/prlink.ts`, `services/watch.ts` `prRefFromLink(link, siteFor)`, PR + build watchers take the hub (`site(provider)`), `services/providers/hub.ts` (`PrHub`), settings `bitbucket.enabled`, `github`, `gitlab`, `features.ciActions`, `enabledProviders`/`providerWeb`, secrets `github.token`/`gitlab.token`, IPC channels + contract (`prs:*`, `providers:detect`, `github:/gitlab:testConnection`, `ci:*`, `ciwatch:*`, event `ciwatch:changed`), diagnostics SERVICES + proxy route, link allow-list (provider hosts + demo hosts). **Not yet:** handlers.ts for the new channels, index.ts wiring (HostService ×2, PrHub, CiWatcher + scheduler, tray `watchedForTray` with CI watches), renderer (PRs provider filter/merged lists, Today, panel, palette `watch <link>`/run links, `prLabel` → `refLabel`).
-- [~] `P7.05` GitHub — written: `services/providers/{rest,common,service}.ts` (ETag cache, rate-limit pause, redirect-safe log tail, HostService), `services/github/{map,client}.ts`, `shared/ci.ts`, `shared/hosting.ts`, `services/ci/watcher.ts`, `demo/github.ts` (+ `demo/origin.ts` demo hosts). **Not yet:** register `githubHandlers` in `demo/handlers.ts`, Builds view tab + run dialog + re-run confirmation, Settings → GitHub section, tests.
-- [~] `P7.06` GitLab — written: `services/gitlab/{map,client}.ts`. **Not yet:** `demo/gitlab.ts`, UI, tests.
-- [ ] `P7.07` Settings sections, Detect (`providers:detect` from remotes), README "Connect your services", CHANGELOG, DECISIONS (P7 decisions: provider on ref, enabled switches, ciActions switch off by default, GitLab has no request-changes, demo hosts, ETag/rate-limit pause), e2e, code-review.
+- [~] `P7.04` Provider model — main side done: `PrHub` routes PRs by `ref.provider`; PR + build watchers, Jenkins "my work" and standup read through it; Bitbucket can be turned off (`bitbucket.enabled`); `providers:detect` (`services/providers/detect.ts`); tray lists watched runs. **Not yet:** renderer (PRs provider filter, Today, panel, palette `watch <link>`/run links, `refLabel`).
+- [~] `P7.05` GitHub — main side done: handlers `prs:*`, `github:testConnection`, `ci:*`, `ciwatch:*`; `ci:action` refused unless `features.ciActions` (owner decision) and the payload's `confirmed: true`; CI watcher + scheduler wired in index.ts. **Not yet:** Builds view tab + run dialog + confirmation, Settings → GitHub.
+- [~] `P7.06` GitLab — main side done incl. `demo/gitlab.ts` (subgroup project, failing pipeline that passes on retry, running one). **Not yet:** UI.
+- [ ] `P7.07` Settings sections, README, CHANGELOG, DECISIONS, e2e, code-review.
 
-Next step on resume: `npm run lint` and fix type errors → handlers.ts + index.ts wiring → `demo/gitlab.ts` + register demo handlers → unit tests (map fixtures, link parsing, rate limits) → renderer → e2e → docs.
+Evidence so far: `npm run lint` clean; `npx vitest run` 60 files, 849 passed, 1 skipped (new: `github-client.test.ts` 21, `gitlab-client.test.ts` 15, `providers.test.ts` 22, `provider-handlers.test.ts` 6). Mutations checked: rate-limit pause removed → providers test fails; token sent to the log storage URL → 2 tests fail.
+
+Next step on resume: renderer (lib/providers.ts hooks → PRs view provider tabs → Builds view GitHub/GitLab runs + run dialog + CI action confirm → Settings → GitHub / GitLab / CI actions → Today, panel, palette) → e2e (+ axe) → docs → code-review.
 
 ## Session log (append-only)
 
