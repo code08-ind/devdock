@@ -2,6 +2,8 @@ name: Release
 
 # Builds the installers for a version tag and attaches them to a DRAFT GitHub Release.
 # Nothing is published: the owner reviews the draft and presses "Publish release" by hand.
+# After publishing, redeploy the website on Vercel so it shows the new version and sizes
+# (the download links themselves point at /releases/latest/ and need no change).
 # Start it with:  git tag v0.1.0 && git push origin v0.1.0   (the tag must match package.json).
 
 on:
@@ -103,11 +105,12 @@ jobs:
           path: installers
           merge-multiple: true
 
+      # Names carry no version (electron-builder.yml artifactName), so the website's
+      # /releases/latest/download/<name> links always reach the newest published release.
       - name: Expect four installers
         run: |
           ls -l installers
-          for f in "DevDock-$VERSION-arm64.dmg" "DevDock-$VERSION-x64.dmg" \
-                   "DevDock-Setup-$VERSION.exe" "DevDock-Portable-$VERSION.exe"; do
+          for f in DevDock-arm64.dmg DevDock-x64.dmg DevDock-Setup.exe DevDock-Portable.exe; do
             test -f "installers/$f" || { echo "::error::missing $f"; exit 1; }
           done
 

@@ -10,7 +10,7 @@ test.describe('no release yet (shipped config)', () => {
     const section = page.locator('#download')
     await expect(section.getByRole('heading', { name: 'Downloads coming soon' })).toBeVisible()
     await expect(page.locator('a[data-asset]')).toHaveCount(0)
-    await expect(page.locator('a[href*="/releases/download/"]')).toHaveCount(0)
+    await expect(page.locator('a[href*="/download/"]')).toHaveCount(0)
     await expect(page.locator('#hero-meta')).toContainText('Downloads coming soon')
   })
 })
@@ -23,12 +23,15 @@ test.describe('Mac, browser without CPU hints (Safari/Firefox)', () => {
     await page.goto('/')
     const section = page.locator('#download')
     const primary = section.getByRole('link', { name: 'Download for macOS (Apple silicon)' })
-    await expect(primary).toHaveAttribute('href', /DevDock-0\.1\.0-arm64\.dmg$/)
-    await expect(primary).toHaveAttribute('download', 'DevDock-0.1.0-arm64.dmg')
+    await expect(primary).toHaveAttribute(
+      'href',
+      /\/releases\/latest\/download\/DevDock-arm64\.dmg$/,
+    )
+    await expect(primary).toHaveAttribute('download', 'DevDock-arm64.dmg')
     await expect(section.getByText('Intel Mac?')).toBeVisible()
     await expect(section.getByRole('link', { name: 'Download for Intel' })).toHaveAttribute(
       'href',
-      /DevDock-0\.1\.0-x64\.dmg$/,
+      /\/releases\/latest\/download\/DevDock-x64\.dmg$/,
     )
     await expect(section.locator('table.installers tbody tr')).toHaveCount(4)
     await expect(section.getByText('103.5 MB').first()).toBeVisible()
@@ -45,7 +48,7 @@ test.describe('Mac, browser without CPU hints (Safari/Firefox)', () => {
       .locator('#download')
       .getByRole('link', { name: 'Download for macOS (Apple silicon)' })
       .click()
-    expect((await downloading).suggestedFilename()).toBe('DevDock-0.1.0-arm64.dmg')
+    expect((await downloading).suggestedFilename()).toBe('DevDock-arm64.dmg')
     const dialog = page.getByRole('dialog', { name: 'Thanks for downloading DevDock' })
     await expect(dialog).toBeVisible()
     await expect(dialog).toContainText('Install DevDock on your Mac')
@@ -78,10 +81,13 @@ test.describe('Windows', () => {
     await setup(page, { manifest: true })
     await page.goto('/')
     const primary = page.locator('#download').getByRole('link', { name: 'Download for Windows' })
-    await expect(primary).toHaveAttribute('href', /DevDock-Setup-0\.1\.0\.exe$/)
+    await expect(primary).toHaveAttribute(
+      'href',
+      /\/releases\/latest\/download\/DevDock-Setup\.exe$/,
+    )
     const downloading = page.waitForEvent('download')
     await primary.click()
-    expect((await downloading).suggestedFilename()).toBe('DevDock-Setup-0.1.0.exe')
+    expect((await downloading).suggestedFilename()).toBe('DevDock-Setup.exe')
     const dialog = page.getByRole('dialog', { name: 'Thanks for downloading DevDock' })
     await expect(dialog).toContainText('Install DevDock on Windows')
     await expect(dialog).toContainText('More info')

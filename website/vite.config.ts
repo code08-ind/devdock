@@ -29,7 +29,7 @@ function csp(): Plugin {
 }
 
 export default defineConfig({
-  // Relative URLs: the same build works at a domain root or under /devdock/ on GitHub Pages.
+  // Relative URLs: the same build works at a domain root or under a sub-path.
   base: './',
   plugins: [csp()],
   build: { target: 'es2022', assetsInlineLimit: 0 },

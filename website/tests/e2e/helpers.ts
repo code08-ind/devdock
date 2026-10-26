@@ -8,31 +8,13 @@ export const UA = {
     'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36',
 }
 
-const REPO = 'https://github.com/code08-ind/devdock'
-
 export const MANIFEST = {
   version: '0.1.0',
   assets: {
-    'mac-arm64': {
-      name: 'DevDock-0.1.0-arm64.dmg',
-      url: `${REPO}/releases/download/v0.1.0/DevDock-0.1.0-arm64.dmg`,
-      size: 103_500_000,
-    },
-    'mac-x64': {
-      name: 'DevDock-0.1.0-x64.dmg',
-      url: `${REPO}/releases/download/v0.1.0/DevDock-0.1.0-x64.dmg`,
-      size: 106_200_000,
-    },
-    'win-setup': {
-      name: 'DevDock-Setup-0.1.0.exe',
-      url: `${REPO}/releases/download/v0.1.0/DevDock-Setup-0.1.0.exe`,
-      size: 88_400_000,
-    },
-    'win-portable': {
-      name: 'DevDock-Portable-0.1.0.exe',
-      url: `${REPO}/releases/download/v0.1.0/DevDock-Portable-0.1.0.exe`,
-      size: 88_100_000,
-    },
+    'mac-arm64': { name: 'DevDock-arm64.dmg', size: 103_500_000 },
+    'mac-x64': { name: 'DevDock-x64.dmg', size: 106_200_000 },
+    'win-setup': { name: 'DevDock-Setup.exe', size: 98_200_000 },
+    'win-portable': { name: 'DevDock-Portable.exe', size: 98_000_000 },
   },
 }
 

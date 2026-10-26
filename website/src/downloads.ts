@@ -1,10 +1,4 @@
-import {
-  RELEASE_CONFIG,
-  REPO_URL,
-  type AssetId,
-  type AssetNaming,
-  type ReleaseConfig,
-} from './config'
+import { RELEASE_CONFIG, REPO_URL, type AssetId, type ReleaseConfig } from './config'
 
 export interface Installer {
   id: AssetId
@@ -49,48 +43,38 @@ const META: Record<AssetId, { label: string; system: string; note: string }> = {
   },
 }
 
-/** File names as electron-builder writes them (electron-builder.yml), or the proposed version-less ones. */
-export function fileName(id: AssetId, naming: AssetNaming, version: string): string {
-  const v = naming === 'versioned' ? `-${version}` : ''
-  switch (id) {
-    case 'mac-arm64':
-      return `DevDock${v}-arm64.dmg`
-    case 'mac-x64':
-      return `DevDock${v}-x64.dmg`
-    case 'win-setup':
-      return `DevDock-Setup${v}.exe`
-    case 'win-portable':
-      return `DevDock-Portable${v}.exe`
-  }
+/** Installer file names, as electron-builder.yml's `artifactName`s write them (no version). */
+export const FILE_NAMES: Record<AssetId, string> = {
+  'mac-arm64': 'DevDock-arm64.dmg',
+  'mac-x64': 'DevDock-x64.dmg',
+  'win-setup': 'DevDock-Setup.exe',
+  'win-portable': 'DevDock-Portable.exe',
 }
 
-export function assetUrl(file: string, naming: AssetNaming, version: string): string {
-  return naming === 'versionless'
-    ? `${REPO_URL}/releases/latest/download/${file}`
-    : `${REPO_URL}/releases/download/v${version}/${file}`
+/** Always the newest published release: GitHub redirects to that release's file. */
+export function assetUrl(id: AssetId): string {
+  return `${REPO_URL}/releases/latest/download/${FILE_NAMES[id]}`
 }
 
 export function releaseFromConfig(config: ReleaseConfig = RELEASE_CONFIG): Release {
   return {
     available: config.available,
     version: config.version,
-    installers: ASSET_IDS.map((id) => {
-      const file = fileName(id, config.naming, config.version)
-      return {
-        id,
-        ...META[id],
-        file,
-        url: assetUrl(file, config.naming, config.version),
-        size: config.sizes[id],
-      }
-    }),
+    installers: ASSET_IDS.map((id) => ({
+      id,
+      ...META[id],
+      file: FILE_NAMES[id],
+      url: assetUrl(id),
+      size: config.sizes[id],
+    })),
   }
 }
 
 /**
- * `releases.json` (written at deploy time by scripts/releases-json.mjs from the latest GitHub
- * release): `{ "version": "0.1.0", "assets": { "mac-arm64": { "name", "url", "size" }, … } }`.
- * Returns null unless every installer is present with a GitHub download URL.
+ * `releases.json` (written at build time by scripts/releases-json.mjs from the latest published
+ * GitHub release): `{ "version": "0.1.0", "assets": { "mac-arm64": { "name", "size" }, … } }`.
+ * Only the version and sizes are taken from it; names and links are always FILE_NAMES and
+ * `/releases/latest/download/`. Returns null unless every installer is listed under its name.
  */
 export function releaseFromManifest(data: unknown): Release | null {
   if (!data || typeof data !== 'object') return null
@@ -99,14 +83,13 @@ export function releaseFromManifest(data: unknown): Release | null {
   const installers: Installer[] = []
   for (const id of ASSET_IDS) {
     const a = (assets as Record<string, unknown>)[id] as
-      { name?: unknown; url?: unknown; size?: unknown } | undefined
-    if (!a || typeof a.name !== 'string' || typeof a.url !== 'string') return null
-    if (!a.url.startsWith(`${REPO_URL}/releases/`)) return null
+      { name?: unknown; size?: unknown } | undefined
+    if (!a || a.name !== FILE_NAMES[id]) return null
     installers.push({
       id,
       ...META[id],
-      file: a.name,
-      url: a.url,
+      file: FILE_NAMES[id],
+      url: assetUrl(id),
       size: typeof a.size === 'number' ? a.size : undefined,
     })
   }

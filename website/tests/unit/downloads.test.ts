@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { RELEASE_CONFIG, type ReleaseConfig } from '../../src/config'
+import { readFileSync } from 'node:fs'
 import {
   assetUrl,
-  fileName,
+  FILE_NAMES,
   formatSize,
   loadRelease,
   releaseFromConfig,
@@ -12,23 +13,27 @@ import {
 const REPO = 'https://github.com/code08-ind/devdock'
 
 describe('installer names and links', () => {
-  it('versioned names match electron-builder.yml and link to the version tag', () => {
-    expect(fileName('mac-arm64', 'versioned', '0.1.0')).toBe('DevDock-0.1.0-arm64.dmg')
-    expect(fileName('mac-x64', 'versioned', '0.1.0')).toBe('DevDock-0.1.0-x64.dmg')
-    expect(fileName('win-setup', 'versioned', '0.1.0')).toBe('DevDock-Setup-0.1.0.exe')
-    expect(fileName('win-portable', 'versioned', '0.1.0')).toBe('DevDock-Portable-0.1.0.exe')
-    expect(assetUrl('DevDock-0.1.0-arm64.dmg', 'versioned', '0.1.0')).toBe(
-      `${REPO}/releases/download/v0.1.0/DevDock-0.1.0-arm64.dmg`,
-    )
+  it('names carry no version and link to releases/latest/download', () => {
+    expect(FILE_NAMES).toEqual({
+      'mac-arm64': 'DevDock-arm64.dmg',
+      'mac-x64': 'DevDock-x64.dmg',
+      'win-setup': 'DevDock-Setup.exe',
+      'win-portable': 'DevDock-Portable.exe',
+    })
+    expect(assetUrl('mac-arm64')).toBe(`${REPO}/releases/latest/download/DevDock-arm64.dmg`)
+    expect(assetUrl('win-portable')).toBe(`${REPO}/releases/latest/download/DevDock-Portable.exe`)
   })
 
-  it('version-less names link to releases/latest/download', () => {
-    expect(fileName('mac-arm64', 'versionless', '9.9.9')).toBe('DevDock-arm64.dmg')
-    expect(fileName('win-setup', 'versionless', '9.9.9')).toBe('DevDock-Setup.exe')
-    expect(fileName('win-portable', 'versionless', '9.9.9')).toBe('DevDock-Portable.exe')
-    expect(assetUrl('DevDock-arm64.dmg', 'versionless', '9.9.9')).toBe(
-      `${REPO}/releases/latest/download/DevDock-arm64.dmg`,
-    )
+  it('names match the artifactNames in electron-builder.yml', () => {
+    const yml = readFileSync(new URL('../../../electron-builder.yml', import.meta.url), 'utf8')
+    const name = (section: string) =>
+      new RegExp(`^${section}:\\n(?:  .*\\n)*?  artifactName: (.+)$`, 'm').exec(yml)?.[1]
+    const expand = (pattern: string | undefined, arch: string) =>
+      pattern?.replace('${productName}', 'DevDock').replace('${arch}', arch).replace('${ext}', '')
+    expect(expand(name('dmg'), 'arm64')).toBe('DevDock-arm64.')
+    expect(expand(name('dmg'), 'x64')).toBe('DevDock-x64.')
+    expect(expand(name('nsis'), 'x64')).toBe('DevDock-Setup.')
+    expect(expand(name('portable'), 'x64')).toBe('DevDock-Portable.')
   })
 
   it('the shipped config says "coming soon" until a release exists', () => {
@@ -52,26 +57,10 @@ describe('installer names and links', () => {
 const manifest = {
   version: '0.2.0',
   assets: {
-    'mac-arm64': {
-      name: 'DevDock-0.2.0-arm64.dmg',
-      url: `${REPO}/releases/download/v0.2.0/DevDock-0.2.0-arm64.dmg`,
-      size: 100,
-    },
-    'mac-x64': {
-      name: 'DevDock-0.2.0-x64.dmg',
-      url: `${REPO}/releases/download/v0.2.0/DevDock-0.2.0-x64.dmg`,
-      size: 101,
-    },
-    'win-setup': {
-      name: 'DevDock-Setup-0.2.0.exe',
-      url: `${REPO}/releases/download/v0.2.0/DevDock-Setup-0.2.0.exe`,
-      size: 80,
-    },
-    'win-portable': {
-      name: 'DevDock-Portable-0.2.0.exe',
-      url: `${REPO}/releases/download/v0.2.0/DevDock-Portable-0.2.0.exe`,
-      size: 79,
-    },
+    'mac-arm64': { name: 'DevDock-arm64.dmg', size: 100 },
+    'mac-x64': { name: 'DevDock-x64.dmg', size: 101 },
+    'win-setup': { name: 'DevDock-Setup.exe', size: 80 },
+    'win-portable': { name: 'DevDock-Portable.exe', size: 79 },
   },
 }
 
@@ -81,16 +70,17 @@ describe('releases.json manifest', () => {
     expect(r?.available).toBe(true)
     expect(r?.version).toBe('0.2.0')
     expect(r?.installers.find((i) => i.id === 'win-setup')?.size).toBe(80)
+    expect(r?.installers.every((i) => i.url === assetUrl(i.id))).toBe(true)
   })
 
-  it('rejects incomplete manifests and links that are not this repo’s releases', () => {
+  it('rejects incomplete manifests and unexpected file names', () => {
     expect(releaseFromManifest(null)).toBeNull()
     expect(releaseFromManifest({ version: '1' })).toBeNull()
     const { 'win-portable': _, ...three } = manifest.assets
     expect(releaseFromManifest({ version: '1', assets: three })).toBeNull()
-    const evil = structuredClone(manifest)
-    evil.assets['mac-arm64'].url = 'https://evil.example/DevDock.dmg'
-    expect(releaseFromManifest(evil)).toBeNull()
+    const renamed = structuredClone(manifest)
+    renamed.assets['mac-arm64'].name = 'DevDock-0.2.0-arm64.dmg'
+    expect(releaseFromManifest(renamed)).toBeNull()
   })
 
   it('loadRelease prefers the manifest and falls back to the config', async () => {

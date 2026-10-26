@@ -29,22 +29,20 @@ so nothing is downloaded from GitHub.
 
 ## How downloads work
 
-Everything comes from `src/config.ts`:
+Installers are named without the version — `DevDock-arm64.dmg`, `DevDock-x64.dmg`,
+`DevDock-Setup.exe`, `DevDock-Portable.exe` (`artifactName` in `../electron-builder.yml`) — so
+every download link is `https://github.com/code08-ind/devdock/releases/latest/download/<name>`,
+which GitHub redirects to the newest **published** release. The links never change.
 
-- `available: false` (as shipped): the page says **Downloads coming soon** and links to no
-  installer. Never point the page at a release that doesn't exist.
-- `naming: 'versioned'` uses today's electron-builder file names (`DevDock-0.1.0-arm64.dmg`, …)
-  and links to that version's tag (`/releases/download/v0.1.0/…`), so `version` must be bumped
-  for each release.
-- `naming: 'versionless'` uses `DevDock-arm64.dmg`, `DevDock-x64.dmg`, `DevDock-Setup.exe`,
-  `DevDock-Portable.exe` and links to `/releases/latest/download/…`, which always serves the
-  newest published release. This needs the `artifactName` change proposed in
-  `docs/DECISIONS.md` (P7-D).
-- **`releases.json`** (preferred): the Pages workflow asks the GitHub API for the latest
-  _published_ release and writes `public/releases.json` with exact file names, links and sizes
-  (`scripts/releases-json.mjs`). When it's present the page uses it and ignores the config, so
-  the site is always in step with the release and works with either naming. If the latest
-  release lacks one of the four installers, no file is written and the config applies.
+- **`releases.json`**: the Vercel build (`npm run build:site`) first runs
+  `scripts/releases-json.mjs`, which asks the GitHub API for the latest published release and,
+  if all four installers are attached, writes `public/releases.json` with the version and
+  exact sizes. When it's present the page shows downloads with that version. It never fails
+  the build: no release, a missing installer, no network or a rate limit just means no file
+  (set `GITHUB_TOKEN` in Vercel to raise the API limit if it ever matters).
+- **`src/config.ts`** applies without `releases.json`. Shipped with `available: false`: the
+  page says **Downloads coming soon** and links to no installer. Never point the page at a
+  release that doesn't exist.
 
 The visitor's system is detected in `src/detect.ts`: `navigator.userAgentData` with the
 `architecture` client hint where the browser offers it (Chrome, Edge), the user agent otherwise.
@@ -67,16 +65,16 @@ Nothing here runs by itself.
    macOS and the Setup + portable on Windows, and attaches them with `SHA256SUMS.txt` to a
    **draft** release. Review it on GitHub and press **Publish release**. Drafts and
    pre-releases aren't "latest", so the site ignores them.
-2. **Publish the site.** Once: repository Settings → Pages → Source: **GitHub Actions**. Then
-   Actions → **Website** → **Run workflow**. It writes `releases.json` from the latest published
-   release, runs the unit tests, builds and deploys to
-   `https://code08-ind.github.io/devdock/` (the build uses relative URLs, so a custom domain
-   works too: add it in Settings → Pages).
-3. **After each new release**, run the Website workflow again so the page picks up the new
-   files (or switch to version-less names, after which links never change).
-
-If you publish the site without the workflow (any static host), set `available: true` and the
-right `version` in `src/config.ts` first, or the page keeps saying "Downloads coming soon".
+2. **Host the site on Vercel** (once). Import the GitHub repository as a Vercel project and set
+   **Root Directory** to `website`. `website/vercel.json` sets the rest: `npm ci`,
+   `npm run build:site`, output `dist`, no framework preset, and security headers
+   (`frame-ancestors 'none'`, `nosniff`, `no-referrer`; the page's own CSP is a `<meta>` added
+   by `vite.config.ts`). Pushes to `main` then deploy production; other branches get preview
+   URLs. No custom domain yet: add one later under the project's Domains (the build uses
+   relative URLs, so nothing else changes).
+3. **After each new release**, redeploy the latest production deployment in Vercel (or push any
+   commit) so the page shows the new version and sizes. The download links already point at the
+   new files.
 
 ## Files
 
@@ -87,7 +85,8 @@ right `version` in `src/config.ts` first, or the page keeps saying "Downloads co
 | `src/config.ts`             | Where installers live; the "coming soon" switch                    |
 | `src/detect.ts`             | OS and CPU detection → installer                                   |
 | `src/downloads.ts`          | File names, links, `releases.json`                                 |
+| `vercel.json`               | Vercel build settings and response headers                         |
 | `src/steps.ts`              | Install steps per installer, for the dialog                        |
 | `public/theme.js`           | Applies the saved theme before first paint                         |
 | `public/img/`               | WebP copies of `docs/screenshots` (`sh website/scripts/images.sh`) |
-| `scripts/releases-json.mjs` | GitHub API release → `releases.json`                               |
+| `scripts/releases-json.mjs` | Latest GitHub release → `releases.json` (run by `build:site`)      |

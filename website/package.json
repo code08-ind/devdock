@@ -4,13 +4,14 @@
   "description": "DevDock's landing and download page (static, no tracking).",
   "private": true,
   "type": "module",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "engines": {
     "node": ">=22.12.0"
   },
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
+    "build:site": "node scripts/releases-json.mjs public/releases.json && npm run build",
     "preview": "vite preview --port 4173 --strictPort",
     "test": "vitest run",
     "e2e": "npm run build && playwright test"
