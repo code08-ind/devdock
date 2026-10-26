@@ -15,7 +15,7 @@ Contract docs: `docs/SPEC.md`, `docs/UI-THEMES.md`, `docs/BUILD-PROMPTS.md` (pha
 | Field        | Value                                                         |
 | ------------ | ------------------------------------------------------------- |
 | Phase        | **Phase 7, resumed 2026-10-26.** P7-E done on `main` except the human VoiceOver/NVDA pass. P7-A/B/D agents resuming on their branches (p7-terminal, p7-providers, p7-website, in .claude/worktrees/). |
-| Next step    | (1) Resume the three agents from their branches' notes (P7-D: GitHub Pages → Vercel, versionless names; P7-B: CI-actions switch + confirm); (2) review/merge P7-A, P7-B, P7-D; (3) start P7-C |
+| Next step    | (1) P7-A and P7-B agents running on their branches; (2) review/merge P7-A, P7-B (watch ci.yml/release.yml conflicts with P7-D); (3) start P7-C; (4) after B+C merge, update website copy (GitHub/GitLab, opt-in AI) |
 | Blockers     | None                                                          |
 | Last updated | 2026-10-26                                                    |
 
@@ -568,3 +568,4 @@ exact resume steps. Nothing pushed.
 | 2026-10-26 | P7-D | WIP on branch p7-website: website/ scaffold (Vite + plain TS), all sections, download config/detection/dialog; builds. | Tests, workflows, review |
 | 2026-10-26 | P7-D pause | Website, tests, release + Pages workflows done and committed on p7-website (not pushed/deployed). Paused by owner before DECISIONS rows and code-review. | DECISIONS P7-D → code-review → tick P7.10/P7.11 |
 | 2026-10-26 | P7-D done | Resumed on p7-website: merged main; Vercel config replaces the Pages workflow; versionless `/releases/latest/download/` links; build-time releases.json; MIT footer; CI website job; Slate token sync + drift test; axe e2e (new dev dep @axe-core/playwright 4.13.0 in website/); macOS 15 Gatekeeper copy; DECISIONS P7-D. code-review run, fixes applied. Checks: website vitest 27, Playwright 16 passed/4 skipped; root lint ok, test 785 passed/1 skipped. Not pushed, deployed or tagged. | Owner review → merge p7-website; connect Vercel |
+| 2026-10-26 | P7-D merge | Merged `p7-website` (8f1d179): Vercel config, versionless installer links, draft-only release workflow, website axe tests. Root lint exit 0; vitest 785 passed, 1 skipped; website vitest 27 passed. Owner to do: Vercel import (Root Directory `website`), later tag v0.1.0. | Merge P7-A, P7-B |
