@@ -14,8 +14,8 @@ Contract docs: `docs/SPEC.md`, `docs/UI-THEMES.md`, `docs/BUILD-PROMPTS.md` (pha
 
 | Field        | Value                                                         |
 | ------------ | ------------------------------------------------------------- |
-| Phase        | **Phase 7, resumed 2026-10-26.** P7-E done on `main` except the human VoiceOver/NVDA pass. P7-A/B/D agents resuming on their branches (p7-terminal, p7-providers, p7-website, in .claude/worktrees/). |
-| Next step    | (1) P7-A and P7-B agents running on their branches; (2) review/merge P7-A, P7-B (watch ci.yml/release.yml conflicts with P7-D); (3) start P7-C; (4) after B+C merge, update website copy (GitHub/GitLab, opt-in AI) |
+| Phase        | **Paused 2026-10-26 evening (owner: "pause everything").** On `main`: P7-D merged, P7-E done, website redesigned. P7-B **done** on `p7-providers` (lint, 852 unit, 55 e2e pass) — merge not done (only DECISIONS/PROGRESS row conflicts). P7-A paused on `p7-terminal` @ 65cc022 with review fixes left (its PROGRESS: "Where P7-A stopped"). |
+| Next step    | (1) Merge `p7-providers` (keep both sides' doc rows), run lint/test/e2e; (2) ask owner: CSP `style-src-attr 'unsafe-inline'` vs the P7-A style shim (recommend shim); (3) resume P7-A from its notes, then merge; (4) swap the website's drawn terminal for a real screenshot; (5) start P7-C; (6) update website copy for GitHub/GitLab + AI |
 | Blockers     | None                                                          |
 | Last updated | 2026-10-26                                                    |
 
@@ -570,3 +570,4 @@ exact resume steps. Nothing pushed.
 | 2026-10-26 | P7-D done | Resumed on p7-website: merged main; Vercel config replaces the Pages workflow; versionless `/releases/latest/download/` links; build-time releases.json; MIT footer; CI website job; Slate token sync + drift test; axe e2e (new dev dep @axe-core/playwright 4.13.0 in website/); macOS 15 Gatekeeper copy; DECISIONS P7-D. code-review run, fixes applied. Checks: website vitest 27, Playwright 16 passed/4 skipped; root lint ok, test 785 passed/1 skipped. Not pushed, deployed or tagged. | Owner review → merge p7-website; connect Vercel |
 | 2026-10-26 | P7-D merge | Merged `p7-website` (8f1d179): Vercel config, versionless installer links, draft-only release workflow, website axe tests. Root lint exit 0; vitest 785 passed, 1 skipped; website vitest 27 passed. Owner to do: Vercel import (Root Directory `website`), later tag v0.1.0. | Merge P7-A, P7-B |
 | 2026-10-26 | Website redesign | Owner: chainyourmac-style look, Light/Dark toggle, hero shows only the panel (larger), Mac/Windows logo buttons, Terminal tab (drawn until P7-A screenshot). Root lint 0; website vitest 24 passed; playwright site+axe 13 passed, 4 skipped. P7-A agent stopped with review fixes left (see p7-terminal PROGRESS). | Resume P7-A; P7-B running |
+| 2026-10-26 | Pause | P7-B agent finished (ready to merge); P7-A agent paused by owner. P7-B merge started then aborted to respect the pause; `main` clean at 95749aa. | Resume per Next step |
