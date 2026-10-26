@@ -61,6 +61,12 @@ export function BitbucketSection({ settings }: { settings: Settings }) {
           : 'Bitbucket Data Center signs in with an HTTP access token (Credentials below).'
       }
     >
+      <Toggle
+        label="Use Bitbucket"
+        description="Turn off if your code is only on GitHub or GitLab."
+        checked={bb.enabled}
+        onChecked={(enabled) => save({ enabled }, `Bitbucket turned ${enabled ? 'on' : 'off'}`)}
+      />
       <SegmentedControl
         label="Site type"
         options={FLAVORS}
@@ -105,7 +111,7 @@ export function BitbucketSection({ settings }: { settings: Settings }) {
 
       <Toggle
         label="PR actions (approve, needs work, merge)"
-        description="Off by default. Use only if your role permits. Each action still asks you to confirm; merge also asks you to type the target branch."
+        description="Off by default. Applies to Bitbucket, GitHub and GitLab. Use only if your role permits. Each action still asks you to confirm; merge also asks you to type the target branch."
         checked={settings.features.prActions}
         onChecked={(on) =>
           on
@@ -127,7 +133,8 @@ export function BitbucketSection({ settings }: { settings: Settings }) {
         body={
           <p>
             Use only if your role permits. DevDock will show Approve, Needs work and Merge on pull
-            requests, and send them to Bitbucket as you once you confirm each one.
+            requests (and GitLab merge requests), and send them to Bitbucket, GitHub or GitLab as
+            you once you confirm each one.
           </p>
         }
         confirmLabel="Turn on PR actions"

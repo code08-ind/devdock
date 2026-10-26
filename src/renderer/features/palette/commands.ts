@@ -1,7 +1,9 @@
 import type { PrAction } from '@shared/bitbucket'
 import type { View } from '@shared/channels'
 import { ISSUE_KEY } from '@shared/jira'
-import { parsePrLink } from '@shared/prlink'
+import { refLabel } from '@shared/bitbucket'
+import { parseRunLink, ciRunLabel } from '@shared/ci'
+import { parseAnyPrLink } from '@shared/prlink'
 import type { ActionRequest, OpenTarget } from '@shared/repos'
 import { THEMES, type SettingsPatch, type Theme } from '@shared/settings'
 import type { QuickLink } from '@shared/links'
@@ -50,8 +52,8 @@ export const VIEW_LABELS: Record<View, string> = {
 
 const VIEW_KEYWORDS: Partial<Record<View, string[]>> = {
   home: ['start', 'launcher', 'features'],
-  prs: ['bitbucket', 'review'],
-  builds: ['jenkins', 'pipeline', 'ci'],
+  prs: ['bitbucket', 'github', 'gitlab', 'merge request', 'review'],
+  builds: ['jenkins', 'pipeline', 'ci', 'actions', 'github', 'gitlab'],
   tickets: ['jira', 'issues'],
   repos: ['git', 'branches'],
   utilities: ['ports', 'env', 'links', 'standup', 'lessons'],
@@ -80,7 +82,8 @@ export interface CommandContext {
   openLabels: Record<OpenTarget, string>
   /**
    * Watches a PR link (the main window shows PRs and reports the result there), or with
-   * `pipeline` the Jenkins build that runs it (shown in Builds).
+   * `pipeline` the Jenkins build that runs it (shown in Builds). A GitHub Actions run or GitLab
+   * pipeline link is watched as a run (Builds).
    */
   watch: (link: string, pipeline?: boolean) => unknown
   /** Opens a Utilities tab (`stopPort`: the stop dialog for that port's process). */
@@ -91,7 +94,7 @@ export interface CommandContext {
   /** Each repo's dev server: running (or starting) or not, and whether it has a command. */
   devServers: readonly { repoId: string; running: boolean }[]
   /** Services set up (or demo mode): commands that need one say so when it isn't. */
-  configured: { bitbucket: boolean; jenkins: boolean; jira: boolean }
+  configured: { prs: boolean; jenkins: boolean; jira: boolean }
   /**
    * Asks before doing something that stops a process (SPEC 7). Windows that can't show a
    * dialog leave it out, and the commands that need it aren't offered there.
@@ -254,8 +257,10 @@ export function buildCommands(ctx: CommandContext, views: readonly View[]): Comm
       id: 'pr:watch',
       title: 'Watch a pull request…',
       group: 'Pull requests',
-      keywords: ['watch', 'bitbucket', 'link', 'pr', 'paste'],
-      disabled: ctx.configured.bitbucket ? undefined : 'Set up Bitbucket in Settings first',
+      keywords: ['watch', 'bitbucket', 'github', 'gitlab', 'link', 'pr', 'paste'],
+      disabled: ctx.configured.prs
+        ? undefined
+        : 'Turn on Bitbucket, GitHub or GitLab in Settings first',
       run: () => ctx.goto('prs'),
     },
     {
@@ -270,7 +275,7 @@ export function buildCommands(ctx: CommandContext, views: readonly View[]): Comm
       id: `pr:unwatch:${w.key}`,
       title: `Stop watching ${w.label}`,
       group: 'Pull requests',
-      keywords: ['unwatch', 'watch', 'bitbucket'],
+      keywords: ['unwatch', 'watch', 'bitbucket', 'github', 'gitlab'],
       run: () => ctx.unwatch(w.key),
     })),
     ...(ctx.prAction
@@ -278,7 +283,7 @@ export function buildCommands(ctx: CommandContext, views: readonly View[]): Comm
           id: `pr:${p.action}:${p.key}`,
           title: `${PR_ACTION_VERB[p.action]} ${p.label}…`,
           group: 'Pull requests',
-          keywords: ['bitbucket', 'review', p.action.replace('_', ' ')],
+          keywords: ['bitbucket', 'github', 'gitlab', 'review', p.action.replace('_', ' ')],
           run: () => ctx.prAction?.(p.key, p.action),
         }))
       : []),
@@ -286,7 +291,7 @@ export function buildCommands(ctx: CommandContext, views: readonly View[]): Comm
       id: `build:unwatch:${w.key}`,
       title: `Stop watching ${w.label}`,
       group: 'Builds',
-      keywords: ['jenkins', 'build', 'unwatch'],
+      keywords: ['jenkins', 'build', 'run', 'pipeline', 'unwatch'],
       run: () => ctx.unwatchBuild(w.key),
     })),
     ...(ctx.finishedBuilds
@@ -443,7 +448,23 @@ export function queryCommands(
   const verb = typed?.[1]?.toLowerCase()
   const argument = typed?.[2]
   const link = argument ?? text
-  const parsed = link ? parsePrLink(link) : null
+  const runLink = link && verb !== 'pipeline' ? parseRunLink(link) : null
+  if (runLink) {
+    const name = ciRunLabel({
+      ref: runLink.ref,
+      name: runLink.ref.provider === 'github' ? 'run' : 'pipeline',
+      number: runLink.ref.id,
+    })
+    return [
+      {
+        id: 'build:watch-run-link',
+        title: `Watch ${name}`,
+        group: 'Builds',
+        run: () => ctx.watch(link),
+      },
+    ]
+  }
+  const parsed = link ? parseAnyPrLink(link) : null
   if (!parsed) {
     // `watch <something>` that isn't a link: say so (a bare non-link is just a search).
     return argument
@@ -464,7 +485,7 @@ export function queryCommands(
         ]
       : []
   }
-  const name = `${parsed.ref.repo} #${parsed.ref.id}`
+  const name = refLabel(parsed.ref)
   const pr: Command = {
     id: 'pr:watch-link',
     title: `Watch pull request ${name}`,

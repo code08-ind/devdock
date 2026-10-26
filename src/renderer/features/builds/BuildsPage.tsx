@@ -9,8 +9,10 @@ import {
   type BuildRef,
   type BuildWatch,
 } from '@shared/jenkins'
-import { parsePrLink } from '@shared/prlink'
-import type { Settings } from '@shared/settings'
+import { ciRunLabel, parseRunLink, type CiRunRef, type CiWatch } from '@shared/ci'
+import { parseAnyPrLink } from '@shared/prlink'
+import type { CiProvider } from '@shared/providers'
+import { enabledCi, type Settings } from '@shared/settings'
 import { bridge, isNotConfigured, keys, queryClient, unwrap, useSettings } from '../../lib/devdock'
 import {
   byLiveFirst,
@@ -22,6 +24,7 @@ import {
   useRemoveBuildWatch,
   useWatchPipeline,
 } from '../../lib/jenkins'
+import { ciKeys, useAddCiWatch, useCiWatches } from '../../lib/providers'
 import { useAction } from '../../lib/useAction'
 import { Button, IconButton } from '../../ui/Button'
 import { RefreshButton } from '../../ui/RefreshButton'
@@ -30,27 +33,47 @@ import { Field, Input, SegmentedControl } from '../../ui/Field'
 import { BuildDialog } from './BuildDialog'
 import { BuildPill, BuildTimes, WatchHead, watchLabel, watchNote } from './BuildBits'
 import { TriggerDialog } from './TriggerDialog'
+import {
+  CI_TAB_LABEL,
+  CiActionDialog,
+  CiRunsList,
+  CiWatchedList,
+  RunDialog,
+  type CiActing,
+} from './CiRuns'
 
-type Tab = 'mine' | 'watched'
+type Tab = 'mine' | CiProvider | 'watched'
 
 /** Watches that are live, or finished within this long, make Builds open on Watched. */
 const RECENT_MS = 15 * 60_000
-const isRecent = (w: BuildWatch) =>
+const isRecent = (w: BuildWatch | CiWatch) =>
   !w.done || (w.checkedAt !== null && Date.now() - w.checkedAt < RECENT_MS)
 
-/** SPEC 6.4: My branches, Watched builds, Watch PR pipeline, triggers and the console tail. */
+/**
+ * SPEC 6.4: My branches, Watched builds, Watch PR pipeline, triggers and the console tail;
+ * P7: GitHub Actions runs and GitLab pipelines (when turned on), watched with the rest.
+ */
 export function BuildsPage({ onView }: { onView: (v: View) => void }) {
   const settings = useSettings().data
   // Opened to see a watch (a notification, palette `pipeline <link>`): show Watched first.
   const [tab, setTab] = useState<Tab>(() =>
-    (queryClient.getQueryData<BuildWatch[]>(keys.buildWatches) ?? []).some(isRecent)
+    [
+      ...(queryClient.getQueryData<BuildWatch[]>(keys.buildWatches) ?? []),
+      ...(queryClient.getQueryData<CiWatch[]>(keys.ciWatches) ?? []),
+    ].some(isRecent)
       ? 'watched'
       : 'mine',
   )
   const [open, setOpen] = useState<BuildRef | null>(null)
+  const [openRun, setOpenRun] = useState<CiRunRef | null>(null)
+  const [acting, setActing] = useState<CiActing | null>(null)
   const [triggering, setTriggering] = useState<BranchBuild | null>(null)
   const watches = useBuildWatches().data ?? []
+  const runWatches = useCiWatches().data ?? []
   if (!settings) return null
+  const ci = enabledCi(settings)
+  // A provider turned off while its tab was showing: back to My branches.
+  const shown: Tab = tab === 'github' || tab === 'gitlab' ? (ci.includes(tab) ? tab : 'mine') : tab
 
   return (
     <div className="prs">
@@ -60,16 +83,28 @@ export function BuildsPage({ onView }: { onView: (v: View) => void }) {
           label="List"
           options={[
             { value: 'mine' as Tab, label: 'My branches' },
-            { value: 'watched' as Tab, label: `Watched (${watches.length})` },
+            ...ci.map((p) => ({ value: p as Tab, label: CI_TAB_LABEL[p] })),
+            { value: 'watched' as Tab, label: `Watched (${watches.length + runWatches.length})` },
           ]}
-          value={tab}
+          value={shown}
           onValue={setTab}
         />
-        {tab === 'mine' ? (
+        {shown === 'mine' ? (
           <RefreshButton queryKey={jenkinsKeys.branches} label="Refresh from Jenkins" />
+        ) : shown === 'github' || shown === 'gitlab' ? (
+          <RefreshButton queryKey={ciKeys.runs(shown)} label={`Refresh ${CI_TAB_LABEL[shown]}`} />
         ) : null}
       </div>
-      {tab === 'mine' ? (
+      {shown === 'github' || shown === 'gitlab' ? (
+        <CiRunsList
+          key={shown}
+          provider={shown}
+          watches={runWatches}
+          onView={onView}
+          onOpen={setOpenRun}
+          onAct={setActing}
+        />
+      ) : shown === 'mine' ? (
         <MyBranches
           settings={settings}
           watches={watches}
@@ -78,9 +113,18 @@ export function BuildsPage({ onView }: { onView: (v: View) => void }) {
           onTrigger={setTriggering}
         />
       ) : (
-        <WatchedBuilds items={watches} onOpen={setOpen} />
+        <>
+          {watches.length || !runWatches.length ? (
+            <WatchedBuilds items={watches} onOpen={setOpen} />
+          ) : null}
+          <CiWatchedList items={runWatches} onOpen={setOpenRun} onAct={setActing} />
+        </>
       )}
       {open ? <BuildDialog build={open} onClose={() => setOpen(null)} /> : null}
+      {openRun ? (
+        <RunDialog runRef={openRun} onClose={() => setOpenRun(null)} onAct={setActing} />
+      ) : null}
+      {acting ? <CiActionDialog acting={acting} onClose={() => setActing(null)} /> : null}
       {triggering ? <TriggerDialog row={triggering} onClose={() => setTriggering(null)} /> : null}
     </div>
   )
@@ -274,7 +318,7 @@ function WatchedBuilds({
     return (
       <EmptyState
         icon={<Eye size={18} aria-hidden="true" />}
-        title="No builds watched. Paste a pull request link above, or watch a branch from My branches, to be notified when its build finishes."
+        title="No builds watched. Paste a pull request or run link above, or watch a branch from My branches, to be notified when its build finishes."
       />
     )
   }
@@ -342,20 +386,43 @@ function WatchedBuilds({
   )
 }
 
-/** SPEC 6.4 "Watch PR pipeline": paste a PR link and walk away. */
+/**
+ * SPEC 6.4 "Watch PR pipeline": paste a PR link and walk away. P7: a GitHub Actions run or
+ * GitLab pipeline link is watched as that run.
+ */
 function PipelineField({ onWatched }: { onWatched: () => void }) {
   const [draft, setDraft] = useState('')
   const watch = useWatchPipeline()
+  const watchRun = useAddCiWatch()
   const toast = useToast()
   const trimmed = draft.trim()
-  const parsed = trimmed ? parsePrLink(trimmed) : null
-  const typed = trimmed && !parsed ? "That isn't a Bitbucket pull request link." : null
+  const runLink = trimmed ? parseRunLink(trimmed) : null
+  const parsed = trimmed && !runLink ? parseAnyPrLink(trimmed) : null
+  const typed =
+    trimmed && !parsed && !runLink
+      ? "That isn't a pull request, Actions run or pipeline link."
+      : null
+  const pending = watch.isPending || watchRun.isPending
+  const error = watch.error ?? watchRun.error
 
   return (
     <form
       className="watch-field"
       onSubmit={(e) => {
         e.preventDefault()
+        if (runLink) {
+          watchRun.mutate(
+            { link: trimmed },
+            {
+              onSuccess: (item) => {
+                toast(`Watching ${ciRunLabel(item.run)}`)
+                setDraft('')
+                onWatched()
+              },
+            },
+          )
+          return
+        }
         if (!parsed) return
         watch.mutate(trimmed, {
           onSuccess: (item) => {
@@ -368,7 +435,7 @@ function PipelineField({ onWatched }: { onWatched: () => void }) {
     >
       <Field
         label="Watch a pull request's pipeline"
-        hint="Paste its Bitbucket link. DevDock finds the Jenkins build that runs it and notifies you when it finishes."
+        hint="Paste its link: DevDock finds the Jenkins build that runs it and notifies you when it finishes. A GitHub Actions run or GitLab pipeline link is watched directly."
         error={typed}
       >
         {({ id, describedBy }) => (
@@ -382,16 +449,17 @@ function PipelineField({ onWatched }: { onWatched: () => void }) {
               onChange={(e) => {
                 setDraft(e.target.value)
                 watch.reset()
+                watchRun.reset()
               }}
             />
-            <Button type="submit" disabled={!parsed || watch.isPending}>
-              {watch.isPending ? 'Finding…' : 'Watch pipeline'}
+            <Button type="submit" disabled={(!parsed && !runLink) || pending}>
+              {pending ? 'Finding…' : 'Watch pipeline'}
             </Button>
           </div>
         )}
       </Field>
       {/* No matching job, another site, no access: main's message with Details. */}
-      {watch.error ? <ErrorNotice error={watch.error} /> : null}
+      {error ? <ErrorNotice error={error} /> : null}
     </form>
   )
 }

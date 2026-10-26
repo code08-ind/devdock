@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { Eye, EyeOff, ExternalLink } from 'lucide-react'
-import type { PrAction, PullRequest } from '@shared/bitbucket'
+import { providerOf, type PrAction, type PullRequest } from '@shared/bitbucket'
+import { PROVIDER_NAMES } from '@shared/providers'
 import { useAddWatch, useRemoveWatch } from '../../lib/bitbucket'
 import { bridge, unwrap } from '../../lib/devdock'
 import { useAction } from '../../lib/useAction'
@@ -33,6 +34,7 @@ export function PrRow({
   const removeWatch = useRemoveWatch()
   const [acting, setActing] = useState<PrAction | null>(null)
   const label = prLabel(pr)
+  const provider = PROVIDER_NAMES[providerOf(pr.ref)]
 
   const toggleWatch = () =>
     watchKey
@@ -43,6 +45,8 @@ export function PrRow({
     <li className="pr-row">
       <div className="pr-row-head">
         <span className="mono pr-ref">{label}</span>
+        {/* Bitbucket rows look as before P7; the others say where they live. */}
+        {pr.ref.provider ? <span className="muted pr-provider">{provider}</span> : null}
         <StatePill pr={pr} />
         <BuildPill pr={pr} />
         <ReviewState pr={pr} />
@@ -61,7 +65,7 @@ export function PrRow({
             onClick={toggleWatch}
           />
           <IconButton
-            label={`Open ${label} in Bitbucket`}
+            label={`Open ${label} in ${provider}`}
             icon={<ExternalLink size={16} aria-hidden="true" />}
             onClick={() => void run(unwrap(bridge.app.openExternal({ url: pr.url })))}
           />

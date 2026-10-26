@@ -3,13 +3,16 @@ import { Eye, GitPullRequest } from 'lucide-react'
 import {
   PR_LISTS,
   isLive,
+  providerOf,
   type PrAction,
   type PrList,
   type PullRequest,
   type WatchItem,
 } from '@shared/bitbucket'
 import type { View } from '@shared/channels'
-import { parsePrLink } from '@shared/prlink'
+import { parseAnyPrLink } from '@shared/prlink'
+import { PROVIDER_NAMES, providerList, type Provider } from '@shared/providers'
+import { enabledProviders } from '@shared/settings'
 import {
   LIST_LABELS,
   prKeys,
@@ -23,9 +26,9 @@ import { isNotConfigured, useSettings } from '../../lib/devdock'
 import { Button } from '../../ui/Button'
 import { RefreshButton } from '../../ui/RefreshButton'
 import { EmptyState, ErrorNotice, useToast } from '../../ui/Feedback'
-import { Field, Input, SegmentedControl } from '../../ui/Field'
-import { ago, prLabel } from './PrBits'
-import { LIST_ACTIONS, MINE, OTHERS } from './actions'
+import { Field, Input, SegmentedControl, Select } from '../../ui/Field'
+import { ProviderFailures, ago, prLabel } from './PrBits'
+import { LIST_ACTIONS, MINE, OTHERS, offered } from './actions'
 import { PrRow } from './PrRow'
 
 type Tab = PrList | 'watched'
@@ -34,19 +37,22 @@ type Tab = PrList | 'watched'
 export function PrsPage({ onView }: { onView: (v: View) => void }) {
   const settings = useSettings().data
   const [tab, setTab] = useState<Tab>('mine')
+  const [only, setOnly] = useState<Provider | 'all'>('all')
   const watches = useWatches().data ?? []
   const watched = useWatchedKeys()
   const mine = useMyPrKeys()
   if (!settings) return null
+  const providers = enabledProviders(settings)
   const allowed = (pr: PullRequest) => {
     if (!settings.features.prActions || pr.state !== 'open') return []
-    if (tab !== 'watched') return LIST_ACTIONS[tab]
-    return mine.has(pr.key) ? MINE : OTHERS
+    if (tab !== 'watched') return offered(pr, LIST_ACTIONS[tab])
+    return offered(pr, mine.has(pr.key) ? MINE : OTHERS)
   }
+  const shown = only !== 'all' && providers.includes(only) ? only : 'all'
 
   return (
     <div className="prs">
-      <WatchField onWatched={() => setTab('watched')} />
+      <WatchField providers={providers} onWatched={() => setTab('watched')} />
       <div className="row-between list-head">
         <SegmentedControl
           label="List"
@@ -57,15 +63,42 @@ export function PrsPage({ onView }: { onView: (v: View) => void }) {
           value={tab}
           onValue={setTab}
         />
-        {tab === 'watched' ? null : (
-          // Beside the list switcher (as in Tickets), not on a row of its own.
-          <RefreshButton queryKey={prKeys.list(tab)} label="Refresh from Bitbucket" />
-        )}
+        <span className="row-actions">
+          {providers.length > 1 ? (
+            // P7.04: one list across providers; narrow it to one when there are several.
+            <Select
+              aria-label="Provider"
+              options={[
+                { value: 'all' as const, label: 'All providers' },
+                ...providers.map((p) => ({ value: p, label: PROVIDER_NAMES[p] })),
+              ]}
+              value={shown}
+              onValue={setOnly}
+            />
+          ) : null}
+          {tab === 'watched' ? null : (
+            // Beside the list switcher (as in Tickets), not on a row of its own.
+            <RefreshButton
+              queryKey={prKeys.list(tab)}
+              label={`Refresh from ${providerList(providers)}`}
+            />
+          )}
+        </span>
       </div>
       {tab === 'watched' ? (
-        <WatchedList items={watches} actionsFor={allowed} />
+        <WatchedList
+          items={watches.filter((w) => shown === 'all' || providerOf(w.ref) === shown)}
+          actionsFor={allowed}
+        />
       ) : (
-        <PrListView key={tab} list={tab} watched={watched} actionsFor={allowed} onView={onView} />
+        <PrListView
+          key={tab}
+          list={tab}
+          only={shown}
+          watched={watched}
+          actionsFor={allowed}
+          onView={onView}
+        />
       )}
     </div>
   )
@@ -73,17 +106,19 @@ export function PrsPage({ onView }: { onView: (v: View) => void }) {
 
 function PrListView({
   list,
+  only,
   watched,
   actionsFor,
   onView,
 }: {
   list: PrList
+  only: Provider | 'all'
   watched: ReadonlySet<string>
   actionsFor: (pr: PullRequest) => readonly PrAction[]
   onView: (v: View) => void
 }) {
   const query = usePrList(list)
-  const prs = query.data ?? []
+  const prs = (query.data ?? []).filter((pr) => only === 'all' || providerOf(pr.ref) === only)
   const label = LIST_LABELS[list]
 
   return (
@@ -103,22 +138,30 @@ function PrListView({
         <ErrorNotice error={query.error} />
       ) : query.isPending ? (
         <p className="muted" role="status">
-          Loading pull requests from Bitbucket…
+          Loading pull requests…
         </p>
-      ) : prs.length === 0 ? (
-        <EmptyState icon={<GitPullRequest size={18} aria-hidden="true" />} title={EMPTY[list]} />
       ) : (
-        <ul className="pr-list" aria-label={label}>
-          {prs.map((pr) => (
-            <PrRow
-              key={pr.key}
-              pr={pr}
-              watchKey={watched.has(pr.key) ? pr.key : undefined}
-              actions={actionsFor(pr)}
-              showAuthor={list === 'reviewing'}
+        <>
+          <ProviderFailures failures={query.failures} />
+          {prs.length === 0 ? (
+            <EmptyState
+              icon={<GitPullRequest size={18} aria-hidden="true" />}
+              title={EMPTY[list]}
             />
-          ))}
-        </ul>
+          ) : (
+            <ul className="pr-list" aria-label={label}>
+              {prs.map((pr) => (
+                <PrRow
+                  key={pr.key}
+                  pr={pr}
+                  watchKey={watched.has(pr.key) ? pr.key : undefined}
+                  actions={actionsFor(pr)}
+                  showAuthor={list === 'reviewing'}
+                />
+              ))}
+            </ul>
+          )}
+        </>
       )}
     </section>
   )
@@ -166,13 +209,20 @@ function WatchedList({
 }
 
 /** SPEC 6.3 "a Watch field": paste a link, watch it. Checked as you type (same parser as main). */
-function WatchField({ onWatched }: { onWatched: () => void }) {
+function WatchField({
+  providers,
+  onWatched,
+}: {
+  providers: readonly Provider[]
+  onWatched: () => void
+}) {
+  const from = providerList(providers.length ? providers : ['bitbucket'])
   const [draft, setDraft] = useState('')
   const add = useAddWatch()
   const toast = useToast()
   const trimmed = draft.trim()
-  const parsed = trimmed ? parsePrLink(trimmed) : null
-  const typed = trimmed && !parsed ? "That isn't a Bitbucket pull request link." : null
+  const parsed = trimmed ? parseAnyPrLink(trimmed) : null
+  const typed = trimmed && !parsed ? `That isn't a pull request link from ${from}.` : null
 
   return (
     <form
@@ -191,7 +241,7 @@ function WatchField({ onWatched }: { onWatched: () => void }) {
     >
       <Field
         label="Watch a pull request"
-        hint="Paste its link from Bitbucket. DevDock notifies you when its build, reviews or comments change."
+        hint={`Paste its link from ${from}. DevDock notifies you when its build, reviews or comments change.`}
         error={typed}
       >
         {({ id, describedBy }) => (

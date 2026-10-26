@@ -31,7 +31,7 @@ const ctx = (over: Partial<CommandContext> = {}): CommandContext => ({
   quickLinks: [],
   openLink: vi.fn(),
   devServers: [],
-  configured: { bitbucket: true, jenkins: true, jira: true },
+  configured: { prs: true, jenkins: true, jira: true },
   prActions: [],
   buildWatches: [],
   finishedBuilds: false,
@@ -289,7 +289,7 @@ describe('palette completeness (P6.01)', () => {
   it('says why a command is off: no repo for Start work, a service not set up', () => {
     const c = ctx({
       issues: [{ key: 'DD-101', summary: 'Checkout total' }],
-      configured: { bitbucket: false, jenkins: true, jira: true },
+      configured: { prs: false, jenkins: true, jira: true },
     })
     const all = buildCommands(c, VIEWS)
     expect(all.find((x) => x.id === 'ticket:start:DD-101')!.disabled).toBe(
@@ -298,13 +298,13 @@ describe('palette completeness (P6.01)', () => {
     expect(queryCommands('branch DD-101', c)[0]!.disabled).toMatch(/^Add a repo first/)
     const noJira = ctx({
       repos: [repo],
-      configured: { bitbucket: true, jenkins: true, jira: false },
+      configured: { prs: true, jenkins: true, jira: false },
     })
     expect(queryCommands('branch DD-101', noJira)[0]!.disabled).toBe(
       'Set up Jira in Settings first',
     )
     expect(all.find((x) => x.id === 'pr:watch')!.disabled).toBe(
-      'Set up Bitbucket in Settings first',
+      'Turn on Bitbucket, GitHub or GitLab in Settings first',
     )
     expect(all.find((x) => x.id === 'build:pipeline')!.disabled).toBeUndefined()
   })
