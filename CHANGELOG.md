@@ -3,6 +3,19 @@
 All notable changes to DevDock. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versions follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- **GitHub and GitLab** (off until turned on in Settings): pull requests / merge requests join
+  the PR lists, Watch field, notifications, Today, the menu-bar panel and the palette, with a
+  provider filter; github.com and GitHub Enterprise Server, gitlab.com and self-managed.
+- **GitHub Actions and GitLab pipelines** in Builds: my recent runs, jobs and steps, the end of
+  each job's log, watch a run (or paste its link anywhere, `watch <run link>` in the palette),
+  one notification when it finishes and the tray dot follows it.
+- **Settings → CI actions** (off by default): re-run / retry failed jobs and cancel, each
+  confirmed. Settings → Detect reads your repos' remotes; Bitbucket can be turned off.
+
 ## [0.1.0] — 2026-10-25
 
 The first release: everything in [`docs/SPEC.md`](docs/SPEC.md), plus the owner's additions

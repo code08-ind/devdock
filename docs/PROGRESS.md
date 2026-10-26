@@ -516,16 +516,14 @@ exact resume steps. Nothing pushed.
 
 ## Phase 7 — P7-B CI / Git provider integrations (branch `p7-providers`, WIP)
 
-Status: **resumed 2026-10-26; rebased onto `main` (P7-E, owner decisions, Slate).** Main process done and tested; renderer next.
+Status: **resumed 2026-10-26; rebased onto `main`. All four steps built and tested; code-review pending.**
 
-- [~] `P7.04` Provider model — main side done: `PrHub` routes PRs by `ref.provider`; PR + build watchers, Jenkins "my work" and standup read through it; Bitbucket can be turned off (`bitbucket.enabled`); `providers:detect` (`services/providers/detect.ts`); tray lists watched runs. **Not yet:** renderer (PRs provider filter, Today, panel, palette `watch <link>`/run links, `refLabel`).
-- [~] `P7.05` GitHub — main side done: handlers `prs:*`, `github:testConnection`, `ci:*`, `ciwatch:*`; `ci:action` refused unless `features.ciActions` (owner decision) and the payload's `confirmed: true`; CI watcher + scheduler wired in index.ts. **Not yet:** Builds view tab + run dialog + confirmation, Settings → GitHub.
-- [~] `P7.06` GitLab — main side done incl. `demo/gitlab.ts` (subgroup project, failing pipeline that passes on retry, running one). **Not yet:** UI.
-- [ ] `P7.07` Settings sections, README, CHANGELOG, DECISIONS, e2e, code-review.
+- [x] `P7.04` Provider model — `PrHub` routes by `ref.provider`; watchers, Jenkins "my work", standup through it; `bitbucket.enabled`; `providers:detect`; tray lists watched runs; renderer lists every provider (`useQueries`), provider filter, `refLabel`, palette `watch <link>` for any provider. Evidence: `providers.test.ts`, `provider-handlers.test.ts`, e2e `providers.spec.ts` test 1.
+- [x] `P7.05` GitHub — PRs (mine, reviewing, merged, watch, actions behind the PR-actions switch + confirmation), Actions runs (jobs, steps, log tail, watch, re-run behind Settings → CI actions + confirmation), github.com + GHE. Evidence: `github-client.test.ts` 21; e2e `providers.spec.ts` test 3 (watched run → "Passed · payments-api CI #88", green dot).
+- [x] `P7.06` GitLab — MRs (approve, merge; no request changes), pipelines (jobs by stage, trace, watch, retry/cancel behind the switch + confirmation), gitlab.com + self-managed (relative root, subgroups); `demo/gitlab.ts`. Evidence: `gitlab-client.test.ts` 15; e2e `providers.spec.ts` test 2.
+- [x] `P7.07` Settings → GitHub / GitLab (Use switch, URL, Detect, Test connection) + CI actions; Today, panel, palette, Diagnostics (Test all, proxy routes) cover them; README, CHANGELOG, SPEC 6.3a, DECISIONS "P7-B". axe: new test scans PRs, both CI tabs, run dialog, CI confirm, Settings in all 5 themes.
 
-Evidence so far: `npm run lint` clean; `npx vitest run` 60 files, 849 passed, 1 skipped (new: `github-client.test.ts` 21, `gitlab-client.test.ts` 15, `providers.test.ts` 22, `provider-handlers.test.ts` 6). Mutations checked: rate-limit pause removed → providers test fails; token sent to the log storage URL → 2 tests fail.
-
-Next step on resume: renderer (lib/providers.ts hooks → PRs view provider tabs → Builds view GitHub/GitLab runs + run dialog + CI action confirm → Settings → GitHub / GitLab / CI actions → Today, panel, palette) → e2e (+ axe) → docs → code-review.
+Next step on resume: code-review (Standards + Spec) and fixes; then owner review → merge.
 
 ## Session log (append-only)
 
