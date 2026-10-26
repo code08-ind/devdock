@@ -8,7 +8,7 @@ import { setup, UA } from './helpers'
  * open. Keyboard use is covered in site.spec.ts; theme colours by tests/unit/themes.test.ts.
  */
 const TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']
-const THEMES = ['light', 'dark', 'hc', 'paper', 'slate']
+const THEMES = ['light', 'dark']
 
 /** Each violation as "rule: target" lines, so a failure names the element to fix. */
 async function violations(page: Page): Promise<string[]> {

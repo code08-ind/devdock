@@ -5,13 +5,11 @@ import { describe, expect, it } from 'vitest'
 const css = readFileSync(new URL('../../src/style.css', import.meta.url), 'utf8')
 const doc = readFileSync(new URL('../../../docs/UI-THEMES.md', import.meta.url), 'utf8')
 
-const THEMES = ['Light', 'Dark', 'High Contrast', 'Paper', 'Slate'] as const
+/** The site offers the app's Light and Dark themes (a toggle; the system's choice until pressed). */
+const THEMES = ['Light', 'Dark'] as const
 const SELECTOR: Record<(typeof THEMES)[number], string> = {
   Light: ':root {',
   Dark: ":root[data-theme='dark'] {",
-  'High Contrast': ":root[data-theme='hc'] {",
-  Paper: ":root[data-theme='paper'] {",
-  Slate: ":root[data-theme='slate'] {",
 }
 
 function siteTokens(selector: string): Record<string, string> {

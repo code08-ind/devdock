@@ -3,7 +3,7 @@
 ;(function () {
   try {
     var t = localStorage.getItem('devdock-site-theme')
-    if (t && /^(light|dark|hc|paper|slate)$/.test(t)) document.documentElement.dataset.theme = t
+    if (t && /^(light|dark)$/.test(t)) document.documentElement.dataset.theme = t
   } catch {
     // Storage blocked: follow the system theme.
   }

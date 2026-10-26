@@ -121,7 +121,9 @@ test.describe('Linux', () => {
 test.describe('page basics', () => {
   test.use({ userAgent: UA.mac })
 
-  test('feature tabs work with the keyboard; theme choice applies', async ({ page }) => {
+  test('feature tabs work with the keyboard; the theme toggle applies and is kept', async ({
+    page,
+  }) => {
     await setup(page)
     await page.goto('/')
     const tabs = page.getByRole('tablist', { name: 'Features' })
@@ -131,8 +133,11 @@ test.describe('page basics', () => {
     await expect(page.getByRole('tabpanel')).toHaveCount(1)
     await expect(page.locator('#tp-repos')).toBeVisible()
 
-    await page.getByLabel('Theme').selectOption('dark')
+    const toggle = page.getByRole('button', { name: 'Dark theme' })
+    await expect(toggle).toHaveAttribute('aria-pressed', 'false')
+    await toggle.click()
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+    await expect(toggle).toHaveAttribute('aria-pressed', 'true')
     await page.reload()
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
   })

@@ -479,3 +479,13 @@ store with migrations).
 | "Read out background events" puts each notification **shown** while the main window is open into a polite, visually hidden live region (`Announcer`). Off by default: the OS already shows (and VoiceOver/Narrator read) the notification, so on by default would read it twice. Held-back ones (type off, quiet hours, paused) stay silent. | P7.13; respects the notification settings. |
 | Fixed a pre-existing e2e bug: "a click outside the palette closes it" clicked at a fallback 1240 × 820 (Electron gives no viewport size), below the 788px-tall page under the title bar, so it failed on `main` too. It now reads `innerWidth`/`innerHeight`. | Found running the full e2e for P7-E. |
 | **Slate `--text` lightened `#ADBAC7 → #CDD9E5`** (8.89:1 on surface, 10.48:1 on bg) so it stays visibly brighter than the AA muted `#A6B1BC`. `#CDD9E5` is GitHub Dimmed's own bright foreground. | Owner's choice, 2026-10-26. The code review found muted and normal text looked almost the same. |
+
+## Website redesign (owner, 2026-10-26)
+
+| Decision | Why |
+| --- | --- |
+| **Look modelled on chainyourmac.com**: system type set large and bold, white and mist (`#F5F5F7`) sections, pill buttons, frosted sticky header, soft shadows, centred section heads. Tokens stay the app's Light/Dark (drift test kept). | Owner's request ("look like chainyourmac.com"). |
+| **Light and Dark only**, one toggle (sun/moon, `aria-pressed`); follows the system until pressed. High contrast, Paper and Slate dropped from the site (still in the app); a saved hc/paper/slate choice falls back to the system. | Owner asked for Light & Dark. |
+| **Hero shows only the panel**, larger (440px) with a shadow and glow; the drawn menu bar/desktop is gone. | Owner: "remove the desktop background … show only the app, a bit bigger". |
+| **Two platform buttons** with Apple and Windows logos (hero) and Mac/Windows cards (Download); the visitor's system comes first. Before a release they link to `#download` with a "Soon" tag. | Owner asked for SaaS-style Mac/Windows buttons with logos. |
+| **Terminal tab** in the feature tour, drawn in HTML (oh-my-zsh style, weight 500/700) until P7-A merges and a real screenshot exists. | Owner asked for a Terminal tab. |

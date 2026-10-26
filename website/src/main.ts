@@ -5,7 +5,6 @@ import { formatSize, loadRelease, type Installer, type Release } from './downloa
 import { installGuide, type Rich } from './steps'
 
 const THEME_KEY = 'devdock-site-theme'
-const THEMES = ['system', 'light', 'dark', 'hc', 'paper', 'slate'] as const
 
 type Child = Node | string | null | undefined | false
 
@@ -15,6 +14,19 @@ function h(tag: string, attrs: Record<string, string> = {}, ...children: Child[]
   for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
   for (const c of children) if (c) el.append(c)
   return el
+}
+
+type Platform = 'mac' | 'windows'
+
+/** The Apple or Windows logo from the page's sprite (`#i-apple`, `#i-windows`). */
+function logo(platform: Platform): SVGSVGElement {
+  const ns = 'http://www.w3.org/2000/svg'
+  const svg = document.createElementNS(ns, 'svg')
+  svg.setAttribute('aria-hidden', 'true')
+  const use = document.createElementNS(ns, 'use')
+  use.setAttribute('href', platform === 'mac' ? '#i-apple' : '#i-windows')
+  svg.append(use)
+  return svg
 }
 
 /** `**bold**` spans to <strong>; everything else stays plain text. */
@@ -29,17 +41,27 @@ function renderRich(text: Rich): DocumentFragment {
 
 // ---------------------------------------------------------------- theme
 
+const darkQuery = window.matchMedia('(prefers-color-scheme: dark)')
+
+/** The theme in use: the visitor's choice, else the system's. */
+function isDark(): boolean {
+  const chosen = document.documentElement.dataset.theme
+  return chosen ? chosen === 'dark' : darkQuery.matches
+}
+
+/** One Light/Dark toggle. Until it's pressed the page follows the system. */
 function initTheme(): void {
-  const select = document.querySelector<HTMLSelectElement>('#theme')
-  if (!select) return
-  select.value = document.documentElement.dataset.theme ?? 'system'
-  select.addEventListener('change', () => {
-    const value = select.value as (typeof THEMES)[number]
-    if (!THEMES.includes(value)) return
-    if (value === 'system') delete document.documentElement.dataset.theme
-    else document.documentElement.dataset.theme = value
+  const button = document.querySelector<HTMLButtonElement>('#theme')
+  if (!button) return
+  const sync = (): void => button.setAttribute('aria-pressed', String(isDark()))
+  sync()
+  darkQuery.addEventListener('change', sync)
+  button.addEventListener('click', () => {
+    const next = isDark() ? 'light' : 'dark'
+    document.documentElement.dataset.theme = next
+    sync()
     try {
-      localStorage.setItem(THEME_KEY, value)
+      localStorage.setItem(THEME_KEY, next)
     } catch {
       // Storage blocked: the choice lasts for this visit.
     }
@@ -163,28 +185,54 @@ function alternative(release: Release, primaryId: string): HTMLElement | null {
   return h('p', { class: 'alt-link' }, p[0], downloadLink(inst, p[2]))
 }
 
+function platformCard(
+  release: Release,
+  platform: Platform,
+  primaryId: string,
+  recommended: boolean,
+): HTMLElement | null {
+  const inst = release.installers.find((i) => i.id === primaryId)
+  if (!inst) return null
+  const size = formatSize(inst.size)
+  const card = h(
+    'div',
+    { class: `card platform${recommended ? ' is-recommended' : ''}` },
+    h(
+      'div',
+      { class: 'platform-head' },
+      logo(platform),
+      h('h3', {}, platform === 'mac' ? 'macOS' : 'Windows'),
+      recommended ? h('span', { class: 'tag' }, 'For this computer') : null,
+    ),
+    h(
+      'p',
+      { class: 'platform-sys' },
+      platform === 'mac' ? 'macOS 12 or later, Apple silicon or Intel' : 'Windows 10 or 11, 64-bit',
+    ),
+    downloadLink(inst, inst.label, recommended ? 'btn btn-ink btn-lg' : 'btn btn-outline'),
+    h(
+      'p',
+      { class: 'download-meta' },
+      `Version ${release.version}, ${kind(inst).toLowerCase()}${size ? `, ${size}` : ''}.`,
+    ),
+  )
+  const alt = alternative(release, inst.id)
+  if (alt) card.append(alt)
+  return card
+}
+
 function renderAvailable(release: Release, d: Detected): HTMLElement[] {
   const primaryId = primaryAsset(d)
-  const primary = release.installers.find((i) => i.id === primaryId)
-  const top = h('div', { class: 'card download-primary' })
-  top.append(h('p', { class: 'detected' }, describe(d)))
-  if (primary) {
-    const size = formatSize(primary.size)
-    top.append(
-      downloadLink(primary, primary.label, 'btn btn-primary btn-lg'),
-      h(
-        'p',
-        { class: 'download-meta' },
-        `Version ${release.version}, ${kind(primary).toLowerCase()}${size ? `, ${size}` : ''}.`,
-      ),
-    )
-    const alt = alternative(release, primary.id)
-    if (alt) top.append(alt)
-  }
+  const macId = primaryId === 'mac-x64' ? 'mac-x64' : 'mac-arm64'
+  const cards = [
+    platformCard(release, 'mac', macId, d.os === 'mac'),
+    platformCard(release, 'windows', 'win-setup', d.os === 'windows'),
+  ].filter((c): c is HTMLElement => c !== null)
+  if (d.os === 'windows') cards.reverse()
   const all = h(
     'div',
     { class: 'card all-installers' },
-    h('h3', { id: 'all-title' }, primary ? 'All installers' : 'Installers'),
+    h('h3', { id: 'all-title' }, 'All installers'),
     installerTable(release),
     h(
       'p',
@@ -194,7 +242,11 @@ function renderAvailable(release: Release, d: Detected): HTMLElement[] {
       ' page.',
     ),
   )
-  return [top, all]
+  return [
+    h('p', { class: 'detected' }, describe(d)),
+    h('div', { class: 'platforms' }, ...cards),
+    all,
+  ]
 }
 
 function renderSoon(release: Release): HTMLElement[] {
@@ -230,20 +282,45 @@ function renderSoon(release: Release): HTMLElement[] {
   ]
 }
 
+/** Hero: one button per platform with its logo; the visitor's own system comes first. */
+function heroButton(platform: Platform, inst: Installer | undefined, solid: boolean): HTMLElement {
+  const text = platform === 'mac' ? 'Download for Mac' : 'Download for Windows'
+  const className = `btn btn-platform ${solid ? 'btn-ink' : 'btn-outline'}`
+  if (!inst)
+    return h(
+      'a',
+      { href: '#download', class: className },
+      logo(platform),
+      h('span', {}, text),
+      h('span', { class: 'soon-tag' }, 'Soon'),
+    )
+  const detail = platform === 'mac' ? (inst.id === 'mac-x64' ? 'Intel' : 'Apple silicon') : ''
+  const link = downloadLink(inst, '', className)
+  link.append(
+    logo(platform),
+    h('span', {}, text),
+    ...(detail ? [h('span', { class: 'visually-hidden' }, `, ${detail}`)] : []),
+  )
+  return link
+}
+
 function renderHero(release: Release, d: Detected): void {
   const actions = document.getElementById('hero-download')
   const meta = document.getElementById('hero-meta')
   if (!actions || !meta) return
-  const primary = release.installers.find((i) => i.id === primaryAsset(d))
-  if (release.available && primary) {
-    actions.replaceChildren(
-      downloadLink(primary, primary.label, 'btn btn-primary btn-lg'),
-      h('a', { href: '#download', class: 'btn btn-ghost btn-lg' }, 'Other systems'),
-    )
-    meta.textContent = `Version ${release.version}. Free. No account, no telemetry.`
-  } else if (!release.available) {
-    meta.textContent = 'Downloads coming soon for macOS and Windows. No account, no telemetry.'
-  }
+  const find = (id: string | null) =>
+    release.available ? release.installers.find((i) => i.id === id) : undefined
+  const primaryId = primaryAsset(d)
+  const mac = heroButton(
+    'mac',
+    find(primaryId === 'mac-x64' ? 'mac-x64' : 'mac-arm64'),
+    d.os !== 'windows',
+  )
+  const win = heroButton('windows', find('win-setup'), d.os === 'windows')
+  actions.replaceChildren(...(d.os === 'windows' ? [win, mac] : [mac, win]))
+  meta.textContent = release.available
+    ? `Version ${release.version} · Free · No account, no telemetry`
+    : 'Downloads coming soon for macOS and Windows. No account, no telemetry.'
 }
 
 // ---------------------------------------------------------------- "Thanks for downloading" dialog
