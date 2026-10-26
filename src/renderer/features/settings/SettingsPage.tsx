@@ -12,6 +12,7 @@ import { GitSection } from './GitSection'
 import { JenkinsSection } from './JenkinsSection'
 import { JiraSection } from './JiraSection'
 import { StandupSection } from './StandupSection'
+import { TerminalSection } from './TerminalSection'
 import { WorkflowSection } from './WorkflowSection'
 import { NotificationsSection } from './NotificationsSection'
 import { Section } from './Section'
@@ -117,6 +118,7 @@ export function SettingsPage() {
       <DemoSection settings={settings} />
       <GeneralSection settings={settings} />
       <GitSection settings={settings} />
+      <TerminalSection settings={settings} />
       <BitbucketSection settings={settings} />
       <JenkinsSection settings={settings} />
       <JiraSection settings={settings} />

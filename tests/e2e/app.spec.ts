@@ -21,6 +21,7 @@ const NAV = [
   ['Builds', 'builds'],
   ['Tickets', 'tickets'],
   ['Utilities', 'utilities'],
+  ['Terminal', 'terminal'],
   ['Settings', 'settings'],
 ] as const
 
@@ -28,7 +29,7 @@ test('opens on Home; every tile opens its feature', async ({ launched }) => {
   const { win, errors } = launched
   await expect(win.locator('main')).toHaveAttribute('data-view', 'home')
   const tiles = win.locator('.home-tile')
-  await expect(tiles).toHaveCount(13)
+  await expect(tiles).toHaveCount(14)
   const go = async (name: string) => {
     await win
       .getByRole('navigation', { name: 'Main' })
@@ -45,6 +46,7 @@ test('opens on Home; every tile opens its feature', async ({ launched }) => {
     ['Pull requests', 'prs'],
     ['Builds', 'builds'],
     ['Tickets', 'tickets'],
+    ['Terminal', 'terminal'],
     ['Settings', 'settings'],
   ] as const) {
     await go(name)

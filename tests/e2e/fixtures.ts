@@ -41,7 +41,8 @@ export async function windowFor(
   app: ElectronApplication,
   page: 'index.html' | 'palette.html' | 'panel.html',
 ): Promise<Page> {
-  const matches = (p: Page) => p.url().endsWith(`/${page}`)
+  // Match the path only: in e2e the main window's URL ends in `?e2e=1`.
+  const matches = (p: Page) => new URL(p.url()).pathname.endsWith(`/${page}`)
   return app.windows().find(matches) ?? app.waitForEvent('window', { predicate: matches })
 }
 
@@ -54,6 +55,7 @@ export const VIEWS = [
   'Builds',
   'Tickets',
   'Utilities',
+  'Terminal',
   'Settings',
 ] as const
 export const THEMES = ['light', 'dark', 'high-contrast', 'paper', 'slate'] as const
@@ -101,6 +103,8 @@ interface TestHook {
     watched: { label: string; state: string; finishedAt: number | null }[]
   }
   pollBuilds(): Promise<void>
+  /** PIDs of the in-app terminals' shells. */
+  terminalPids(): number[]
 }
 
 export function callHook<K extends keyof TestHook>(

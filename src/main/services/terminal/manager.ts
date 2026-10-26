@@ -241,7 +241,9 @@ export class TerminalManager {
 
   /** A window closed or reloaded: its terminals go with it. */
   async killOwner(owner: number): Promise<void> {
-    await Promise.all([...this.sessions.values()].filter((s) => s.owner === owner).map((s) => this.stop(s)))
+    await Promise.all(
+      [...this.sessions.values()].filter((s) => s.owner === owner).map((s) => this.stop(s)),
+    )
   }
 
   /** DevDock is quitting. */

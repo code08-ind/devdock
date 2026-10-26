@@ -1,13 +1,4 @@
-import {
-  ArrowDown,
-  ArrowUp,
-  Copy,
-  Eraser,
-  Plus,
-  Search,
-  SquareTerminal,
-  X,
-} from 'lucide-react'
+import { ArrowDown, ArrowUp, Copy, Eraser, Plus, Search, SquareTerminal, X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { useSettings } from '../../lib/devdock'
 import { modLabel } from '../../lib/keyboard'
@@ -99,7 +90,7 @@ export function TerminalPage({ request }: { request?: { n: number; repoId: strin
   )
 
   useEffect(() => {
-    store.hooks = {
+    store.setHooks({
       onFind: () => setFinding(true),
       onLeave: (back) => {
         if (back) {
@@ -109,7 +100,8 @@ export function TerminalPage({ request }: { request?: { n: number; repoId: strin
         }
       },
       onError: (message, details) => toast(message, 'danger', details),
-    }
+    })
+    return () => store.setHooks(null)
   }, [store, toast])
 
   // The screens move into this view's viewport (and out again when it goes away).
@@ -230,7 +222,10 @@ export function TerminalPage({ request }: { request?: { n: number; repoId: strin
             value={whereOptions.some((o) => o.value === where) ? where : HOME}
             onValue={setWhere}
           />
-          <Button icon={<Plus size={16} aria-hidden="true" />} onClick={() => openIn(where === HOME ? null : where)}>
+          <Button
+            icon={<Plus size={16} aria-hidden="true" />}
+            onClick={() => openIn(where === HOME ? null : where)}
+          >
             New terminal
           </Button>
           <IconButton

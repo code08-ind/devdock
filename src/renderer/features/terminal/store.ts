@@ -140,9 +140,7 @@ class TerminalSession {
   private async start(): Promise<void> {
     const { cols, rows } = this.term
     try {
-      const session = await unwrap(
-        bridge.terminal.create({ repoId: this.tab.repoId, cols, rows }),
-      )
+      const session = await unwrap(bridge.terminal.create({ repoId: this.tab.repoId, cols, rows }))
       if (this.disposed) {
         void bridge.terminal.kill({ id: session.id })
         return
@@ -308,6 +306,11 @@ export class TerminalStore {
 
   private onExit(e: TerminalExitEvent): void {
     this.byId.get(e.id)?.exited(e)
+  }
+
+  /** The Terminal view's callbacks (find bar, leaving with F6, errors); null when it goes away. */
+  setHooks(hooks: TerminalHooks | null): void {
+    this.hooks = hooks
   }
 
   /** Opens a tab (in a registered repo, or the home folder) and shows it. */

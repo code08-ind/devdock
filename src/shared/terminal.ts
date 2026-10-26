@@ -89,7 +89,7 @@ export const ShellOverrideSchema = z
     (v) =>
       v === '' ||
       // No control characters (a newline would be a second command in some contexts).
-      (!/[\u0000-\u001f]/.test(v) &&
+      (![...v].some((c) => c.charCodeAt(0) < 0x20) &&
         ((SHELL_NAMES as readonly string[]).includes(v.toLowerCase()) || isAbsolutePath(v))),
     'Use a shell name (zsh, bash, pwsh…) or the full path to the shell program',
   )
@@ -182,7 +182,13 @@ export function parseHex(hex: string): Rgb {
 }
 
 const toHex = ([r, g, b]: Rgb) =>
-  `#${[r, g, b].map((v) => Math.round(Math.min(255, Math.max(0, v))).toString(16).padStart(2, '0')).join('')}`
+  `#${[r, g, b]
+    .map((v) =>
+      Math.round(Math.min(255, Math.max(0, v)))
+        .toString(16)
+        .padStart(2, '0'),
+    )
+    .join('')}`
 
 /** `a` moved `t` (0–1) of the way to `b`. */
 export function mix(a: string, b: string, t: number): string {
@@ -228,7 +234,10 @@ export const minContrastFor = (highContrast: boolean) => (highContrast ? 7 : 4.5
  * towards the text colour. Every colour except black/white (which are meant to be close to
  * the background on one side) is raised to the theme's text contrast.
  */
-export function terminalPalette(t: ThemeTokens, opts: { highContrast?: boolean } = {}): TerminalPalette {
+export function terminalPalette(
+  t: ThemeTokens,
+  opts: { highContrast?: boolean } = {},
+): TerminalPalette {
   const dark = luminance(t.bg) < 0.5
   const min = minContrastFor(opts.highContrast ?? false)
   const fit = (c: string) => ensureContrast(c, t.bg, t.text, min)
