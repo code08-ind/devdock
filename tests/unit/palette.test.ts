@@ -42,6 +42,7 @@ const ctx = (over: Partial<CommandContext> = {}): CommandContext => ({
   startWork: vi.fn(),
   watches: [],
   unwatch: vi.fn(),
+  openTerminal: vi.fn(),
   ...over,
 })
 
