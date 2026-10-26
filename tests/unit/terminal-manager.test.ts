@@ -39,7 +39,9 @@ afterEach(() => {
 const EXEC = new Set(['/bin/zsh', '/bin/bash', '/bin/sh', '/usr/local/bin/fish', '/opt/zsh'])
 
 function manager(
-  over: Partial<TerminalManagerOptions> & { settings?: Partial<TerminalSettings> } = {},
+  over: Partial<Omit<TerminalManagerOptions, 'settings'>> & {
+    settings?: Partial<TerminalSettings>
+  } = {},
 ) {
   const pty = fakeSpawn()
   const events: {
