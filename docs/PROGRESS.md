@@ -522,11 +522,26 @@ Rebased onto `main` @ 5f6d651 (P7-E accessibility + Slate `--text #CDD9E5`) on 2
 - [~] `P7.02` Per-theme ANSI palette from tokens (unit `terminal-palette.test.ts`: every theme from tokens.css; Slate on the new tokens), text weight 500 / bold 700 (owner request), font size follows the app by default, Settings → Terminal section (e2e), DevDock prompt for zsh + bash (e2e in a temporary HOME: `➜ clone git:(…)` then `✗` after a change; `zsh -n`/`bash -n`; branch name never run).
 - [~] `P7.03` Packaging: node-pty external + only runtime dep, asarUnpack prebuilds, `npmRebuild: false`, spawn-helper chmod postinstall, notices — **dist not run yet**. CSP unchanged (style shim).
 
-### Where P7-A is (2026-10-26, resumed)
+### Where P7-A stopped (2026-10-26 evening, paused by the owner)
 
-Done: steps 1–4 of the old list, docs (DECISIONS P7-A, SPEC 6.8 + 6.7, README, CHANGELOG, notices). Still to do: full `npm run e2e` result, `npm run dist` + package size, README screenshot (`npx playwright test screenshots -g terminal` with `DEVDOCK_SCREENSHOTS=1`), code-review skill + fixes.
+Done and committed on `p7-terminal`: rebase onto main; palette ctx; Settings → Terminal; CSP-safe style shim (no CSP change); terminal e2e (5 tests) + palette/manager/IPC/real-PTY tests; owner's "slightly bold" text (500/700, font size follows the app) with screenshots checked in Light/Dark/Slate/HC/Paper; ANSI black/white raised to ≥ 3:1; a11y fixes (tablist holds only tabs, 44px tabs, F6 moves on like Tab, focus ring); docs (DECISIONS P7-A, SPEC 6.8, README, CHANGELOG, notices); **packaging bug fixed** (per-OS `files` lists had packed the whole repo into app.asar; now 2.9 MB). `npm run dist`: arm64 + x64 DMGs built (108.5 / 111.6 MB, +5.0 / +5.4 MB over P6), no x64 download timeout; packaged arm64 app opened a terminal and ran a real login zsh (no console errors).
 
-Open for the owner: CSP — the shim keeps `style-src 'self'`; the simpler alternative `style-src-attr 'unsafe-inline'` on the main window was not applied (a security loosening needs the owner's yes). Ctrl+K / Ctrl+1–9 go to DevDock on Windows even inside the terminal (zsh/bash Ctrl+K kill-line is lost there).
+Checks so far: lint ok; terminal unit/integration 26 + 11 palette passed; e2e full run before the a11y fixes = 52 passed, 4 failed (axe tablist, larger targets, keyboard round, Font size label) → all fixed; `a11y.spec` + `terminal.spec` then 8/8 passed. **Full `npm test` and full `npm run e2e` not yet re-run after the last fixes.**
+
+code-review (Standards + Spec) ran. Fixed so far: orphaned PTY when a window closes/reloads mid-create (epoch + `ownerAlive`), session limit counts starting creates (WIP commit — needs a unit test each).
+
+Resume, in order:
+1. Unit tests for the two race fixes (killOwner during create → shell stopped, `not-found`; 20 concurrent creates → limit).
+2. Review findings still open:
+   - store.ts `early` map leak: drop output for closed/disposed ids (record them; clear on exit event).
+   - store.ts `send`: don't split a surrogate pair at the `MAX_WRITE` boundary; DECISIONS says "64 KB" / batcher "256 KB" — they are characters: fix the wording.
+   - manager `stop` for an already-exited shell doesn't signal the group: decide (Terminal.app also leaves jobs of an exited shell running) and correct the DECISIONS sentence "so `npm run dev` started in it goes too" to "while the shell runs".
+   - Rename store's `class TerminalSession` (clashes with the shared type) → e.g. `TerminalTabView`; `DEFAULT_OPTIONS` → `TerminalSettingsSchema.parse({})` + appFontSize; move `DEVDOCK_TERMINAL_LABEL` to `lib/repos.ts` next to `OPEN_LABELS`; one named type for `{ n, repoId }` terminal requests (App.tsx ×2, TerminalPage); `terminal:new` command built once; drop unused IPC `terminal:list` (or use it); handlers.ts import order; comment why `withTerminal` wraps `withGit`; styleShim: comment/test pinning that nothing else calls `createElement('style')`.
+   - Spec: e2e that quitting DevDock stops the shells (`app.close()` → pid gone); DevDock prompt should skip itself when oh-my-zsh is loaded (`(( ${+functions[omz]} ))` or `$ZSH_THEME`) and stop overriding user zsh options (drop `zstyle … menu select`, `zle_highlight`); update the Settings description.
+3. `DEVDOCK_SCREENSHOTS=1 npx playwright test screenshots -g terminal` → docs/screenshots/readme-terminal.png (README already links it).
+4. Full `npm run lint`, `npm test`, `npm run e2e`, `npm run dist`; tick P7.01–P7.03 with evidence; session log row; report.
+
+Owner to check by hand: how their own oh-my-zsh prompt/plugins look in DevDock's terminal (Light, Dark, Slate); Windows (PowerShell, ConPTY) on a real machine; CSP alternative (`style-src-attr 'unsafe-inline'` for the main window) was **not** applied — the shim is used instead.
 
 ---
 
@@ -581,3 +596,4 @@ Open for the owner: CSP — the shim keeps `style-src 'self'`; the simpler alter
 | 2026-10-26 | P7-E review, pause | code-review (Standards + Spec): fixed DECISIONS installer names, SPEC §6.7 + UI-THEMES motion note, announcer also in the menu-bar panel, axe on panel + palette window in all 5 themes, computed underline check, shared e2e helpers in fixtures.ts, MOTION_MODES + label map, `--target-min` token. Open: Slate muted vs text hierarchy (asked owner). Checks: lint ok; vitest 785 passed; e2e 51 passed, 4 skipped. Owner paused. | Resume per Next step |
 | 2026-10-26 | Resume | Owner: Slate `--text` lightened #ADBAC7 → #CDD9E5 so it stays brighter than the AA muted #A6B1BC (UI-THEMES, DECISIONS). lint ok; vitest 785 passed, 1 skipped (contrast 32). | Resume P7-A/B/D agents |
 | 2026-10-26 | P7-A (WIP) | Branch p7-terminal. node-pty 1.1.0 verified under Electron 45 (prebuilds; spawn-helper chmod fix). Terminal contract, PTY manager, shell/prompt, handlers, main wiring, packaging config, renderer store/view/palette/repo buttons written. Not built or tested yet. Paused by owner. | P7-A step 1 in Phase 7 "Where P7-A stopped" |
+| 2026-10-26 | P7-A resume, pause | Rebased p7-terminal onto main (P7-E, Slate text). Settings → Terminal, CSP-safe style shim, owner's bold text (500/700), readable ANSI black/white, a11y fixes, tests (terminal e2e 5, unit/integration 37), docs, packaging fix (asar 10.6 → 2.9 MB); dist arm64 + x64 built (108.5 / 111.6 MB) and the packaged app ran zsh. code-review run; part of its fixes done. Owner paused. | P7-A "Where P7-A stopped (evening)" |

@@ -326,6 +326,10 @@ function start(): void {
     onExit: (owner, e) => sendTo(owner, 'terminal:exit', e),
     promptDir: join(userData, 'terminal'),
     appVersion: app.getVersion(),
+    ownerAlive: (id) => {
+      const wc = webContents.fromId(id)
+      return wc !== undefined && !wc.isDestroyed()
+    },
   })
   // A window that closes or reloads takes its terminals with it: no shell is left behind.
   app.on('web-contents-created', (_e, wc) => {

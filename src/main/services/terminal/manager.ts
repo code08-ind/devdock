@@ -64,6 +64,8 @@ export interface TerminalManagerOptions {
   batchMs?: number
   /** Signals a process group (macOS/Linux); injected for tests. */
   signal?: (pid: number, sig: NodeJS.Signals) => void
+  /** Whether the window is still there (a shell started for a closed window is stopped). */
+  ownerAlive?: (owner: number) => boolean
 }
 
 interface Session {
@@ -106,9 +108,18 @@ export class TerminalManager {
   private readonly sessions = new Map<string, Session>()
   private counter = 0
   private readonly platform: NodeJS.Platform
+  /** Creates still starting, per window (they count towards the limit). */
+  private readonly starting = new Map<number, number>()
+  /** Bumped each time a window's terminals are stopped (it closed or reloaded). */
+  private readonly epochs = new Map<number, number>()
 
   constructor(private readonly opts: TerminalManagerOptions) {
     this.platform = opts.platform ?? process.platform
+  }
+
+  /** The window's current generation: a create that began in an older one is stale. */
+  epoch(owner: number): number {
+    return this.epochs.get(owner) ?? 0
   }
 
   async create(req: {
@@ -118,13 +129,38 @@ export class TerminalManager {
     repoId: string | null
     cols: number
     rows: number
+    /** `epoch(owner)` when the request arrived (the caller may await before calling). */
+    epoch?: number
   }): Promise<TerminalSession> {
-    if (this.list(req.owner).length >= MAX_SESSIONS) {
+    const epoch = req.epoch ?? this.epoch(req.owner)
+    const starting = this.starting.get(req.owner) ?? 0
+    if (this.list(req.owner).length + starting >= MAX_SESSIONS) {
       throw new TerminalError(
         'limit',
         `A window can have ${MAX_SESSIONS} terminals at once. Close one to open another.`,
       )
     }
+    this.starting.set(req.owner, starting + 1)
+    try {
+      return await this.start(req, epoch)
+    } finally {
+      const n = (this.starting.get(req.owner) ?? 1) - 1
+      if (n > 0) this.starting.set(req.owner, n)
+      else this.starting.delete(req.owner)
+    }
+  }
+
+  private async start(
+    req: {
+      owner: number
+      cwd: string
+      title: string
+      repoId: string | null
+      cols: number
+      rows: number
+    },
+    epoch: number,
+  ): Promise<TerminalSession> {
     const s = this.opts.settings()
     const baseEnv = (this.opts.env ?? (() => process.env))()
     let spec: ShellSpec
@@ -192,6 +228,11 @@ export class TerminalManager {
       }),
     )
     this.sessions.set(id, session)
+    // The window closed or reloaded while the shell was starting: nobody can reach it.
+    if (this.epoch(req.owner) !== epoch || !(this.opts.ownerAlive?.(req.owner) ?? true)) {
+      await this.stop(session)
+      throw new TerminalError('not-found', 'That window is no longer open.')
+    }
     return { ...info }
   }
 
@@ -244,6 +285,7 @@ export class TerminalManager {
 
   /** A window closed or reloaded: its terminals go with it. */
   async killOwner(owner: number): Promise<void> {
+    this.epochs.set(owner, this.epoch(owner) + 1)
     await Promise.all(
       [...this.sessions.values()].filter((s) => s.owner === owner).map((s) => this.stop(s)),
     )

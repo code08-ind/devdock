@@ -507,6 +507,8 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
     'terminal:create': ({ repoId, cols, rows }, event) =>
       withTerminal(async () => {
         const owner = terminalOwner(event)
+        // Taken before the folder check: a window that reloads meanwhile gets no shell.
+        const epoch = deps.terminal.epoch(owner)
         const repo = repoId ? deps.repos.get(repoId) : null
         const cwd = repo ? repo.path : deps.home
         const isDir = await stat(cwd).then(
@@ -528,6 +530,7 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
           repoId: repo ? repo.id : null,
           cols,
           rows,
+          epoch,
         })
       }),
     'terminal:write': ({ id, data }, event) =>
