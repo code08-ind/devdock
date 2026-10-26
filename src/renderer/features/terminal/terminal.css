@@ -35,39 +35,41 @@
 .terminal-tab {
   display: flex;
   align-items: center;
+  gap: var(--space-1);
+  max-width: 240px;
+  padding: var(--space-1) var(--space-1) var(--space-1) var(--space-2);
   border: var(--border-w) solid var(--border);
   border-radius: var(--radius-md);
   background: var(--surface);
-}
-.terminal-tab[data-active] {
-  border-color: var(--accent);
-  background: var(--selection);
-}
-.terminal-tab > button[role='tab'] {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-  max-width: 220px;
-  padding: var(--space-1) var(--space-2);
-  border: 0;
-  border-radius: var(--radius-md);
-  background: transparent;
   color: var(--text);
   font: inherit;
   cursor: pointer;
 }
-.terminal-tab > button[role='tab'] span {
+.terminal-tab[aria-selected='true'] {
+  border-color: var(--accent);
+  background: var(--selection);
+}
+.terminal-tab:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.terminal-tab > span:not(.terminal-tab-close) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.terminal-tab > button[role='tab']:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring);
+.terminal-tab-close {
+  display: inline-flex;
+  padding: 2px;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
 }
-.terminal-tab .btn-icon {
-  width: calc(var(--control-h) * 0.8);
-  height: calc(var(--control-h) * 0.8);
+.terminal-tab-close:hover {
+  background: var(--bg-subtle);
+  color: var(--text);
+}
+[data-larger-targets] .terminal-tab {
+  min-height: var(--target-min);
 }
 
 .terminal-toolbar {
@@ -109,6 +111,7 @@
 }
 .terminal-viewport:focus-within {
   border-color: var(--focus);
+  box-shadow: var(--focus-ring);
 }
 .terminal-viewport[hidden] {
   display: none;

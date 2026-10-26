@@ -68,7 +68,25 @@ test('terminal: runs a command in the login shell; closing the tab stops the she
     )
     .toBe('rgb(34, 39, 46)')
 
-  await tabs.getByRole('button', { name: 'Close Home' }).click()
+  // F6 leaves the terminal (Tab is the shell's): focus lands outside it.
+  await win.locator('.terminal-screen:not([hidden]) .xterm').click()
+  await win.keyboard.press('F6')
+  expect(
+    await win.evaluate(() => document.activeElement?.closest('.terminal-screen') == null),
+  ).toBe(true)
+
+  // Two more tabs: Delete on a tab closes it, and so does its × (mouse).
+  await win.getByRole('button', { name: 'New terminal' }).click()
+  await win.getByRole('button', { name: 'New terminal' }).click()
+  await expect(tabs.getByRole('tab')).toHaveCount(3)
+  await tabs.getByRole('tab', { selected: true }).focus()
+  await win.keyboard.press('Delete')
+  await expect(tabs.getByRole('tab')).toHaveCount(2)
+  await tabs.locator('.terminal-tab-close').last().click()
+  await expect(tabs.getByRole('tab')).toHaveCount(1)
+  await expect.poll(() => callHook(app, 'terminalPids')).toEqual([pid])
+
+  await win.getByRole('button', { name: 'Close terminal' }).click()
   await expect(tabs.getByRole('tab')).toHaveCount(0)
   await expect(win.getByRole('button', { name: 'Open a terminal' })).toBeVisible()
   await expect.poll(() => callHook(app, 'terminalPids')).toEqual([])

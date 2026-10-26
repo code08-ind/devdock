@@ -198,7 +198,7 @@ company needs a specific one, set it in **Settings → Diagnostics → Proxy**.
 | `⌘K` / `Ctrl+K`                   | Command palette (in the app)                                                      |
 | `⌘⇧Space` / `Ctrl+Shift+Space`    | Command palette from any app (change it in Settings → General)                    |
 | `⌘1` … `⌘9` / `Ctrl+1` … `Ctrl+9` | Home, Today, Repos, Pull requests, Builds, Tickets, Utilities, Terminal, Settings |
-| `F6` / `Shift+F6`                 | In a terminal: leave it for the toolbar / the tabs (Tab goes to the shell)        |
+| `F6` / `Shift+F6`                 | In a terminal: leave it, forwards / backwards (Tab goes to the shell)        |
 | `⌘F` / `Ctrl+F`                   | In a terminal: find in its scrollback                                             |
 | `⌘,` / `Ctrl+,`                   | Settings                                                                          |
 | `↑` `↓` `Enter`                   | Move through and run palette results                                              |

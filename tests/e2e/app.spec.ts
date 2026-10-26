@@ -113,7 +113,7 @@ test('theme, font size and density apply live and persist across restarts', asyn
     expect(dark.body).toBe(dark.token)
     expect(dark.body).not.toBe(light.body)
 
-    await win.getByLabel('Font size').selectOption('18')
+    await win.getByRole('region', { name: 'Appearance' }).getByLabel('Font size').selectOption('18')
     await expect(win.locator('html')).toHaveAttribute('data-font-size', '18')
     expect(await win.evaluate(() => getComputedStyle(document.body).fontSize)).toBe('18px')
 

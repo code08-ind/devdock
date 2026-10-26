@@ -64,6 +64,28 @@ function FindBar({ onClose }: { onClose: () => void }) {
   )
 }
 
+/** What Tab can reach, in document order (visible and enabled). */
+const FOCUSABLE =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+
+/**
+ * F6 / Shift+F6 in a terminal (where Tab belongs to the shell): focus moves to the next / previous
+ * stop outside the terminal, as Tab and Shift+Tab would (wrapping round the window).
+ */
+function focusBeside(terminal: HTMLElement | null, back: boolean): void {
+  if (!terminal) return
+  const all = [...document.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(
+    (el) => !terminal.contains(el) && el.getClientRects().length > 0,
+  )
+  if (all.length === 0) return
+  const after = all.findIndex(
+    (el) => terminal.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING,
+  )
+  const next = after < 0 ? 0 : after
+  const target = back ? all[(next - 1 + all.length) % all.length] : all[next]
+  target?.focus()
+}
+
 /**
  * P7-A: terminal tabs on real shells (in main). Tabs and their scrollback live in the store, so
  * they are still there after visiting another view. Inside a terminal, Tab and Escape belong to
@@ -92,13 +114,7 @@ export function TerminalPage({ request }: { request?: { n: number; repoId: strin
   useEffect(() => {
     store.setHooks({
       onFind: () => setFinding(true),
-      onLeave: (back) => {
-        if (back) {
-          tabList.current?.querySelector<HTMLElement>('[aria-selected="true"]')?.focus()
-        } else {
-          document.querySelector<HTMLElement>('.terminal-toolbar button')?.focus()
-        }
-      },
+      onLeave: (back) => focusBeside(viewport.current, back),
       onError: (message, details) => toast(message, 'danger', details),
     })
     return () => store.setHooks(null)
@@ -189,32 +205,40 @@ export function TerminalPage({ request }: { request?: { n: number; repoId: strin
       <div className="terminal-bar">
         <div className="terminal-tabs" role="tablist" aria-label="Terminals" ref={tabList}>
           {tabs.map((t, i) => (
-            <div key={t.key} className="terminal-tab" data-active={t.key === active || undefined}>
-              <button
-                type="button"
-                role="tab"
-                id={`terminal-tab-${t.key}`}
-                data-key={t.key}
-                aria-selected={t.key === active}
-                aria-controls="terminal-viewport"
-                tabIndex={t.key === active ? 0 : -1}
-                title={t.shell ? `${t.title} — ${t.shell}` : t.title}
-                onClick={() => {
-                  store.select(t.key)
-                  store.focusActive()
+            <button
+              key={t.key}
+              type="button"
+              role="tab"
+              className="terminal-tab"
+              id={`terminal-tab-${t.key}`}
+              data-key={t.key}
+              aria-selected={t.key === active}
+              aria-controls="terminal-viewport"
+              aria-keyshortcuts="Delete"
+              tabIndex={t.key === active ? 0 : -1}
+              title={t.shell ? `${t.title} — ${t.shell}` : t.title}
+              onClick={() => {
+                store.select(t.key)
+                store.focusActive()
+              }}
+              onKeyDown={(e) => onTabKey(e, i)}
+            >
+              <SquareTerminal size={14} aria-hidden="true" />
+              <span>{tabLabel(t)}</span>
+              {/* A mouse shortcut only: a tablist may hold nothing but tabs, so keyboard and
+                  screen-reader users close a tab with Delete or "Close terminal" in the toolbar. */}
+              <span
+                className="terminal-tab-close"
+                aria-hidden="true"
+                title={`Close ${t.title}`}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  void store.close(t.key)
                 }}
-                onKeyDown={(e) => onTabKey(e, i)}
               >
-                <SquareTerminal size={14} aria-hidden="true" />
-                <span>{tabLabel(t)}</span>
-              </button>
-              <IconButton
-                label={`Close ${t.title}`}
-                icon={<X size={14} />}
-                tabIndex={t.key === active ? 0 : -1}
-                onClick={() => void store.close(t.key)}
-              />
-            </div>
+                <X size={14} />
+              </span>
+            </button>
           ))}
         </div>
         <div className="terminal-toolbar">
@@ -243,6 +267,14 @@ export function TerminalPage({ request }: { request?: { n: number; repoId: strin
             icon={<Copy size={16} />}
             disabled={!activeTab}
             onClick={() => store.activeSession()?.copySelection()}
+          />
+          <IconButton
+            label="Close terminal"
+            icon={<X size={16} />}
+            disabled={!activeTab}
+            onClick={() => {
+              if (activeTab) void store.close(activeTab.key)
+            }}
           />
           <IconButton
             label="Clear"
@@ -278,7 +310,7 @@ export function TerminalPage({ request }: { request?: { n: number; repoId: strin
         hidden={tabs.length === 0}
       />
       <p className="muted terminal-hint">
-        Tab and Escape go to the shell. Leave the terminal with F6 (Shift+F6 for the tabs) or{' '}
+        Tab and Escape go to the shell. Leave the terminal with F6 (Shift+F6 to go back) or{' '}
         {modLabel('1')}–{modLabel('9')}.
       </p>
     </div>

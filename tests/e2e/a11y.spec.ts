@@ -64,8 +64,13 @@ type Stop = { name: string; ring: boolean; shown: boolean; inside: boolean }
  *  focus colour (outline or ring) and stay inside `scope` (a dialog traps focus). */
 async function tabRound(win: Page, where: string, scope = 'body') {
   const seen: string[] = []
+  let inTerminal = false
   for (let i = 0; i < 200; i++) {
-    await win.keyboard.press('Tab')
+    // In a terminal Tab is the shell's; F6 is the documented way on (P7-A, WCAG 2.1.2).
+    await win.keyboard.press(inTerminal ? 'F6' : 'Tab')
+    inTerminal = await win.evaluate(
+      () => document.activeElement?.closest('.terminal-screen') != null,
+    )
     const stop: Stop = await win.evaluate((scopeSel) => {
       const el = document.activeElement as HTMLElement | null
       if (!el || el === document.body)
@@ -88,7 +93,10 @@ async function tabRound(win: Page, where: string, scope = 'body') {
       const ring = [el, el.parentElement, el.parentElement?.parentElement].some(
         (n) => n !== null && n !== undefined && ringed(n),
       )
-      const target = el.matches('.visually-hidden') ? (el.closest('label') ?? el) : el
+      // xterm types into a zero-size helper textarea: the terminal itself is what shows focus.
+      const target = el.matches('.visually-hidden')
+        ? (el.closest('label') ?? el)
+        : (el.closest<HTMLElement>('.xterm') ?? el)
       const box = target.getBoundingClientRect()
       const label =
         el.getAttribute('aria-label') ??

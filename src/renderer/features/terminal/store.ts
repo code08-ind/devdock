@@ -41,7 +41,7 @@ export interface TerminalTab {
 export interface TerminalHooks {
   /** Mod+F in a terminal: show the find bar. */
   onFind: () => void
-  /** F6 / Shift+F6 in a terminal: move focus out (the terminal keeps Tab for the shell). */
+  /** F6 / Shift+F6 in a terminal: focus the next / previous stop outside it (Tab is the shell's). */
   onLeave: (back: boolean) => void
   /** A link the allowlist refused, or a copy that failed. */
   onError: (message: string, details?: string) => void
