@@ -34,11 +34,11 @@ nsis:
   perMachine: false
   allowElevation: false
   allowToChangeInstallationDirectory: true
-  artifactName: ${productName}-Setup-${version}.${ext}
+  artifactName: ${productName}-Setup.${ext}
 portable:
-  artifactName: ${productName}-Portable-${version}.${ext}
+  artifactName: ${productName}-Portable.${ext}
 dmg:
-  artifactName: ${productName}-${version}-${arch}.${ext}
+  artifactName: ${productName}-${arch}.${ext}
 extraResources:
   - from: build/tray
     to: tray

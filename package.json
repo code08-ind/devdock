@@ -5,7 +5,7 @@
   "description": "Menu-bar / tray app for a frontend developer's daily chores.",
   "main": "./out/main/index.js",
   "author": "Aryan Garg",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "engines": {
