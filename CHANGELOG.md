@@ -3,6 +3,19 @@
 All notable changes to DevDock. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versions follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- **Terminal** (Phase 7, P7-A): a real terminal in DevDock — your login shell in tabs (zsh, bash,
+  fish; PowerShell on Windows) with your own setup (oh-my-zsh as is), ANSI colours per theme,
+  slightly bold text like a native terminal, find, copy/paste, links through the allowlist.
+  Opens in a repo from its card, the menu-bar panel or the palette (`terminal <repo>`).
+  Settings → Terminal: shell, font size (follows the app by default), cursor, scrollback, and an
+  optional robbyrussell-style DevDock prompt for zsh and bash (your dotfiles are never edited).
+  Shells stop when their tab closes or DevDock quits. Adds `node-pty` (the one native module).
+- **Accessibility** (P7-E): Settings → Accessibility and axe checks of every view.
+
 ## [0.1.0] — 2026-10-25
 
 The first release: everything in [`docs/SPEC.md`](docs/SPEC.md), plus the owner's additions

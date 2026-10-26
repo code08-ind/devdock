@@ -1,7 +1,8 @@
-import { mkdirSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { makeRepos } from '../fixtures/git-repos'
-import { callHook, expect, test, windowFor } from './fixtures'
+import { callHook, expect, launch, test, windowFor } from './fixtures'
 
 /**
  * P0.25: Today in Light and Dark, written to docs/screenshots/ (demo mode, default window).
@@ -79,4 +80,50 @@ test('screenshots: README features', async ({ launched }) => {
   const panel = await windowFor(app, 'panel.html')
   await expect(panel.getByRole('list', { name: 'My pull requests' })).toBeVisible()
   await panel.screenshot({ path: join(out, 'readme-panel.png'), animations: 'disabled' })
+})
+
+/** P7-A: the terminal in Dark with the DevDock prompt in a repo (an empty home: no one's rc files). */
+test('screenshots: README terminal', async () => {
+  test.skip(process.platform === 'win32', 'zsh prompt (macOS)')
+  const home = mkdtempSync(join(tmpdir(), 'devdock-home-'))
+  const { app, win, userData } = await launch(undefined, { HOME: home, ZDOTDIR: '' })
+  try {
+    mkdirSync(out, { recursive: true })
+    repos = makeRepos()
+    await win.evaluate((p) => window.devdock.repos.add({ path: p }), repos.clone)
+    await win.evaluate(() =>
+      window.devdock.settings.update({
+        appearance: { theme: 'dark' },
+        terminal: { shell: '/bin/zsh', devdockPrompt: true },
+      }),
+    )
+    await win
+      .getByRole('navigation', { name: 'Main' })
+      .getByRole('button', { name: 'Repos' })
+      .click()
+    await win
+      .getByRole('article', { name: 'clone' })
+      .getByRole('button', { name: 'Open in DevDock terminal' })
+      .click()
+    const screen = win.locator('.terminal-screen:not([hidden]) .xterm')
+    await expect(screen).toBeVisible()
+    await win.waitForTimeout(1000)
+    await screen.click()
+    for (const line of [
+      'git log --oneline -3',
+      'echo "export const ok = true" > ok.ts',
+      'git status -sb',
+      'ls -G',
+    ]) {
+      await win.keyboard.type(line)
+      await win.keyboard.press('Enter')
+      await win.waitForTimeout(300)
+    }
+    await win.waitForTimeout(500)
+    await win.screenshot({ path: join(out, 'readme-terminal.png'), animations: 'disabled' })
+  } finally {
+    await app.close().catch(() => undefined)
+    rmSync(userData, { recursive: true, force: true })
+    rmSync(home, { recursive: true, force: true })
+  }
 })

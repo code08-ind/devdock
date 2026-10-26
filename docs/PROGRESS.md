@@ -483,7 +483,7 @@ exact resume steps. Nothing pushed.
 
 | Track | Branch @ commit | State | Resume with |
 | --- | --- | --- | --- |
-| P7-A Terminal | `p7-terminal` @ `577277b` | Main process (PTY manager, shell + DevDock prompt, batching, IPC), renderer (xterm view, tabs, palette, repo buttons) and packaging config written; node-pty 1.1.0 proven to spawn a real PTY here (postinstall fixes its macOS `spawn-helper` permission). Not yet built, run or tested. | Fix palette test context and view counts, Settings → Terminal, build + launch (CSP style shim, WebGL fallback), tests, docs, lint/test/e2e/dist, code-review |
+| P7-A Terminal | `p7-terminal` (rebased, resumed 2026-10-26) | Main process (PTY manager, shell + DevDock prompt, batching, IPC), renderer (xterm view, tabs, palette, repo buttons) and packaging config written; node-pty 1.1.0 proven to spawn a real PTY here (postinstall fixes its macOS `spawn-helper` permission). Not yet built, run or tested. | Fix palette test context and view counts, Settings → Terminal, build + launch (CSP style shim, WebGL fallback), tests, docs, lint/test/e2e/dist, code-review |
 | P7-B Providers | `p7-providers` @ `9280edb` | Provider model, PR hub, GitHub + GitLab clients (PRs/MRs, Actions/pipelines, logs, re-run), rate limits + ETag cache, run watcher, settings/IPC/keychain written. Unwired, not type-checked or tested; GitHub demo data only. | Typecheck, handlers + index wiring, GitLab demo data, unit tests, renderer, e2e, docs, code-review |
 | P7-D Website | `p7-website` @ `07d377e` | Site built (Vite + TS), OS-aware downloads + install dialog, release + Pages workflows (not run); build, 21 unit + 9 browser tests, root lint/test pass; Lighthouse 99–100. | DECISIONS rows, code-review, tick P7.10/P7.11 |
 | P7-C AI agents | — | Not started (after P7-A merges). | — |
@@ -516,20 +516,17 @@ exact resume steps. Nothing pushed.
 
 ## Phase 7 — In-app terminal (P7-A, branch `p7-terminal`)
 
-- [~] `P7.01` Terminal view + "Open in DevDock terminal" per repo, real PTY (node-pty) in main, xterm.js tabs/find/copy/paste/clear, batched output, sessions survive view switches, PTYs killed on quit — code written, **not yet built, run or tested**.
-- [~] `P7.02` Per-theme ANSI palette from tokens (`terminalPalette`), Settings → Terminal schema, DevDock prompt (zsh ZDOTDIR + bash rcfile) — code written; **Settings → Terminal UI section not written**; untested.
-- [~] `P7.03` Packaging: node-pty external + only runtime dep, asarUnpack prebuilds, `npmRebuild: false` (N-API prebuilds per arch), spawn-helper chmod postinstall — config written, **dist not run**; notices/DECISIONS/README/CHANGELOG not updated.
+Rebased onto `main` @ 5f6d651 (P7-E accessibility + Slate `--text #CDD9E5`) on 2026-10-26.
 
-### Where P7-A stopped (2026-10-26)
+- [~] `P7.01` Terminal view + "Open in DevDock terminal" per repo (card, panel, palette), real PTY (node-pty) in main, xterm.js tabs/find/copy/paste/clear, batched output, sessions survive view switches, PTYs killed on tab close / window close / quit — e2e `terminal.spec.ts` (echo, view switch keeps the shell, close tab → pid gone, repo `pwd`, `exit` marks the tab), unit `terminal-manager.test.ts`, integration `terminal-ipc.test.ts` + `terminal-pty.test.ts` (real node-pty).
+- [~] `P7.02` Per-theme ANSI palette from tokens (unit `terminal-palette.test.ts`: every theme from tokens.css; Slate on the new tokens), text weight 500 / bold 700 (owner request), font size follows the app by default, Settings → Terminal section (e2e), DevDock prompt for zsh + bash (e2e in a temporary HOME: `➜ clone git:(…)` then `✗` after a change; `zsh -n`/`bash -n`; branch name never run).
+- [~] `P7.03` Packaging: node-pty external + only runtime dep, asarUnpack prebuilds, `npmRebuild: false`, spawn-helper chmod postinstall, notices — **dist not run yet**. CSP unchanged (style shim).
 
-Done (committed WIP): node-pty 1.1.0 installs here and runs under Electron 45 (prebuilt N-API binaries for darwin-arm64/x64, win32-x64/arm64; needed `chmod +x` on spawn-helper → `scripts/fix-node-pty.mjs` postinstall). Shared contract `src/shared/terminal.ts` (+ channels/ipc/settings `terminal` section, view `terminal` after Utilities → 9 views). Main: `src/main/services/terminal/{shell,prompt,batcher,manager}.ts`, handlers `terminal:*` (owner = webContents id, cwd = registered repo or home), index.ts wiring (lazy node-pty require, kill on window destroy/reload and before-quit, e2e hook `terminalPids`), main window loads `?e2e=1` in e2e. Renderer: `features/terminal/{store,TerminalPage,styleShim,theme}.ts(x)` + terminal.css, App/views/Home/palette (`New terminal`, `Open in DevDock terminal — repo`, `terminal <repo>`), Repos card + panel buttons. Typecheck: node/web pass except `tests/unit/palette.test.ts` (context needs `openTerminal`).
+### Where P7-A is (2026-10-26, resumed)
 
-Next, in order:
-1. Fix `tests/unit/palette.test.ts` ctx (add `openTerminal`) and any view-count tests; `tests/e2e/fixtures.ts` `windowFor` must match on URL pathname (main window now has `?e2e=1`).
-2. Settings → Terminal section (shell override, font size, cursor style/blink, scrollback, Use DevDock prompt; note zsh/bash only).
-3. `npm run build`, launch, check: xterm styles under CSP via `styleShim` (constructed stylesheets — verify no CSP console errors), WebGL/DOM fallback, copy/paste, F6 leave.
-4. Tests: unit (palette contrast per theme from tokens.css, prompt generation + real `zsh -i`/`bash -n` run, IPC validation, batcher, manager with `tests/fixtures/pty.ts`, shell resolution), integration (real node-pty: echo hello, exit code, kill), e2e terminal spec (`echo devdock-ok` via `window.__devdockTerminal.text()`, repo `pwd`, close tab kills pid), a11y spec additions.
-5. scripts/notices.mjs (xterm + node-pty licenses), DECISIONS P7-A (deps, P6.14 exception, CSP style shim, F6, npmRebuild false), README + screenshot, CHANGELOG; `npm run lint/test/e2e/dist` + package size before/after; code-review skill.
+Done: steps 1–4 of the old list, docs (DECISIONS P7-A, SPEC 6.8 + 6.7, README, CHANGELOG, notices). Still to do: full `npm run e2e` result, `npm run dist` + package size, README screenshot (`npx playwright test screenshots -g terminal` with `DEVDOCK_SCREENSHOTS=1`), code-review skill + fixes.
+
+Open for the owner: CSP — the shim keeps `style-src 'self'`; the simpler alternative `style-src-attr 'unsafe-inline'` on the main window was not applied (a security loosening needs the owner's yes). Ctrl+K / Ctrl+1–9 go to DevDock on Windows even inside the terminal (zsh/bash Ctrl+K kill-line is lost there).
 
 ---
 

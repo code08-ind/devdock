@@ -264,11 +264,25 @@ Place this file at `docs/SPEC.md` in the new repository. Every build phase refer
 - **Feature switches:** PR actions (off), job triggers (off; per-job allow list), Jira
   transition on Start work (off), and brief location.
 - **Appearance:** theme (5 + System), font size, density.
+- **Terminal** (Phase 7, P7-A): shell (empty = login shell), font size (follows the app by default), cursor style and blink, scrollback, Use DevDock prompt (off).
 - **Accessibility** (Phase 7, P7.13; all off by default): reduce motion (follow the system / always), larger click targets (44 × 44px), underline links, always show the focus ring, read out background events to screen readers.
 - **Notifications:** per type, quiet hours, sound on/off.
 - **Polling intervals**, global shortcut, launch at login, and demo mode.
 - **Import/export settings JSON.** Secrets are never included in the export.
 - **Danger zone:** clear credentials, clear all data.
+
+### 6.8 Terminal (Phase 7, P7-A)
+- A Terminal view with tabs, each a real pseudo-terminal (`node-pty`, in main only) running the
+  user's login shell with their own startup files (oh-my-zsh as is); PowerShell on Windows.
+- Opens in the home folder or a registered repo (repo card, menu-bar panel, palette
+  `terminal <repo>`); the renderer never sends a path.
+- xterm.js: fit, find, copy/paste, links (through the link allowlist), Unicode widths; ANSI
+  colours from the theme's tokens (readable on every theme); text slightly bold like a native
+  terminal.
+- Optional DevDock prompt (zsh/bash, robbyrussell-style with the git branch); DevDock never
+  edits the user's dotfiles.
+- Shells (and what they started) stop when their tab closes, their window closes or reloads, or
+  DevDock quits.
 
 ## 7. Quality bar
 - Every action is reachable from the keyboard and from the command palette.

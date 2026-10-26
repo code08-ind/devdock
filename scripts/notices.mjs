@@ -1,12 +1,27 @@
 // Writes out/THIRD_PARTY_NOTICES.txt: the license of every library bundled into the app.
-// The packaged app carries no node_modules (P6.14), so their LICENSE files must ship this way
+// The packaged app carries no node_modules except node-pty (P6.14, P7-A), so their LICENSE files must ship this way
 // (MIT and similar licenses require the notice to travel with copies). Runs after the build.
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 const root = join(import.meta.dirname, '..')
 /** What the bundles import at their top level: the renderer's and the main process's libraries. */
-const BUNDLED = ['react', 'react-dom', '@tanstack/react-query', 'lucide-react', 'zod', 'msw']
+const BUNDLED = [
+  'react',
+  'react-dom',
+  '@tanstack/react-query',
+  'lucide-react',
+  'zod',
+  'msw',
+  // P7-A terminal: xterm.js and its addons are bundled; node-pty ships as the one runtime module.
+  '@xterm/xterm',
+  '@xterm/addon-fit',
+  '@xterm/addon-search',
+  '@xterm/addon-unicode11',
+  '@xterm/addon-web-links',
+  '@xterm/addon-webgl',
+  'node-pty',
+]
 
 const pkgDir = (name) => join(root, 'node_modules', name)
 const seen = new Map()

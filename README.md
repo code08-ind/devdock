@@ -107,13 +107,24 @@ add what it learns. DevDock itself makes no AI calls: your agent in VS Code does
 (switch `.env.local` safely; values stay encrypted and masked), quick links, and a standup draft
 from your own commits, PRs and ticket moves.
 
+**Terminal** — your own shell in tabs, inside DevDock: your login shell (zsh, bash, fish;
+PowerShell on Windows) with your own setup, so an oh-my-zsh prompt and plugins look as they do
+in Terminal.app, in colours matched to each DevDock theme. Open one in a repo from its card, the
+menu-bar panel or the palette (`terminal <repo>`). Find (`⌘F`), copy, paste, clear; `F6` leaves
+the terminal for the rest of the app. No oh-my-zsh? Settings → Terminal → **Use DevDock prompt**
+gives zsh and bash a robbyrussell-style prompt with the git branch — your `.zshrc` is never
+changed. Closing a tab or quitting DevDock stops the shell and what it started.
+
+![Terminal](docs/screenshots/readme-terminal.png)
+
 **Command palette** — every action, searchable: `⌘K` in the app, or the global shortcut from
 any app. It takes arguments: `watch <PR link>`, `pipeline <PR link>`, `branch NM-1234`,
-`kill 5173`, `open <link name>`. Recent commands come first; a command that can't run says why.
+`kill 5173`, `open <link name>`, `terminal <repo>`. Recent commands come first; a command that can't run says why.
 
 ![Command palette](docs/screenshots/readme-palette.png)
 
-**Settings** — appearance (five themes, font size, density), accessibility (reduce motion,
+**Settings** — appearance (five themes, font size, density), terminal (shell, font size, cursor,
+scrollback, DevDock prompt), accessibility (reduce motion,
 larger click targets, underlined links, an always-visible focus ring, screen-reader announcements
 of notifications), notifications (types, quiet hours,
 history), services and credentials, workflow options (lessons, Start work follow-ups), and
@@ -170,6 +181,9 @@ company needs a specific one, set it in **Settings → Diagnostics → Proxy**.
 - **Only your services.** DevDock talks to the Jira, Bitbucket and Jenkins addresses you enter,
   and opens links only on hosts you allow (Settings → Links). There's no telemetry, no account,
   and no AI service: demo mode makes no network calls at all.
+- **The terminal is your shell.** It runs with your permissions, like Terminal.app; the screens
+  only send keystrokes to it, and only to their own terminals. It starts in a repo you added or
+  your home folder.
 - **Your files stay yours.** It writes only where you ask: ticket briefs and lessons in your
   repo (or briefs in DevDock's own folder — Settings), env profile backups, its settings and
   logs. Env profile values are encrypted at rest and masked until you reveal one.
@@ -179,15 +193,17 @@ company needs a specific one, set it in **Settings → Diagnostics → Proxy**.
 
 ## Keyboard shortcuts
 
-| Shortcut (macOS / Windows)        | Does                                                                    |
-| --------------------------------- | ----------------------------------------------------------------------- |
-| `⌘K` / `Ctrl+K`                   | Command palette (in the app)                                            |
-| `⌘⇧Space` / `Ctrl+Shift+Space`    | Command palette from any app (change it in Settings → General)          |
-| `⌘1` … `⌘8` / `Ctrl+1` … `Ctrl+8` | Home, Today, Repos, Pull requests, Builds, Tickets, Utilities, Settings |
-| `⌘,` / `Ctrl+,`                   | Settings                                                                |
-| `↑` `↓` `Enter`                   | Move through and run palette results                                    |
-| `Esc`                             | Close the palette, a dialog or the menu-bar panel                       |
-| `Tab` / `Shift+Tab`               | Every control is reachable from the keyboard, with a visible focus ring |
+| Shortcut (macOS / Windows)        | Does                                                                              |
+| --------------------------------- | --------------------------------------------------------------------------------- |
+| `⌘K` / `Ctrl+K`                   | Command palette (in the app)                                                      |
+| `⌘⇧Space` / `Ctrl+Shift+Space`    | Command palette from any app (change it in Settings → General)                    |
+| `⌘1` … `⌘9` / `Ctrl+1` … `Ctrl+9` | Home, Today, Repos, Pull requests, Builds, Tickets, Utilities, Terminal, Settings |
+| `F6` / `Shift+F6`                 | In a terminal: leave it for the toolbar / the tabs (Tab goes to the shell)        |
+| `⌘F` / `Ctrl+F`                   | In a terminal: find in its scrollback                                             |
+| `⌘,` / `Ctrl+,`                   | Settings                                                                          |
+| `↑` `↓` `Enter`                   | Move through and run palette results                                              |
+| `Esc`                             | Close the palette, a dialog or the menu-bar panel                                 |
+| `Tab` / `Shift+Tab`               | Every control is reachable from the keyboard, with a visible focus ring           |
 
 ## Develop
 
