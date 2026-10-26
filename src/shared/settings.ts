@@ -13,6 +13,8 @@ export const SETTINGS_VERSION = 1
 export const THEMES = ['system', 'light', 'dark', 'high-contrast', 'paper', 'slate'] as const
 export const FONT_SIZES = [12, 13, 14, 15, 16, 18] as const
 export const DENSITIES = ['comfortable', 'compact'] as const
+/** Reduce motion: follow the OS setting, or always on. */
+export const REDUCE_MOTION = ['system', 'on'] as const
 export const NOTIFICATION_TYPES = [
   'build-finished',
   'pr-comment',
@@ -107,6 +109,18 @@ export const SettingsSchema = z.object({
       theme: z.enum(THEMES).default('system'),
       fontSize: z.literal(FONT_SIZES).default(14),
       density: z.enum(DENSITIES).default('comfortable'),
+    })
+    .prefault({}),
+  accessibility: z
+    .object({
+      reduceMotion: z.enum(REDUCE_MOTION).default('system'),
+      /** Buttons, switches and tabs at least 44px tall and wide (WCAG 2.5.5). */
+      largerTargets: z.boolean().default(false),
+      underlineLinks: z.boolean().default(false),
+      /** The focus ring also after a click, not only after a key press. */
+      focusAlways: z.boolean().default(false),
+      /** Background events (build finished, PR changed) are also read out by screen readers. */
+      announce: z.boolean().default(false),
     })
     .prefault({}),
   notifications: z
@@ -283,6 +297,7 @@ const notificationsShape = SettingsSchema.shape.notifications.unwrap().shape
 /** Deep-partial patch accepted by settings:update. Arrays and records are replaced whole. */
 export const SettingsPatchSchema = z.object({
   appearance: patchOf(SettingsSchema.shape.appearance),
+  accessibility: patchOf(SettingsSchema.shape.accessibility),
   notifications: z
     .object({
       types: z.partialRecord(z.enum(NOTIFICATION_TYPES), z.boolean()).optional(),

@@ -18,6 +18,16 @@ describe('migrate', () => {
     })
     expect(r.ok && r.migratedFrom).toBeNull()
   })
+  it('gives a file from before Accessibility existed every switch at its default (off)', () => {
+    const r = migrate({ version: SETTINGS_VERSION, appearance: { theme: 'dark' } })
+    expect(r.ok && r.settings.accessibility).toEqual({
+      reduceMotion: 'system',
+      largerTargets: false,
+      underlineLinks: false,
+      focusAlways: false,
+      announce: false,
+    })
+  })
   it('upgrades v0 (flat theme key)', () => {
     const r = migrate({ theme: 'paper' })
     expect(r.ok).toBe(true)
@@ -73,6 +83,9 @@ describe('SettingsPatchSchema', () => {
   it('still validates the values it gets', () => {
     expect(SettingsPatchSchema.safeParse({ appearance: { theme: 'neon' } }).success).toBe(false)
     expect(SettingsPatchSchema.safeParse({ appearance: { fontSize: 17 } }).success).toBe(false)
+    expect(SettingsPatchSchema.safeParse({ accessibility: { reduceMotion: 'off' } }).success).toBe(
+      false,
+    )
     expect(SettingsPatchSchema.safeParse({ links: { allowedHosts: ['a b'] } }).success).toBe(false)
     expect(
       SettingsPatchSchema.safeParse({ notifications: { quietHours: { start: '25:00' } } }).success,

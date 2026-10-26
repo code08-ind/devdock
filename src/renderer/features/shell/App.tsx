@@ -27,6 +27,7 @@ import { HomePage } from '../home/HomePage'
 import { TodayPage } from '../today/TodayPage'
 import type { UtilityRequest } from '@shared/utilities'
 import { UtilitiesPage } from '../utilities/UtilitiesPage'
+import { Announcer } from './Announcer'
 import { NavRail } from './NavRail'
 import { EMPTY_COPY, VIEW_ICONS } from './views'
 
@@ -235,6 +236,7 @@ export function App() {
         <StartWorkFor issueKey={startKey} onClose={() => setStartKey(null)} onView={setView} />
       ) : null}
       {commandDialogs.dialogs}
+      <Announcer />
       {requested && requestedRepo ? (
         <ActionDialog
           key={`${requested.id}:${requested.request.action}`}

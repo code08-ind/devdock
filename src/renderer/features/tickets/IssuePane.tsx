@@ -5,6 +5,7 @@ import type { JiraIssueDetail } from '@shared/jira'
 import { bridge, unwrap } from '../../lib/devdock'
 import { useJiraIssue } from '../../lib/jira'
 import { useAction } from '../../lib/useAction'
+import { reducedMotion } from '../../ui/appearance'
 import { Button, IconButton } from '../../ui/Button'
 import { ErrorNotice } from '../../ui/Feedback'
 import { KeyValue } from '../../ui/Text'
@@ -32,8 +33,7 @@ export function IssuePane({
   useEffect(() => {
     const el = ref.current
     if (!el) return
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    el.scrollIntoView({ block: 'nearest', behavior: reduce ? 'auto' : 'smooth' })
+    el.scrollIntoView({ block: 'nearest', behavior: reducedMotion() ? 'auto' : 'smooth' })
     el.focus({ preventScroll: true })
   }, [issueKey])
   const open = (url: string) => void run(unwrap(bridge.app.openExternal({ url })))

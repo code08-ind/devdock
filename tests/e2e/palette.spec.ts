@@ -94,8 +94,9 @@ test('a click outside the palette closes it; a click inside does not', async ({ 
   // Inside: the search box keeps it open.
   await p.getByRole('combobox', { name: 'Command' }).click()
   await expect(p).toBeVisible()
-  // Outside: the dimmed area near the window's corner.
-  const size = win.viewportSize() ?? { width: 1240, height: 820 }
+  // Outside: the dimmed area near the window's corner. Electron has no viewport size, and the
+  // window's size includes the title bar, so ask the page.
+  const size = await win.evaluate(() => ({ width: innerWidth, height: innerHeight }))
   await win.mouse.click(size.width - 20, size.height - 20)
   await expect(p).toBeHidden()
   // And it opens again normally.

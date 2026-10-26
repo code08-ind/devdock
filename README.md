@@ -113,7 +113,9 @@ any app. It takes arguments: `watch <PR link>`, `pipeline <PR link>`, `branch NM
 
 ![Command palette](docs/screenshots/readme-palette.png)
 
-**Settings** — appearance (five themes, font size, density), notifications (types, quiet hours,
+**Settings** — appearance (five themes, font size, density), accessibility (reduce motion,
+larger click targets, underlined links, an always-visible focus ring, screen-reader announcements
+of notifications), notifications (types, quiet hours,
 history), services and credentials, workflow options (lessons, Start work follow-ups), and
 **Diagnostics**: versions, the proxy in use (or your own), Test all connections, and a report
 to send with a bug.
