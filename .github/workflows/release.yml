@@ -1,0 +1,147 @@
+name: Release
+
+# Builds the installers for a version tag and attaches them to a DRAFT GitHub Release.
+# Nothing is published: the owner reviews the draft and presses "Publish release" by hand.
+# After publishing, redeploy the website on Vercel so it shows the new version and sizes
+# (the download links themselves point at /releases/latest/ and need no change).
+# Start it with:  git tag v0.1.0 && git push origin v0.1.0   (the tag must match package.json).
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  check:
+    name: Check version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Tag matches package.json
+        id: version
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          if [ "$TAG" != "v$version" ]; then
+            echo "::error::Tag $TAG does not match package.json version $version (expected v$version)."
+            exit 1
+          fi
+          if ! grep -q "^## \[$version\]" CHANGELOG.md; then
+            echo "::error::CHANGELOG.md has no '## [$version]' section."
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build ${{ matrix.os }}
+    needs: check
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    env:
+      # Unsigned builds in v1 (see README "Unsigned app warnings").
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      # The Electron postinstall download is occasionally skipped; make sure the binary exists.
+      - name: Ensure Electron binary
+        run: node node_modules/electron/install.js
+
+      - name: Lint, format and typecheck
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm test
+
+      # macOS: DMG arm64 + x64. Windows: NSIS Setup + portable (electron-builder.yml).
+      - name: Package
+        run: npm run dist
+
+      - name: Upload installers
+        uses: actions/upload-artifact@v7
+        with:
+          name: installers-${{ matrix.os }}
+          path: |
+            release/${{ needs.check.outputs.version }}/*.dmg
+            release/${{ needs.check.outputs.version }}/*.exe
+          if-no-files-found: error
+          retention-days: 7
+
+  draft:
+    name: Draft release
+    needs: [check, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ github.ref_name }}
+      VERSION: ${{ needs.check.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: installers-*
+          path: installers
+          merge-multiple: true
+
+      # Names carry no version (electron-builder.yml artifactName), so the website's
+      # /releases/latest/download/<name> links always reach the newest published release.
+      - name: Expect four installers
+        run: |
+          ls -l installers
+          for f in DevDock-arm64.dmg DevDock-x64.dmg DevDock-Setup.exe DevDock-Portable.exe; do
+            test -f "installers/$f" || { echo "::error::missing $f"; exit 1; }
+          done
+
+      - name: Checksums
+        working-directory: installers
+        run: sha256sum -- *.dmg *.exe > SHA256SUMS.txt && cat SHA256SUMS.txt
+
+      - name: Release notes from CHANGELOG.md
+        run: |
+          awk -v v="$VERSION" '
+            $0 ~ "^## \\[" v "\\]" { on = 1; next }
+            on && /^## \[/ { exit }
+            on { print }
+          ' CHANGELOG.md > notes.md
+          {
+            echo
+            echo "DevDock isn't code-signed yet: see the README's \"Unsigned app warnings\" for the one-time Gatekeeper / SmartScreen step."
+          } >> notes.md
+          cat notes.md
+
+      # Draft only. Re-running the workflow replaces the files on the same draft.
+      - name: Create or update the draft release
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" installers/* --clobber
+          else
+            gh release create "$TAG" installers/* \
+              --draft --verify-tag \
+              --title "DevDock $VERSION" \
+              --notes-file notes.md
+          fi
