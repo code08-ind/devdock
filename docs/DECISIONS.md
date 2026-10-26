@@ -440,3 +440,13 @@ store with migrations).
 | **QA (P6.D3/D4)**: a general-purpose agent drove the built app in demo mode through the README and every feature: 0 Fail. Fixed after: disabled repo actions say why on hover; Diagnostics values share one column and Node on PATH drops its "v"; the Start work lessons tick says it applies once the repo has a lessons file. Left as is: argument commands (`branch`, `kill`, `watch`) aren't recents (only registry commands are); demo data uses DD-101 for both a PR and a different Jira issue; diagnostics keep repo paths outside the home folder. | Owner approved the QA run; no "qa-tester" agent exists here. |
 | `.claude/worktrees/` (Phase 7 agents' worktrees) is ignored by eslint, prettier and git. | Lint scanned the agents' copies of the repo. |
 
+
+## Phase 7 — Owner decisions (2026-10-26, asked at session start)
+
+| Decision | Why |
+| --- | --- |
+| **Website hosting: Vercel** (static build of `website/`, Git-connected deploys). No custom domain yet. The `p7-website` GitHub Pages workflow is replaced by Vercel config; connecting the Vercel project is done by the owner. | Owner's choice (over the proposed GitHub Pages). |
+| **Installer names without the version** (e.g. `DevDock-mac-arm64.dmg`, `DevDock-win-x64-setup.exe`), so the site links to `/releases/latest/download/<name>` and never needs updating. The version stays in the app, the release title and the tag. | Owner's choice. |
+| **Tag `v0.1.0` after Phase 7 merges** (P7-A–E merged, all checks green). The release workflow makes a draft; the owner publishes it. | Owner's choice. |
+| **Licence: MIT** (`LICENSE` file, `package.json` `"license": "MIT"`). Matches the website calling it free. | Owner's choice. |
+| **GitHub/GitLab re-run / retry / cancel**: behind a Settings **"CI actions"** switch (off by default) *and* a confirmation each time — the same pattern as PR actions. | Owner's choice. |
