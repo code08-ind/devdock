@@ -1,12 +1,5 @@
 import type { PrActionRequest, PrList, PrRef, PullRequest } from '@shared/bitbucket'
-import type {
-  CiActionRequest,
-  CiLog,
-  CiRun,
-  CiRunDetail,
-  CiRunRef,
-  CiRunsResult,
-} from '@shared/ci'
+import type { CiActionRequest, CiLog, CiRun, CiRunDetail, CiRunRef, CiRunsResult } from '@shared/ci'
 import type { HostConnection } from '@shared/hosting'
 import { PROVIDER_NAMES, remoteProject, type CiProvider } from '@shared/providers'
 import { providerWeb, type Settings } from '@shared/settings'
@@ -32,7 +25,11 @@ export interface HostServiceDeps {
   repoRemotes: () => Promise<string[]>
   /** Demo mode: the fixture site, and its projects (no registered repos needed). */
   demo: { config: HostConfig; projects: string[] }
-  makeClient: (http: HttpClient, config: HostConfig, projects: () => Promise<string[]>) => HostClient
+  makeClient: (
+    http: HttpClient,
+    config: HostConfig,
+    projects: () => Promise<string[]>,
+  ) => HostClient
 }
 
 /**

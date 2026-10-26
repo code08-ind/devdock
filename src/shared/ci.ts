@@ -7,8 +7,7 @@ import { CI_PROVIDERS, type CiProvider } from './providers'
  */
 
 /** `owner/repo` (GitHub) or `group/sub/project` (GitLab); each part a slug. */
-const PROJECT =
-  /^[A-Za-z0-9][A-Za-z0-9._-]{0,99}(?:\/[A-Za-z0-9][A-Za-z0-9._-]{0,99}){1,20}$/
+const PROJECT = /^[A-Za-z0-9][A-Za-z0-9._-]{0,99}(?:\/[A-Za-z0-9][A-Za-z0-9._-]{0,99}){1,20}$/
 
 export const ProjectPathSchema = z
   .string()
@@ -21,7 +20,11 @@ export const CiRunRefSchema = z
     provider: z.enum(CI_PROVIDERS),
     project: ProjectPathSchema,
     /** GitHub run id / GitLab pipeline id. */
-    id: z.number().int().positive().max(2 ** 53),
+    id: z
+      .number()
+      .int()
+      .positive()
+      .max(2 ** 53),
   })
   .refine((r) => r.provider === 'gitlab' || r.project.split('/').length === 2, {
     message: 'A GitHub repository is owner/repo',

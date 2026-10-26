@@ -123,7 +123,16 @@ export function useMainEvents(): void {
   useBridgeEvent('repos:changed', onRepoChanged)
 }
 
-/** A service is set up (its URL is saved) or demo mode stands in for it. */
-export function isSetUp(settings: Settings, service: 'jira' | 'bitbucket' | 'jenkins'): boolean {
+/**
+ * A service is set up (its URL is saved) or demo mode stands in for it. GitHub and GitLab
+ * (P7) are on only once turned on in Settings (they default to the public sites); Bitbucket
+ * can be turned off too.
+ */
+export function isSetUp(
+  settings: Settings,
+  service: 'jira' | 'bitbucket' | 'jenkins' | 'github' | 'gitlab',
+): boolean {
+  if (service === 'github' || service === 'gitlab') return settings[service].enabled
+  if (service === 'bitbucket' && !settings.bitbucket.enabled) return false
   return settings.general.demoMode || settings[service].baseUrl !== ''
 }

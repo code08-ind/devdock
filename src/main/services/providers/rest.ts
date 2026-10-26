@@ -61,7 +61,8 @@ export class ProviderRest {
       headers,
       body: opts.body === undefined ? undefined : JSON.stringify(opts.body),
     })
-    if (res.status === 304 && cached) return { status: 200, headers: res.headers, body: cached.body }
+    if (res.status === 304 && cached)
+      return { status: 200, headers: res.headers, body: cached.body }
     if (!res.ok) throw await this.failure(res)
     const body = await this.body(res)
     const etag = res.headers.get('etag')
@@ -105,7 +106,7 @@ export class ProviderRest {
       method: string
       headers: Record<string, string>
       body?: string
-      redirect?: RequestRedirect
+      redirect?: 'follow' | 'manual'
     },
   ): Promise<Response> {
     this.checkBlocked()

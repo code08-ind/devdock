@@ -148,7 +148,8 @@ export class GitHubClient implements HostClient {
     const res = await this.rest.json(`${this.api}/user`)
     const u = obj(res.body)
     const login = text(u.login)
-    if (!login) throw new ServiceError('bad_response', "GitHub didn't say who the token belongs to.")
+    if (!login)
+      throw new ServiceError('bad_response', "GitHub didn't say who the token belongs to.")
     this.me = Promise.resolve({ login, name: text(u.name) ?? login })
     return {
       status: res.status,
@@ -161,9 +162,7 @@ export class GitHubClient implements HostClient {
 
   async list(list: PrList, now = Date.now()): Promise<PullRequest[]> {
     const since = new Date(now - MERGED_WINDOW_DAYS * 86_400_000).toISOString().slice(0, 10)
-    const hits = (
-      await Promise.all(SEARCH[list](since).map((q) => this.search(q)))
-    ).flat()
+    const hits = (await Promise.all(SEARCH[list](since).map((q) => this.search(q)))).flat()
     const unique = [
       ...new Map(
         hits.map((h) => [`${h.owner}/${h.repo}#${h.number}`.toLowerCase(), h] as const),
@@ -219,7 +218,9 @@ export class GitHubClient implements HostClient {
         return (Array.isArray(runs) ? runs : []).map((r) => toRun(r, project))
       } catch (err) {
         if (err instanceof ServiceError && (err.kind === 'not_found' || err.kind === 'forbidden')) {
-          notes.push(`${project}: ${err.kind === 'not_found' ? 'not found, or the token has no access' : 'no Actions access with this token'}`)
+          notes.push(
+            `${project}: ${err.kind === 'not_found' ? 'not found, or the token has no access' : 'no Actions access with this token'}`,
+          )
           return []
         }
         throw err
@@ -245,7 +246,10 @@ export class GitHubClient implements HostClient {
     const list = obj(jobs.body).jobs
     return {
       run,
-      jobs: (Array.isArray(list) ? list : []).flatMap((j): CiJob[] => toJob(j) ?? []),
+      jobs: (Array.isArray(list) ? list : []).flatMap((j): CiJob[] => {
+        const job = toJob(j)
+        return job ? [job] : []
+      }),
     }
   }
 
@@ -376,4 +380,3 @@ function hidden(err: unknown): null {
   }
   throw err
 }
-

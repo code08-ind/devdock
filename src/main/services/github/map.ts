@@ -1,11 +1,5 @@
 import { prKey, type BuildState, type BuildStatus } from '@shared/bitbucket'
-import {
-  ciRunKey,
-  CiRunRefSchema,
-  type CiJob,
-  type CiRun,
-  type CiState,
-} from '@shared/ci'
+import { ciRunKey, CiRunRefSchema, type CiJob, type CiRun, type CiState } from '@shared/ci'
 import { num, obj, text } from '../json'
 import { voteCounts, type PrBase } from '../bitbucket/adapter'
 import { epoch, firstLine, serverRef } from '../providers/common'
@@ -76,7 +70,13 @@ export function toPr(raw: unknown, reviews: unknown[]): PrBase {
     unresolvedComments: null,
     // `mergeable` is null while GitHub computes it; `dirty` means conflicts.
     conflicts:
-      p.mergeable_state === 'dirty' ? true : p.mergeable === false ? true : p.mergeable === true ? false : null,
+      p.mergeable_state === 'dirty'
+        ? true
+        : p.mergeable === false
+          ? true
+          : p.mergeable === true
+            ? false
+            : null,
     createdAt: text(p.created_at) ?? new Date(0).toISOString(),
     updatedAt: text(p.updated_at) ?? text(p.created_at) ?? new Date(0).toISOString(),
     closedAt: merged ?? text(p.closed_at),
@@ -234,9 +234,13 @@ export function toJob(raw: unknown): CiJob | null {
 }
 
 /** `owner/repo` from a search hit's `repository_url` (`…/repos/{owner}/{repo}`). */
-export function repoOfSearchHit(raw: unknown): { owner: string; repo: string; number: number } | null {
+export function repoOfSearchHit(
+  raw: unknown,
+): { owner: string; repo: string; number: number } | null {
   const hit = obj(raw)
   const m = /\/repos\/([^/]+)\/([^/]+)$/.exec(text(hit.repository_url) ?? '')
   const number = num(hit.number)
-  return m && number !== null ? { owner: decodeURIComponent(m[1]!), repo: decodeURIComponent(m[2]!), number } : null
+  return m && number !== null
+    ? { owner: decodeURIComponent(m[1]!), repo: decodeURIComponent(m[2]!), number }
+    : null
 }

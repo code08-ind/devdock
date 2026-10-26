@@ -171,13 +171,11 @@ function serviceHosts(settings: Settings): string[] {
     settings.bitbucket.baseUrl,
     settings.jenkins.baseUrl,
     ...hosting,
-  ].flatMap(
-    (url) => {
-      try {
-        return url ? [new URL(url).hostname] : []
-      } catch {
-        return []
-      }
-    },
-  )
+  ].flatMap((url) => {
+    try {
+      return url ? [new URL(url).hostname] : []
+    } catch {
+      return []
+    }
+  })
 }

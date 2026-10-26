@@ -161,7 +161,6 @@ const PRS: DemoPr[] = [
   },
 ]
 
-type RunStatus = 'completed' | 'in_progress' | 'queued'
 interface DemoStep {
   name: string
   fails?: boolean
@@ -205,7 +204,11 @@ const RUNS: DemoRun[] = [
     takesMin: 6,
     fails: false,
     jobs: [
-      { id: 70011, name: 'build', steps: [{ name: 'Set up job' }, { name: 'Install' }, { name: 'Build' }] },
+      {
+        id: 70011,
+        name: 'build',
+        steps: [{ name: 'Set up job' }, { name: 'Install' }, { name: 'Build' }],
+      },
       { id: 70012, name: 'test', steps: [{ name: 'Set up job' }, { name: 'Run unit tests' }] },
     ],
   },
@@ -221,11 +224,19 @@ const RUNS: DemoRun[] = [
     takesMin: 5,
     fails: true,
     jobs: [
-      { id: 70021, name: 'build', steps: [{ name: 'Set up job' }, { name: 'Install' }, { name: 'Build' }] },
+      {
+        id: 70021,
+        name: 'build',
+        steps: [{ name: 'Set up job' }, { name: 'Install' }, { name: 'Build' }],
+      },
       {
         id: 70022,
         name: 'test',
-        steps: [{ name: 'Set up job' }, { name: 'Run unit tests', fails: true }, { name: 'Upload coverage' }],
+        steps: [
+          { name: 'Set up job' },
+          { name: 'Run unit tests', fails: true },
+          { name: 'Upload coverage' },
+        ],
       },
     ],
   },
@@ -256,7 +267,13 @@ const RUNS: DemoRun[] = [
     agoMin: 65,
     takesMin: 3,
     fails: false,
-    jobs: [{ id: 70031, name: 'deploy-preview', steps: [{ name: 'Set up job' }, { name: 'Deploy to preview' }] }],
+    jobs: [
+      {
+        id: 70031,
+        name: 'deploy-preview',
+        steps: [{ name: 'Set up job' }, { name: 'Deploy to preview' }],
+      },
+    ],
   },
 ]
 
@@ -276,10 +293,7 @@ const repoJson = (repo: string) => ({
   allow_rebase_merge: true,
 })
 const refused = (status: number, message: string) =>
-  HttpResponse.json(
-    { message, documentation_url: 'https://docs.github.com/rest' },
-    { status },
-  )
+  HttpResponse.json({ message, documentation_url: 'https://docs.github.com/rest' }, { status })
 
 const authed = (request: Request) => /^Bearer .+/.test(request.headers.get('authorization') ?? '')
 
@@ -396,7 +410,11 @@ export function githubHandlers({ speed = 1 }: { speed?: number } = {}): RequestH
     const { failed } = runTimes(run)
     const lines = [
       `2026-10-26T09:00:00.0000000Z ##[group]Run ${job.steps[1]?.name ?? job.name}`,
-      ...Array.from({ length: 40 }, (_, i) => `2026-10-26T09:00:${String(i).padStart(2, '0')}.0000000Z \u001b[36minfo\u001b[0m step output line ${i + 1}`),
+      ...Array.from(
+        { length: 40 },
+        (_, i) =>
+          `2026-10-26T09:00:${String(i).padStart(2, '0')}.0000000Z \u001b[36minfo\u001b[0m step output line ${i + 1}`,
+      ),
     ]
     if (failed && job.steps.some((s) => s.fails)) {
       lines.push(
@@ -489,20 +507,26 @@ export function githubHandlers({ speed = 1 }: { speed?: number } = {}): RequestH
       const pr = find(params.repo, params.n)
       if (!pr) return refused(404, 'Not Found')
       const body = (await request.json()) as { sha?: string; merge_method?: string }
-      if (body.merge_method === 'merge') return refused(405, 'Merge commits are not allowed on this repository.')
+      if (body.merge_method === 'merge')
+        return refused(405, 'Merge commits are not allowed on this repository.')
       if (body.sha && body.sha !== pullJson(pr).head.sha)
         return refused(409, 'Head branch was modified. Review and try the merge again.')
       if (!pr.mergeable) return refused(405, 'Pull Request is not mergeable')
       if (!pr.reviews.some(([, s]) => s === 'APPROVED'))
-        return refused(405, 'At least 1 approving review is required by reviewers with write access.')
+        return refused(
+          405,
+          'At least 1 approving review is required by reviewers with write access.',
+        )
       pr.state = 'merged'
       pr.updated = 0
-      return HttpResponse.json({ merged: true, message: 'Pull Request successfully merged', sha: sha('m') })
+      return HttpResponse.json({
+        merged: true,
+        message: 'Pull Request successfully merged',
+        sha: sha('m'),
+      })
     }),
     http.get(`${API}/repos/acme/:repo/commits/:sha/check-runs`, ({ params }) => {
-      const pr = prs.find(
-        (p) => p.repo === params.repo && pullJson(p).head.sha === params.sha,
-      )
+      const pr = prs.find((p) => p.repo === params.repo && pullJson(p).head.sha === params.sha)
       const checks = pr ? pr.checks.map(([name, c]) => [name, checkState(pr, c)] as const) : []
       return HttpResponse.json({
         total_count: checks.length,
@@ -548,12 +572,16 @@ export function githubHandlers({ speed = 1 }: { speed?: number } = {}): RequestH
       return HttpResponse.json({ total_count: jobs.length, jobs })
     }),
     http.get(`${API}/repos/acme/:repo/actions/jobs/:job/logs`, ({ params }) => {
-      const run = runs.find((r) => r.repo === params.repo && r.jobs.some((j) => j.id === Number(params.job)))
+      const run = runs.find(
+        (r) => r.repo === params.repo && r.jobs.some((j) => j.id === Number(params.job)),
+      )
       if (!run) return refused(404, 'Not Found')
       // Like GitHub: a redirect to short-lived storage, fetched without the token.
       return new HttpResponse(null, {
         status: 302,
-        headers: { location: `${DEMO_GITHUB}/_blob/logs/${params.repo}/${params.job}.txt?sig=demo` },
+        headers: {
+          location: `${DEMO_GITHUB}/_blob/logs/${params.repo}/${params.job}.txt?sig=demo`,
+        },
       })
     }),
     http.get(`${DEMO_GITHUB}/_blob/logs/:repo/:file`, ({ params, request }) => {

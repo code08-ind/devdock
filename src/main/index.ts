@@ -23,16 +23,24 @@ import {
 } from 'electron'
 import type { EventChannel, View } from '@shared/channels'
 import type { EventPayload } from '@shared/ipc'
-import type { Settings } from '@shared/settings'
+import { enabledProviders, type Settings } from '@shared/settings'
 import { demoHandlers } from './demo/handlers'
 import { createHandlers } from './handlers'
 import { GitActions } from './services/git/actions'
 import { GitRunner } from './services/git/exec'
-import { remoteUrls } from './services/git/repo'
+import { remotesByRepo, remoteUrls } from './services/git/repo'
 import { editorCommand, editorFallback, launchDetached, terminalCommand } from './services/open'
 import { DEMO_BITBUCKET } from './demo/bitbucket'
 import { DEMO_JENKINS } from './demo/jenkins'
 import { DEMO_JIRA } from './demo/jira'
+import { DEMO_GITHUB_CONFIG } from './demo/github'
+import { DEMO_GITLAB_CONFIG } from './demo/gitlab'
+import { CiWatcher } from './services/ci/watcher'
+import { GitHubClient } from './services/github/client'
+import { GitLabClient } from './services/gitlab/client'
+import { configuredHosts, detectHosts } from './services/providers/detect'
+import { PrHub } from './services/providers/hub'
+import { HostService } from './services/providers/service'
 import { BitbucketService } from './services/bitbucket/service'
 import { PrWatcher } from './services/bitbucket/watcher'
 import { Scheduler } from './services/scheduler'
@@ -313,9 +321,33 @@ function start(): void {
     repoRemotes: () => remoteUrls(git, store.get().repos),
     demo: DEMO_BITBUCKET,
   })
+  const repoRemotes = () => remoteUrls(git, store.get().repos)
+  // P7.05 / P7.06: GitHub and GitLab, each off until turned on in Settings.
+  const github = new HostService({
+    provider: 'github',
+    http,
+    settings: () => store.get(),
+    token: () => secrets.get('github.token'),
+    repoRemotes,
+    demo: DEMO_GITHUB_CONFIG,
+    makeClient: (h, config, projects) => new GitHubClient(h, config, projects),
+  })
+  const gitlab = new HostService({
+    provider: 'gitlab',
+    http,
+    settings: () => store.get(),
+    token: () => secrets.get('gitlab.token'),
+    repoRemotes,
+    demo: DEMO_GITLAB_CONFIG,
+    makeClient: (h, config, projects) => new GitLabClient(h, config, projects),
+  })
+  const hosts = { github, gitlab }
+  // P7.04: the watchers, Today and lists reach every provider through the hub.
+  const prs = new PrHub({ bitbucket, github, gitlab })
+  const myPrs = () => prs.listAll(enabledProviders(store.get()), 'mine')
   const prWatcher = new PrWatcher({
     file: join(userData, 'watches.json'),
-    bitbucket,
+    bitbucket: prs,
     notify: (n) => notifications.notify(n),
     onChange: () => {
       broadcast('watch:changed', prWatcher.list())
@@ -326,16 +358,28 @@ function start(): void {
     http,
     settings: () => store.get(),
     token: () => secrets.get('jenkins.token'),
-    myWork: () => collectMyWork(git, store.get().repos, () => bitbucket.list('mine')),
+    myWork: () => collectMyWork(git, store.get().repos, myPrs),
     demo: DEMO_JENKINS,
   })
   const buildWatcher = new BuildWatcher({
     file: join(userData, 'build-watches.json'),
     jenkins,
-    bitbucket,
+    bitbucket: prs,
     notify: (n) => notifications.notify(n),
     onChange: () => {
       broadcast('buildwatch:changed', buildWatcher.list())
+      tray?.refresh()
+    },
+  })
+  const ciWatcher = new CiWatcher({
+    file: join(userData, 'ci-watches.json'),
+    ci: {
+      runInfo: (ref) => hosts[ref.provider].runInfo(ref),
+      site: (provider) => hosts[provider].site(),
+    },
+    notify: (n) => notifications.notify(n),
+    onChange: () => {
+      broadcast('ciwatch:changed', ciWatcher.list())
       tray?.refresh()
     },
   })
@@ -350,7 +394,8 @@ function start(): void {
     run: () => buildWatcher.poll(),
     intervalsMs,
   })
-  const pollers = [prPolling, buildPolling]
+  const ciPolling = new Scheduler({ name: 'ci watcher', run: () => ciWatcher.poll(), intervalsMs })
+  const pollers = [prPolling, buildPolling, ciPolling]
   const openRepo = async (repo: RepoConfig, target: OpenTarget): Promise<void> => {
     if (target === 'files') {
       const error = await shell.openPath(repo.path)
@@ -431,6 +476,17 @@ function start(): void {
       devServers,
       jira,
       bitbucket,
+      prs,
+      hosts,
+      ciWatcher,
+      detectProviders: async () => {
+        const repoList = store.get().repos
+        const remotes = await remotesByRepo(git, repoList)
+        return detectHosts(
+          repoList.map((repo, i) => ({ name: repo.name, remotes: remotes[i] ?? [] })),
+          configuredHosts(store.get()),
+        )
+      },
       prWatcher,
       jenkins,
       buildWatcher,
@@ -444,7 +500,7 @@ function start(): void {
               http.demo
                 ? Promise.resolve(demoCommits(from))
                 : gitCommits(git, store.get().repos, store.get().standup.authorEmail, from, to),
-            prs: (list) => bitbucket.list(list),
+            prs: (list) => prs.listAll(enabledProviders(store.get()), list),
             jira,
           },
           new Date(),
@@ -496,9 +552,11 @@ function start(): void {
   applyLoginItem(store.get())
   applyProxy(store.get())
 
+  // One per poller, in `pollers` order: the settings each one reads from.
   const signatures = (s: Settings) => [
-    JSON.stringify([s.bitbucket, s.general.demoMode]),
-    JSON.stringify([s.jenkins, s.general.demoMode]),
+    JSON.stringify([s.bitbucket, s.github, s.gitlab, s.general.demoMode]),
+    JSON.stringify([s.jenkins, s.bitbucket, s.github, s.gitlab, s.general.demoMode]),
+    JSON.stringify([s.github, s.gitlab, s.general.demoMode]),
   ]
   let lastSignatures = signatures(store.get())
   store.onChange((s) => {
@@ -555,7 +613,7 @@ function start(): void {
     : join(app.getAppPath(), 'build', 'tray')
   const trayState = () => ({
     pausedUntil: notifications.getPausedUntil(),
-    watched: watchedForTray(buildWatcher.list(), prWatcher.list()),
+    watched: watchedForTray(buildWatcher.list(), prWatcher.list(), ciWatcher.list()),
   })
   tray = createTray(trayDir, trayState, {
     open: showMain,
@@ -585,6 +643,7 @@ function start(): void {
         trayStatus: () => tray?.status() ?? null,
         trayState,
         pollBuilds: () => buildPolling.runNow(),
+        pollRuns: () => ciPolling.runNow(),
       },
     })
   }

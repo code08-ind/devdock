@@ -148,10 +148,7 @@ export class CiWatcher {
   private refFromLink(link: string): CiRunRef {
     const parsed = parseRunLink(link)
     if (!parsed) {
-      throw new WatchError(
-        'invalid',
-        "That isn't a GitHub Actions run or GitLab pipeline link.",
-      )
+      throw new WatchError('invalid', "That isn't a GitHub Actions run or GitLab pipeline link.")
     }
     const site = this.deps.ci.site(parsed.ref.provider)
     const name = PROVIDER_NAMES[parsed.ref.provider]

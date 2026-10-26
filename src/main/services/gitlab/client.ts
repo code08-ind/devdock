@@ -159,7 +159,10 @@ export class GitLabClient implements HostClient {
         // `sha`: GitLab refuses (409) when the source branch moved since we checked.
         await this.rest.json(`${mr}/merge`, { method: 'PUT', body: { sha: before.sourceCommit } })
       } else if (action === 'approve') {
-        await this.rest.json(`${mr}/approve`, { method: 'POST', body: { sha: before.sourceCommit } })
+        await this.rest.json(`${mr}/approve`, {
+          method: 'POST',
+          body: { sha: before.sourceCommit },
+        })
       } else {
         throw new ServiceError('forbidden', "GitLab's API has no “request changes”.")
       }
@@ -208,7 +211,10 @@ export class GitLabClient implements HostClient {
     ])
     return {
       run,
-      jobs: (Array.isArray(jobs.body) ? jobs.body : []).flatMap((j): CiJob[] => toGlJob(j) ?? []),
+      jobs: (Array.isArray(jobs.body) ? jobs.body : []).flatMap((j): CiJob[] => {
+        const job = toGlJob(j)
+        return job ? [job] : []
+      }),
     }
   }
 

@@ -50,7 +50,9 @@ export function prRefFromLink(link: string, site: SiteFor): { ref: PrRef; site: 
       'other-site',
       expected
         ? `That link is on ${parsed.baseUrl}, but DevDock reads ${name} from ${expected}. Change it in Settings → ${name}.`
-        : `Set up ${name} in Settings → ${name} first.`,
+        : parsed.provider === 'bitbucket'
+          ? 'Turn on Bitbucket and set its server URL in Settings → Bitbucket first.'
+          : `Turn on ${name} in Settings → ${name} first.`,
     )
   }
   return { ref: onSite.ref, site: expected! }

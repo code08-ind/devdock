@@ -253,7 +253,14 @@ export const contract = {
   'ci:runs': { req: z.object({ provider: z.enum(CI_PROVIDERS) }), res: CiRunsResultSchema },
   'ci:run': { req: CiRunRefSchema, res: CiRunDetailSchema },
   'ci:log': {
-    req: z.object({ ref: CiRunRefSchema, jobId: z.number().int().positive().max(2 ** 53) }),
+    req: z.object({
+      ref: CiRunRefSchema,
+      jobId: z
+        .number()
+        .int()
+        .positive()
+        .max(2 ** 53),
+    }),
     res: CiLogSchema,
   },
   'ci:action': { req: CiActionRequestSchema, res: CiRunSchema },

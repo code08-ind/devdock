@@ -358,10 +358,12 @@ export function enabledProviders(s: Pick<Settings, Provider>): Provider[] {
 }
 
 /** Providers whose CI DevDock shows (GitHub Actions, GitLab pipelines). */
-export const enabledCi = (s: Pick<Settings, Provider>) =>
-  CI_PROVIDERS.filter((p) => s[p].enabled)
+export const enabledCi = (s: Pick<Settings, Provider>) => CI_PROVIDERS.filter((p) => s[p].enabled)
 
 /** The site a GitHub / GitLab setting points at: its base URL, or the public site. */
-export function providerWeb(s: Pick<Settings, 'github' | 'gitlab'>, p: 'github' | 'gitlab'): string {
+export function providerWeb(
+  s: Pick<Settings, 'github' | 'gitlab'>,
+  p: 'github' | 'gitlab',
+): string {
   return s[p].baseUrl || (p === 'github' ? GITHUB_WEB : GITLAB_WEB)
 }
