@@ -59,7 +59,7 @@ describe('provider IPC (P7-B)', () => {
     )
     expect(off).toMatchObject({
       ok: false,
-      error: { code: 'NOT_ALLOWED', message: expect.stringMatching(/Settings → CI actions/) },
+      error: { code: 'NOT_ALLOWED', message: expect.stringMatching(/Settings → Actions/) },
     })
     expect(fetch).not.toHaveBeenCalled()
     // Without the confirmation the payload itself is refused.

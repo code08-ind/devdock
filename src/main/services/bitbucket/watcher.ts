@@ -29,7 +29,7 @@ export interface PrWatcherDeps {
    * Where PRs are read: the provider hub (P7.04) — Bitbucket, GitHub or GitLab by the ref's
    * provider. `site(provider)` is where that provider's links must point.
    */
-  bitbucket: { pr(ref: PrRef): Promise<PullRequest>; site(provider?: Provider): string | null }
+  bitbucket: { pr(ref: PrRef): Promise<PullRequest>; site(provider: Provider): string | null }
   notify: (n: NotifyInput) => void
   /** The list changed (added, removed, polled): tell the renderer. */
   onChange: () => void

@@ -13,7 +13,7 @@ versions follow [Semantic Versioning](https://semver.org/).
 - **GitHub Actions and GitLab pipelines** in Builds: my recent runs, jobs and steps, the end of
   each job's log, watch a run (or paste its link anywhere, `watch <run link>` in the palette),
   one notification when it finishes and the tray dot follows it.
-- **Settings → CI actions** (off by default): re-run / retry failed jobs and cancel, each
+- **Settings → Actions**: PR actions (now for every provider) and **CI actions** (off by default): re-run / retry failed jobs and cancel, each
   confirmed. Settings → Detect reads your repos' remotes; Bitbucket can be turned off.
 
 ## [0.1.0] — 2026-10-25

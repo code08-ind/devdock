@@ -5,7 +5,7 @@
 import type { App, WebContents } from 'electron'
 import type { Settings } from '@shared/settings'
 // Relative and dependency-free: electron.vite.config.ts imports this file (CSP), outside the alias.
-import { GITHUB_WEB, GITLAB_WEB } from '../shared/providers'
+import { providerWeb } from '../shared/providers'
 import { DEMO_HOSTS, DEMO_ORIGIN } from './demo/origin'
 
 export const WEB_PREFERENCES = {
@@ -166,7 +166,7 @@ export function linkHosts(settings: Settings, demo: boolean): string[] {
 function serviceHosts(settings: Settings): string[] {
   // GitHub / GitLab (P7): their site, public or self-hosted, while turned on.
   const hosting = (['github', 'gitlab'] as const).flatMap((p) =>
-    settings[p].enabled ? [settings[p].baseUrl || (p === 'github' ? GITHUB_WEB : GITLAB_WEB)] : [],
+    settings[p].enabled ? [providerWeb(settings, p)] : [],
   )
   return [
     settings.jira.baseUrl,

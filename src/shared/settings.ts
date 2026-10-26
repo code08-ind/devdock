@@ -7,7 +7,7 @@ import { MAX_QUICK_LINKS, QuickLinkSchema } from './links'
 import { ProxyServerSchema } from './diagnostics'
 import { DEFAULT_LESSONS_PATH, LessonsPathSchema } from './lessons'
 import { HolidaySchema } from './standup'
-import { CI_PROVIDERS, GITHUB_WEB, GITLAB_WEB, PROVIDERS, type Provider } from './providers'
+import { CI_PROVIDERS, PROVIDERS, providerWeb, type Provider } from './providers'
 
 export const SETTINGS_VERSION = 1
 
@@ -360,10 +360,4 @@ export function enabledProviders(s: Pick<Settings, Provider>): Provider[] {
 /** Providers whose CI DevDock shows (GitHub Actions, GitLab pipelines). */
 export const enabledCi = (s: Pick<Settings, Provider>) => CI_PROVIDERS.filter((p) => s[p].enabled)
 
-/** The site a GitHub / GitLab setting points at: its base URL, or the public site. */
-export function providerWeb(
-  s: Pick<Settings, 'github' | 'gitlab'>,
-  p: 'github' | 'gitlab',
-): string {
-  return s[p].baseUrl || (p === 'github' ? GITHUB_WEB : GITLAB_WEB)
-}
+export { providerWeb }

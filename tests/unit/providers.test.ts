@@ -227,6 +227,31 @@ describe('ProviderRest', () => {
     expect(stripAnsi('\u001b[1;32mok\u001b[0m')).toBe('ok')
   })
 
+  it('log redirects: every hop checked; an opaque redirect is refused, not followed with the token', async () => {
+    const http = new ScriptedHttp([
+      (r) =>
+        r.url === 'https://api/two'
+          ? new Response(null, { status: 302, headers: { location: 'https://blob/a' } })
+          : undefined,
+      (r) =>
+        r.url === 'https://blob/a'
+          ? new Response(null, { status: 302, headers: { location: 'http://blob/b' } })
+          : undefined,
+      (r) => (r.url === 'https://api/opaque' ? Response.error() : undefined),
+      (r) =>
+        r.url === 'https://api/big' ? new Response(`${'x'.repeat(500_000)}\nlast line`) : undefined,
+    ])
+    const rest = new ProviderRest(http, target)
+    await expect(rest.textTail('https://api/two', 100)).rejects.toThrow(/won't follow/)
+    expect(http.requests.some((r) => r.url.startsWith('http://'))).toBe(false)
+    await expect(rest.textTail('https://api/opaque', 100)).rejects.toThrow(/won't follow/)
+    expect(http.requests.filter((r) => r.url === 'https://api/opaque')).toHaveLength(1)
+    expect(await rest.textTail('https://api/big', 64)).toEqual({
+      text: 'last line',
+      truncated: true,
+    })
+  })
+
   it("the server's words are added to a refused request (GitHub and GitLab shapes)", () => {
     expect(hostMessage('{"message":"Validation Failed","errors":[{"message":"no"}]}')).toBe(
       'Validation Failed no',

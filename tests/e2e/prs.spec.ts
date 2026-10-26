@@ -145,7 +145,7 @@ test('global palette window: `watch <link>` is handed to the main window', async
   await expect(win.getByRole('radio', { name: 'Watched (1)' })).toBeAttached()
 })
 
-test('Settings → Bitbucket: Test connection, Detect, PR actions behind a warning; approve and a typed merge', async ({
+test('Settings → Bitbucket: Test connection, Detect; Settings → Actions: PR actions behind a warning; approve and a typed merge', async ({
   launched,
 }) => {
   const { win } = launched
@@ -157,7 +157,9 @@ test('Settings → Bitbucket: Test connection, Detect, PR actions behind a warni
   await expect(win.getByText('Demo site is Bitbucket Data Center 8.19.1')).toBeVisible()
 
   // Turning PR actions on asks first; Cancel leaves them off.
-  const toggle = section.getByRole('switch', { name: 'PR actions (approve, needs work, merge)' })
+  const toggle = win
+    .getByRole('region', { name: 'Actions' })
+    .getByRole('switch', { name: 'PR actions (approve, needs work, merge)' })
   await toggle.click()
   const warn = win.getByRole('dialog', { name: 'Turn on PR actions?' })
   await expect(warn).toContainText('Use only if your role permits.')

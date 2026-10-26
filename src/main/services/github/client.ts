@@ -107,6 +107,8 @@ const SEARCH: Record<PrList, (since: string) => string[]> = {
 const LIST_LIMIT = 30
 const DETAIL_CONCURRENCY = 4
 const RUNS_PER_REPO = 10
+/** Recent runs read per repo, before keeping mine and those on my branches. */
+const RECENT_RUNS_READ = 30
 const RUNS_LIMIT = 40
 
 interface Me {
@@ -212,10 +214,13 @@ export class GitHubClient implements HostClient {
     const perRepo = await mapLimit(projects, DETAIL_CONCURRENCY, async (project) => {
       try {
         const res = await this.rest.json(
-          `${this.api}/repos/${encodePath(project)}/actions/runs?actor=${encodeURIComponent(me.login)}&per_page=${RUNS_PER_REPO}`,
+          `${this.api}/repos/${encodePath(project)}/actions/runs?per_page=${RECENT_RUNS_READ}`,
         )
-        const runs = obj(res.body).workflow_runs
-        return (Array.isArray(runs) ? runs : []).map((r) => toRun(r, project))
+        const raw = obj(res.body).workflow_runs
+        return mineAndMyBranches(
+          (Array.isArray(raw) ? raw : []).map((r) => toRun(r, project)),
+          me.login,
+        ).slice(0, RUNS_PER_REPO)
       } catch (err) {
         if (err instanceof ServiceError && (err.kind === 'not_found' || err.kind === 'forbidden')) {
           notes.push(
@@ -368,6 +373,17 @@ export class GitHubClient implements HostClient {
     )
     return this.me
   }
+}
+
+/**
+ * P7.05 "runs for my branches/PRs": runs I started, plus runs on a branch I started one on (a
+ * bot, a reviewer's re-run or a scheduled run on my PR branch) — newest first, as listed.
+ */
+export function mineAndMyBranches(runs: CiRun[], login: string): CiRun[] {
+  const me = login.toLowerCase()
+  const mine = (r: CiRun) => r.actor?.toLowerCase() === me
+  const branches = new Set(runs.filter(mine).flatMap((r) => r.branch ?? []))
+  return runs.filter((r) => mine(r) || (r.branch !== null && branches.has(r.branch)))
 }
 
 /** Each segment encoded, slashes kept (`owner/repo`). */

@@ -37,7 +37,7 @@ export interface BuildWatcherDeps {
     resolvePr(pr: PullRequest): Promise<PrJobResolution>
   }
   /** The provider hub (P7.04): a GitHub or GitLab PR's Jenkins pipeline is found the same way. */
-  bitbucket: { pr(ref: PrRef): Promise<PullRequest>; site(provider?: Provider): string | null }
+  bitbucket: { pr(ref: PrRef): Promise<PullRequest>; site(provider: Provider): string | null }
   notify: (n: NotifyInput) => void
   onChange: () => void
   now?: () => number

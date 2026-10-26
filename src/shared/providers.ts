@@ -27,6 +27,14 @@ export const PR_NOUN: Record<Provider, string> = {
 export const GITHUB_WEB = 'https://github.com'
 export const GITLAB_WEB = 'https://gitlab.com'
 
+/** The site a GitHub / GitLab setting points at: its base URL, or the public site. */
+export function providerWeb(
+  s: { github: { baseUrl: string }; gitlab: { baseUrl: string } },
+  p: CiProvider,
+): string {
+  return s[p].baseUrl || (p === 'github' ? GITHUB_WEB : GITLAB_WEB)
+}
+
 /** "Bitbucket", "Bitbucket or GitHub", "Bitbucket, GitHub or GitLab". */
 export function providerList(providers: readonly Provider[]): string {
   const names = providers.map((p) => PROVIDER_NAMES[p])

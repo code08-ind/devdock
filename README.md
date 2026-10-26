@@ -81,7 +81,7 @@ conflicts stop safely with Abort. Start and stop the dev server and see its log.
 **Pull requests** — yours, the ones waiting for your review, recently merged, and watched ones
 (paste a link) — from Bitbucket, and GitHub or GitLab once turned on in Settings. Notifications
 when a build, review or comment changes. Approve, needs work and merge can be turned on in
-Settings → Bitbucket → PR actions (for every provider).
+Settings → Actions (for every provider).
 
 ![Pull requests](docs/screenshots/readme-prs.png)
 
@@ -90,7 +90,7 @@ console; watch a build, a job or your branch's deploy and get notified when it f
 Triggering builds is off by default and never offered for protected jobs. With GitHub or GitLab
 on, their tabs list your recent **Actions runs** / **pipelines** with jobs, steps and the end of
 each job's log; watch one (or paste its link). Re-run, retry and cancel stay off until you turn
-on Settings → CI actions, and each one asks first.
+on Settings → Actions → CI actions, and each one asks first.
 
 ![Builds](docs/screenshots/readme-builds.png)
 

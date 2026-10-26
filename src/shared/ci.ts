@@ -9,11 +9,8 @@ import { CI_PROVIDERS, type CiProvider } from './providers'
 /** `owner/repo` (GitHub) or `group/sub/project` (GitLab); each part a slug. */
 const PROJECT = /^[A-Za-z0-9][A-Za-z0-9._-]{0,99}(?:\/[A-Za-z0-9][A-Za-z0-9._-]{0,99}){1,20}$/
 
-export const ProjectPathSchema = z
-  .string()
-  .max(2100)
-  .regex(PROJECT, 'Not a project path')
-  .refine((p) => !p.split('/').some((s) => s === '.' || s === '..'), 'Not a project path')
+/** Each segment starts with a letter or digit, so `.` and `..` can't appear. */
+export const ProjectPathSchema = z.string().max(2100).regex(PROJECT, 'Not a project path')
 
 export const CiRunRefSchema = z
   .object({

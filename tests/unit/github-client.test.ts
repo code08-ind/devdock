@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { DEMO_GITHUB_CONFIG, githubHandlers } from '../../src/main/demo/github'
 import {
   GitHubClient,
+  mineAndMyBranches,
   githubApiRoot,
   githubGraphqlUrl,
   githubRateLimit,
@@ -210,6 +211,30 @@ describe('GitHub mapping', () => {
     expect(job).toMatchObject({ id: 3, state: 'failed', durationMs: 60_000, stage: null })
     expect(job!.steps.map((s) => s.state)).toEqual(['success', 'failed'])
     expect(toJob({ name: 'x' })).toBeNull()
+  })
+
+  it("runs: mine, plus others' runs on a branch I ran on (not other branches)", () => {
+    const at = (id: number, actor: string, branch: string) =>
+      toRun(
+        {
+          id,
+          status: 'completed',
+          conclusion: 'success',
+          head_branch: branch,
+          actor: { login: actor },
+        },
+        'acme/web',
+      )
+    const kept = mineAndMyBranches(
+      [
+        at(1, 'Me', 'feat'),
+        at(2, 'dependabot[bot]', 'feat'),
+        at(3, 'alex', 'main'),
+        at(4, 'me', 'fix'),
+      ],
+      'me',
+    )
+    expect(kept.map((r) => r.ref.id)).toEqual([1, 2, 4])
   })
 
   it('search hits name their repository', () => {

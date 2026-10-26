@@ -71,33 +71,37 @@ export class ProviderRest {
   }
 
   /**
-   * The last `maxBytes` of a text resource (job logs). A redirect is followed by hand, without
-   * the Authorization header; a server that hides the redirect (Chromium's opaque redirect)
-   * is asked again with redirects followed — Chromium drops Authorization across origins.
+   * The last `maxBytes` of a text resource (job logs). A redirect (GitHub: signed storage) is
+   * followed by hand, hop by hop, only to https and never with the Authorization header. A
+   * redirect the network layer hides (an opaque redirect) is refused rather than followed with
+   * the token. The body is streamed and only its tail kept, so a many-MB log isn't held whole.
    */
   async textTail(url: string, maxBytes: number): Promise<{ text: string; truncated: boolean }> {
     const accept = { Accept: 'text/plain, */*' }
     let res = await this.fetch(url, { method: 'GET', headers: accept, redirect: 'manual' })
-    if (res.status >= 300 && res.status < 400) {
+    let at = url
+    for (let hops = 0; isRedirect(res); hops++) {
       const location = res.headers.get('location')
-      const next = location ? safeUrl(location, url) : null
-      if (!next || next.protocol !== 'https:') {
-        throw new ServiceError(
-          'bad_response',
-          `${this.target.service} sent the log somewhere DevDock won't follow.`,
-        )
+      const next = location ? safeUrl(location, at) : null
+      if (hops >= MAX_LOG_REDIRECTS || !next || next.protocol !== 'https:') {
+        throw this.refusedLog()
       }
-      res = await this.plainFetch(next.toString())
-    } else if (res.type === 'opaqueredirect' || res.status === 0) {
-      res = await this.fetch(url, { method: 'GET', headers: accept })
+      at = next.toString()
+      res = await this.plainFetch(at)
     }
+    if (res.type === 'opaqueredirect' || res.status === 0) throw this.refusedLog()
     if (!res.ok) throw await this.failure(res)
-    const whole = await res.text()
-    const truncated = whole.length > maxBytes
-    let text = truncated ? whole.slice(-maxBytes) : whole
+    const { text: tail, truncated } = await tailOf(res, maxBytes)
     // Start at a line boundary when cut.
-    if (truncated) text = text.slice(text.indexOf('\n') + 1)
+    const text = truncated ? tail.slice(tail.indexOf('\n') + 1) : tail
     return { text: stripAnsi(text), truncated }
+  }
+
+  private refusedLog(): ServiceError {
+    return new ServiceError(
+      'bad_response',
+      `${this.target.service} sent the log somewhere DevDock won't follow.`,
+    )
   }
 
   private async fetch(
@@ -126,11 +130,14 @@ export class ProviderRest {
     }
   }
 
-  /** A storage URL from a redirect: no credentials. */
+  /** A storage URL from a redirect: no credentials, and its own redirects come back to us. */
   private async plainFetch(url: string): Promise<Response> {
     try {
       return await this.http.fetch(
-        new Request(url, { signal: AbortSignal.timeout(this.target.timeoutMs) }),
+        new Request(url, {
+          redirect: 'manual',
+          signal: AbortSignal.timeout(this.target.timeoutMs),
+        }),
       )
     } catch (err) {
       throw errorFromFetchFailure(this.target.service, err)
@@ -177,6 +184,35 @@ export class ProviderRest {
     this.etags.set(url, { etag, body })
     if (this.etags.size > ETAG_LIMIT) this.etags.delete(this.etags.keys().next().value!)
   }
+}
+
+const MAX_LOG_REDIRECTS = 3
+const isRedirect = (res: Response) => res.status >= 300 && res.status < 400
+
+/** Streams a body, keeping only its last `max` characters. */
+async function tailOf(res: Response, max: number): Promise<{ text: string; truncated: boolean }> {
+  if (!res.body) {
+    const whole = await res.text()
+    return { text: whole.slice(-max), truncated: whole.length > max }
+  }
+  const reader = res.body.getReader()
+  const decoder = new TextDecoder()
+  let kept = ''
+  let truncated = false
+  for (;;) {
+    const { done, value } = await reader.read()
+    kept += decoder.decode(value, { stream: !done })
+    if (kept.length > max * 2) {
+      kept = kept.slice(-max)
+      truncated = true
+    }
+    if (done) break
+  }
+  if (kept.length > max) {
+    kept = kept.slice(-max)
+    truncated = true
+  }
+  return { text: kept, truncated }
 }
 
 function safeUrl(location: string, base: string): URL | null {

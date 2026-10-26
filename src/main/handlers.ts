@@ -409,7 +409,7 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
         if (!deps.settings.get().features.prActions) {
           throw new IpcError(
             'NOT_ALLOWED',
-            'PR actions are turned off. Turn them on in Settings → Bitbucket (only if your role permits).',
+            'PR actions are turned off. Turn them on in Settings → Actions (only if your role permits).',
           )
         }
         try {
@@ -429,7 +429,7 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
         if (!deps.settings.get().features.prActions) {
           throw new IpcError(
             'NOT_ALLOWED',
-            'PR actions are turned off. Turn them on in Settings → Bitbucket → PR actions (only if your role permits).',
+            'PR actions are turned off. Turn them on in Settings → Actions (only if your role permits).',
           )
         }
         try {
@@ -453,7 +453,7 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
         if (!deps.settings.get().features.ciActions) {
           throw new IpcError(
             'NOT_ALLOWED',
-            'CI actions are turned off. Turn them on in Settings → CI actions (only if your role permits).',
+            'CI actions are turned off. Turn them on in Settings → Actions (only if your role permits).',
           )
         }
         try {

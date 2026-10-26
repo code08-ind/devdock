@@ -15,7 +15,7 @@ import {
 /**
  * P7-B in demo mode (src/main/demo/github.ts, gitlab.ts): GitHub and GitLab are off until
  * turned on in Settings; then their PRs/MRs join the lists, their runs show in Builds, and
- * re-run / retry / cancel sit behind Settings → CI actions plus a confirmation each time.
+ * re-run / retry / cancel sit behind Settings → Actions → CI actions plus a confirmation each time.
  */
 
 const section = (win: Page, name: string) => win.getByRole('region', { name, exact: true })
@@ -87,7 +87,7 @@ test('GitLab pipeline: jobs and log; retry only after Settings → CI actions, c
 
   // Turning CI actions on asks first; Cancel leaves them off.
   await openSettings(win)
-  const toggle = section(win, 'CI actions').getByRole('switch', {
+  const toggle = section(win, 'Actions').getByRole('switch', {
     name: 'CI actions (re-run, retry, cancel)',
   })
   await toggle.click()

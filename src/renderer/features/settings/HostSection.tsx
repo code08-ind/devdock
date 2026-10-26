@@ -111,57 +111,83 @@ export function HostSection({ provider, settings }: { provider: CiProvider; sett
   )
 }
 
-/**
- * Owner decision (P7): re-run / retry / cancel on GitHub and GitLab sit behind this switch,
- * off by default, and still ask every time — the same pattern as PR actions.
- */
-export function CiActionsSection({ settings }: { settings: Settings }) {
-  const update = useUpdateSettings()
-  const toast = useToast()
+/** One switch, its warning before it turns on, and a pill while it is on. */
+function GuardedSwitch({
+  on,
+  label,
+  description,
+  name,
+  warning,
+  set,
+}: {
+  on: boolean
+  label: string
+  description: string
+  /** "PR actions", "CI actions": in the dialog title, button and toasts. */
+  name: string
+  warning: string
+  set: (on: boolean) => void
+}) {
   const [warn, setWarn] = useState(false)
-  const on = settings.features.ciActions
   return (
-    <Section
-      id="ci-actions"
-      title="CI actions"
-      description="For GitHub Actions runs and GitLab pipelines."
-    >
+    <>
       <Toggle
-        label="CI actions (re-run, retry, cancel)"
-        description="Off by default. Use only if your role permits. Each action still asks you to confirm."
+        label={label}
+        description={description}
         checked={on}
-        onChecked={(next) =>
-          next
-            ? setWarn(true)
-            : update.mutate(
-                { features: { ciActions: false } },
-                { onSuccess: () => toast('CI actions turned off') },
-              )
-        }
+        onChecked={(next) => (next ? setWarn(true) : set(false))}
       />
       {on ? (
         <div role="status">
-          <StatusPill tone="warning">CI actions are on</StatusPill>
+          <StatusPill tone="warning">{name} are on</StatusPill>
         </div>
       ) : null}
       <ConfirmDialog
         open={warn}
-        title="Turn on CI actions?"
-        body={
-          <p>
-            Use only if your role permits. DevDock will show Re-run failed jobs, Retry failed jobs
-            and Cancel on runs and pipelines, and send them to GitHub or GitLab as you once you
-            confirm each one.
-          </p>
-        }
-        confirmLabel="Turn on CI actions"
-        onConfirm={() =>
-          update.mutate(
-            { features: { ciActions: true } },
-            { onSuccess: () => toast('CI actions turned on') },
-          )
-        }
+        title={`Turn on ${name}?`}
+        body={<p>{warning}</p>}
+        confirmLabel={`Turn on ${name}`}
+        onConfirm={() => set(true)}
         onClose={() => setWarn(false)}
+      />
+    </>
+  )
+}
+
+/**
+ * Writes DevDock may send, for every provider: PR actions (SPEC 6.3) and, owner decision P7,
+ * CI actions (re-run / retry / cancel). Both off by default, each warns before it turns on,
+ * and every action still asks to confirm.
+ */
+export function ActionsSection({ settings }: { settings: Settings }) {
+  const update = useUpdateSettings()
+  const toast = useToast()
+  const set = (key: 'prActions' | 'ciActions', name: string) => (on: boolean) =>
+    update.mutate(
+      { features: { [key]: on } },
+      { onSuccess: () => toast(`${name} turned ${on ? 'on' : 'off'}`) },
+    )
+  return (
+    <Section
+      id="actions"
+      title="Actions"
+      description="What DevDock may change on Bitbucket, GitHub and GitLab for you."
+    >
+      <GuardedSwitch
+        on={settings.features.prActions}
+        label="PR actions (approve, needs work, merge)"
+        description="Off by default. Use only if your role permits. Each action still asks you to confirm; merge also asks you to type the target branch."
+        name="PR actions"
+        warning="Use only if your role permits. DevDock will show Approve, Needs work and Merge on pull requests and merge requests, and send them to Bitbucket, GitHub or GitLab as you once you confirm each one."
+        set={set('prActions', 'PR actions')}
+      />
+      <GuardedSwitch
+        on={settings.features.ciActions}
+        label="CI actions (re-run, retry, cancel)"
+        description="Off by default, for GitHub Actions runs and GitLab pipelines. Use only if your role permits. Each action still asks you to confirm."
+        name="CI actions"
+        warning="Use only if your role permits. DevDock will show Re-run failed jobs, Retry failed jobs and Cancel on runs and pipelines, and send them to GitHub or GitLab as you once you confirm each one."
+        set={set('ciActions', 'CI actions')}
       />
       {update.error ? <ErrorNotice error={update.error} /> : null}
     </Section>

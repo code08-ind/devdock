@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { ScanSearch } from 'lucide-react'
 import { BITBUCKET_FLAVORS, type BitbucketFlavor } from '@shared/bitbucket'
@@ -7,8 +6,7 @@ import type { Settings } from '@shared/settings'
 import { prKeys } from '../../lib/bitbucket'
 import { bridge, keys, unwrap, useUpdateSettings } from '../../lib/devdock'
 import { Button } from '../../ui/Button'
-import { ConfirmDialog } from '../../ui/Dialog'
-import { ErrorNotice, StatusPill, useToast } from '../../ui/Feedback'
+import { ErrorNotice, useToast } from '../../ui/Feedback'
 import { SegmentedControl, Toggle } from '../../ui/Field'
 import { Section } from './Section'
 import { TestConnection, TextSetting } from './ServiceBits'
@@ -19,14 +17,13 @@ const FLAVOR_NAME: Record<BitbucketFlavor, string> = {
 }
 const FLAVORS = BITBUCKET_FLAVORS.map((value) => ({ value, label: FLAVOR_NAME[value] }))
 
-/** SPEC 6.3 / 6.7: site type with Detect, URL, user name, Test connection, PR actions switch. */
+/** SPEC 6.3 / 6.7: on/off, site type with Detect, URL, user name, Test connection. */
 export function BitbucketSection({ settings }: { settings: Settings }) {
   const bb = settings.bitbucket
   const demo = settings.general.demoMode
   const update = useUpdateSettings()
   const toast = useToast()
   const qc = useQueryClient()
-  const [warnActions, setWarnActions] = useState(false)
   const save = (patch: Partial<Settings['bitbucket']>, done: string) =>
     update.mutate(
       { bitbucket: patch },
@@ -109,43 +106,6 @@ export function BitbucketSection({ settings }: { settings: Settings }) {
         test={() => unwrap(bridge.bitbucket.testConnection())}
       />
 
-      <Toggle
-        label="PR actions (approve, needs work, merge)"
-        description="Off by default. Applies to Bitbucket, GitHub and GitLab. Use only if your role permits. Each action still asks you to confirm; merge also asks you to type the target branch."
-        checked={settings.features.prActions}
-        onChecked={(on) =>
-          on
-            ? setWarnActions(true)
-            : update.mutate(
-                { features: { prActions: false } },
-                { onSuccess: () => toast('PR actions turned off') },
-              )
-        }
-      />
-      {settings.features.prActions ? (
-        <div role="status">
-          <StatusPill tone="warning">PR actions are on</StatusPill>
-        </div>
-      ) : null}
-      <ConfirmDialog
-        open={warnActions}
-        title="Turn on PR actions?"
-        body={
-          <p>
-            Use only if your role permits. DevDock will show Approve, Needs work and Merge on pull
-            requests (and GitLab merge requests), and send them to Bitbucket, GitHub or GitLab as
-            you once you confirm each one.
-          </p>
-        }
-        confirmLabel="Turn on PR actions"
-        onConfirm={() =>
-          update.mutate(
-            { features: { prActions: true } },
-            { onSuccess: () => toast('PR actions turned on') },
-          )
-        }
-        onClose={() => setWarnActions(false)}
-      />
       {update.error ? <ErrorNotice error={update.error} /> : null}
     </Section>
   )

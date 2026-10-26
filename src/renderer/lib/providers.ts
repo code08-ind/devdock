@@ -79,7 +79,7 @@ export function useClearFinishedRuns() {
   })
 }
 
-/** Re-run / retry / cancel (behind Settings → CI actions and a confirmation). */
+/** Re-run / retry / cancel (behind Settings → Actions → CI actions and a confirmation). */
 export function useCiAction() {
   return useMutation({
     mutationFn: (request: CiActionRequest) => unwrap(bridge.ci.action(request)),

@@ -108,7 +108,7 @@ test('axe: the command palette and dialogs in the main window', async ({ launche
   // Settings: a warning before PR actions turn on, and the diagnostics report.
   await show(win, 'Settings')
   await win
-    .getByRole('region', { name: 'Bitbucket' })
+    .getByRole('region', { name: 'Actions' })
     .getByRole('switch', { name: 'PR actions (approve, needs work, merge)' })
     .click()
   await win.getByRole('dialog', { name: 'Turn on PR actions?' }).waitFor()

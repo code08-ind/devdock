@@ -18,7 +18,7 @@ import {
   type CiRunsResult,
 } from '@shared/ci'
 import type { HostConnection } from '@shared/hosting'
-import type { CiProvider } from '@shared/providers'
+import { PROVIDER_NAMES, type CiProvider } from '@shared/providers'
 import { obj, text } from '../json'
 import type { PrBase } from '../bitbucket/adapter'
 import { PrActionError, type ActionResult } from '../bitbucket/client'
@@ -50,7 +50,7 @@ export function serverRef(
   if (!ref.success) {
     throw new ServiceError(
       'bad_response',
-      `${provider === 'github' ? 'GitHub' : 'GitLab'} didn't return a pull request with a valid repository and id.`,
+      `${PROVIDER_NAMES[provider]} didn't return a pull request with a valid repository and id.`,
     )
   }
   return ref.data

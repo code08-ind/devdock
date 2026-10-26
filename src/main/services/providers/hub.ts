@@ -46,8 +46,7 @@ export class PrHub {
     return this.sources[provider].act(request)
   }
 
-  /** Defaults to Bitbucket for callers written before P7.04. */
-  site(provider: Provider = 'bitbucket'): string | null {
+  site(provider: Provider): string | null {
     return this.sources[provider].site()
   }
 
