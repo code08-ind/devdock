@@ -292,7 +292,7 @@ function heroButton(platform: Platform, inst: Installer | undefined, solid: bool
       { href: '#download', class: className },
       logo(platform),
       h('span', {}, text),
-      h('span', { class: 'soon-tag' }, 'Soon'),
+      h('span', { class: 'visually-hidden' }, ', coming soon'),
     )
   const detail = platform === 'mac' ? (inst.id === 'mac-x64' ? 'Intel' : 'Apple silicon') : ''
   const link = downloadLink(inst, '', className)

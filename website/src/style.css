@@ -359,9 +359,9 @@ main:focus {
 
 /* The two "Download for Mac / Windows" buttons, logo first. */
 .btn-platform {
-  min-height: 56px;
-  padding: 0 28px 0 24px;
-  font-size: var(--fs-lg);
+  min-height: 54px;
+  padding: 0 24px 0 20px;
+  font-size: var(--fs-base);
 }
 
 .btn-platform svg {
@@ -371,15 +371,6 @@ main:focus {
 
 .btn-platform svg use[href='#i-apple'] {
   transform: translateY(-1px);
-}
-
-.soon-tag {
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: color-mix(in srgb, currentColor 14%, transparent);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
 }
 
 .icon-btn {
@@ -488,7 +479,7 @@ main:focus {
 
 .hero-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 440px);
   gap: var(--space-7);
   align-items: center;
 }
