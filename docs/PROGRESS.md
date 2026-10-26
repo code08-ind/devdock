@@ -14,10 +14,10 @@ Contract docs: `docs/SPEC.md`, `docs/UI-THEMES.md`, `docs/BUILD-PROMPTS.md` (pha
 
 | Field        | Value                                                         |
 | ------------ | ------------------------------------------------------------- |
-| Phase        | **Paused 2026-10-26 (owner).** Phase 6 done. Phase 7 agents paused with WIP committed on their branches (p7-terminal, p7-providers, p7-website, in .claude/worktrees/). |
-| Next step    | Resume: (1) accessibility pass (owner request 2026-10-26, see P7-E); (2) resume the three agents from their branches' PROGRESS notes; (3) review/merge P7-A, P7-B, P7-D; (4) start P7-C |
+| Phase        | **Phase 7 — P7-E (accessibility) in progress on `main`.** Owner decisions recorded (DECISIONS "Phase 7 — Owner decisions"). P7-A/B/D agents still paused on their branches (p7-terminal, p7-providers, p7-website, in .claude/worktrees/). |
+| Next step    | (1) P7.13 Settings → Accessibility; (2) resume the three agents (P7-D: switch Pages → Vercel, versionless names; P7-B: CI-actions switch) from their branches' PROGRESS notes; (3) review/merge P7-A, P7-B, P7-D; (4) start P7-C |
 | Blockers     | None                                                          |
-| Last updated | 2026-10-25                                                    |
+| Last updated | 2026-10-26                                                    |
 
 ---
 
@@ -487,7 +487,7 @@ exact resume steps. Nothing pushed.
 | P7-B Providers | `p7-providers` @ `9280edb` | Provider model, PR hub, GitHub + GitLab clients (PRs/MRs, Actions/pipelines, logs, re-run), rate limits + ETag cache, run watcher, settings/IPC/keychain written. Unwired, not type-checked or tested; GitHub demo data only. | Typecheck, handlers + index wiring, GitLab demo data, unit tests, renderer, e2e, docs, code-review |
 | P7-D Website | `p7-website` @ `07d377e` | Site built (Vite + TS), OS-aware downloads + install dialog, release + Pages workflows (not run); build, 21 unit + 9 browser tests, root lint/test pass; Lighthouse 99–100. | DECISIONS rows, code-review, tick P7.10/P7.11 |
 | P7-C AI agents | — | Not started (after P7-A merges). | — |
-| P7-E Accessibility | — | Not started (owner request). | — |
+| P7-E Accessibility | `main` | P7.12 automated part done: axe scans (views × 5 themes, panel, palette, dialogs) pass after Slate colour fix and CodeBlock tab stop. | P7.13 Settings → Accessibility; manual VoiceOver/NVDA pass (owner) |
 
 **Owner decisions waiting:** website hosting (GitHub Pages proposed) and domain; installer file names without the version vs a `releases.json`; when to tag `v0.1.0` (makes a draft release); a licence (none yet — the site's FAQ says "free"); GitHub/GitLab "CI actions" switch (off by default) on top of confirmations; GitHub/GitLab off by default until set up.
 
@@ -506,7 +506,7 @@ exact resume steps. Nothing pushed.
   - [ ] `P7.08` Agent launcher: detect installed agent CLIs (Claude Code, Codex, Gemini CLI, GitHub Copilot CLI) and start one in the terminal in the repo with the ticket brief/lessons; Start work offers "Start <agent> now"
   - [ ] `P7.09` Optional AI providers with your own key (Anthropic Claude, OpenAI, Google Gemini) in the keychain; first features: PR summary, review-comment → lesson wording, standup polish — off until a key is added, every call shown and confirmable
 - [ ] **P7-E — Accessibility** (owner request 2026-10-26: "add accessibility in the software")
-  - [ ] `P7.12` Audit against WCAG 2.2 AA: screen-reader names/roles/live regions on every view, the panel and dialogs (VoiceOver + NVDA pass), focus order and return, reduced motion, contrast in all five themes (extend tests/unit/contrast.test.ts), target sizes
+  - [~] `P7.12` Audit against WCAG 2.2 AA — automated part done: `tests/e2e/axe.spec.ts` (3 tests) pass; `contrast.test.ts` 32/32 incl. new 4.5:1 status-text and banner-tint checks (fail on old Slate); `a11y.spec.ts` keyboard rounds + 12/18px pass. Still open: a real VoiceOver + NVDA listening pass (needs a person). Audit: screen-reader names/roles/live regions on every view, the panel and dialogs (VoiceOver + NVDA pass), focus order and return, reduced motion, contrast in all five themes (extend tests/unit/contrast.test.ts), target sizes
   - [ ] `P7.13` Settings → Accessibility: reduce motion (follow system or on), larger click targets, underline links, always-visible focus ring, screen-reader announcements for background events (build finished, PR changed); automated axe checks in e2e
 - [ ] **P7-D — Landing website** (folder `website/`, branch `p7-website`)
   - [ ] `P7.10` Static site: hero, features with real screenshots, download section that detects macOS (Apple silicon / Intel) or Windows and offers the right installer, unsigned-app help, privacy, FAQ; light/dark; accessible; fast
@@ -560,3 +560,4 @@ exact resume steps. Nothing pushed.
 | 2026-10-26 | P7 plan | Owner asked for an in-app terminal (oh-my-zsh look), GitHub/GitLab CI and more providers, multiple AI agents/providers (Claude, Gemini, Codex, Copilot), and a landing website with downloads. Planned Phase 7 tracks P7-A (terminal), P7-B (providers), P7-C (AI agents, after P7-A), P7-D (website); A, B, D started in parallel worktrees. Phase 6 D3/D4 QA run and P6-D CI in progress. | Merge tracks after review |
 | 2026-10-26 | P6 close | Committed P6-D (2b8cfff); CI 40221500313 green (Windows Setup 98.2 MB, Portable 98.0 MB). QA agent: README walk-through + full demo QA, 0 Fail. Fixed 3 QA observations; .claude/worktrees ignored by lint/prettier/git. Phase 6 closed (Windows installers still to launch by hand). | Phase 7 merges |
 | 2026-10-26 | Pause | Palette now closes on a press outside it (bug from owner; e2e `a click outside the palette closes it`, fails without the fix). Owner asked for accessibility → planned P7-E. Owner paused all agents until tomorrow: each committed WIP on its branch. | Resume per Next step |
+| 2026-10-26 | P7 decisions, P7-E | Asked the owner's 5 pending decisions: Vercel hosting, versionless installer names (`npm run dist` → `DevDock-arm64.dmg`, `DevDock-x64.dmg`), tag v0.1.0 after Phase 7, MIT licence (LICENSE added), CI actions behind a switch + confirm. P7-E: added axe e2e; fixed Slate contrast (3.44–4.47 → ≥ 5:1) and the diagnostics report's keyboard reach. | P7.13 |
