@@ -446,7 +446,7 @@ store with migrations).
 | Decision | Why |
 | --- | --- |
 | **Website hosting: Vercel** (static build of `website/`, Git-connected deploys). No custom domain yet. The `p7-website` GitHub Pages workflow is replaced by Vercel config; connecting the Vercel project is done by the owner. | Owner's choice (over the proposed GitHub Pages). |
-| **Installer names without the version** (e.g. `DevDock-mac-arm64.dmg`, `DevDock-win-x64-setup.exe`), so the site links to `/releases/latest/download/<name>` and never needs updating. The version stays in the app, the release title and the tag. | Owner's choice. |
+| **Installer names without the version** (`DevDock-arm64.dmg`, `DevDock-x64.dmg`, `DevDock-Setup.exe`, `DevDock-Portable.exe` — the website's `versionless` names), so the site links to `/releases/latest/download/<name>` and never needs updating. The version stays in the app, the release title and the tag. | Owner's choice. |
 | **Tag `v0.1.0` after Phase 7 merges** (P7-A–E merged, all checks green). The release workflow makes a draft; the owner publishes it. | Owner's choice. |
 | **Licence: MIT** (`LICENSE` file, `package.json` `"license": "MIT"`). Matches the website calling it free. | Owner's choice. |
 | **GitHub/GitLab re-run / retry / cancel**: behind a Settings **"CI actions"** switch (off by default) *and* a confirmation each time — the same pattern as PR actions. | Owner's choice. |

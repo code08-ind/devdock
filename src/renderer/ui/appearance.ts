@@ -1,4 +1,4 @@
-import type { Density, FontSize, Settings, Theme } from '@shared/settings'
+import type { Density, FontSize, MotionMode, Settings, Theme } from '@shared/settings'
 
 export const THEME_LABELS: Record<Theme, string> = {
   system: 'System',
@@ -12,6 +12,11 @@ export const THEME_LABELS: Record<Theme, string> = {
 export const DENSITY_LABELS: Record<Density, string> = {
   comfortable: 'Comfortable',
   compact: 'Compact',
+}
+
+export const MOTION_LABELS: Record<MotionMode, string> = {
+  system: 'Follow the system',
+  on: 'Always',
 }
 
 /** Applies theme, font size and density live by setting data attributes on <html>. */

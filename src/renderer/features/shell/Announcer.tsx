@@ -3,14 +3,15 @@ import { bridge, useBridgeEvent, useSettings } from '../../lib/devdock'
 
 /**
  * Settings → Accessibility → "Read out background events": each notification shown while the
- * main window is open (build finished, PR changed) is also put in a polite live region, so a
+ * main window or the menu-bar panel is open (build finished, PR changed) is also put in a polite live region, so a
  * screen reader announces it without moving focus. Notifications held back (type off, quiet
  * hours, paused) stay silent here too.
  */
 export function Announcer() {
   const on = useSettings().data?.accessibility.announce ?? false
   const [text, setText] = useState('')
-  // Only what arrives after the window opened; the history before that was never announced.
+  // Only what arrives after the window opened: history before that was never announced, and
+  // events before this effect runs are dropped (`n.at > Infinity` is false).
   const since = useRef(Infinity)
   useEffect(() => {
     since.current = Date.now()
@@ -30,6 +31,7 @@ export function Announcer() {
 
   return (
     <div className="visually-hidden" role="status" aria-live="polite" data-testid="announcer">
+      {/* Turned off: drop what was read last, so it isn't read again on focus. */}
       {on ? text : ''}
     </div>
   )

@@ -37,7 +37,7 @@ renders natively on macOS and Windows).
 --radius-sm: 4px; --radius-md: 6px; --radius-lg: 10px; /* cards (DevDock) */
 --border-w: 1px;
 --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--focus);
---motion: 120ms ease-out;   /* 0ms when prefers-reduced-motion */
+--motion: 120ms ease-out;   /* 0ms when prefers-reduced-motion or Settings → Accessibility → Reduce motion: Always */
 ```
 
 ## Theme tokens

@@ -45,6 +45,30 @@ export async function windowFor(
   return app.windows().find(matches) ?? app.waitForEvent('window', { predicate: matches })
 }
 
+/** The main window's views, in nav order, and the five named themes. */
+export const VIEWS = [
+  'Home',
+  'Today',
+  'Repos',
+  'Pull requests',
+  'Builds',
+  'Tickets',
+  'Utilities',
+  'Settings',
+] as const
+export const THEMES = ['light', 'dark', 'high-contrast', 'paper', 'slate'] as const
+
+/** Shows a view from the nav rail. */
+export const showView = (win: Page, label: string) =>
+  win
+    .getByRole('navigation', { name: 'Main' })
+    .getByRole('button', { name: label, exact: true })
+    .click()
+
+/** Picks a tab of a segmented control (its radio is visually hidden). */
+export const pickSegment = (win: Page, label: string) =>
+  win.locator('label.segment', { hasText: label }).first().click()
+
 export async function openSettings(win: Page): Promise<void> {
   await win
     .getByRole('navigation', { name: 'Main' })

@@ -12,6 +12,7 @@ import { CommandPalette } from '../palette/CommandPalette'
 import { useCommandDialogs } from '../palette/CommandDialogs'
 import { useCommands } from '../palette/useCommands'
 import { ActionDialog } from '../repos/ActionDialog'
+import { Announcer } from '../shell/Announcer'
 import { StartWorkFor } from '../tickets/StartWorkFor'
 import { goto, openUtility, watch } from './bits'
 import { ReposTab } from './ReposTab'
@@ -145,6 +146,7 @@ export function PanelWindow() {
           onClose={() => setRequested(null)}
         />
       ) : null}
+      <Announcer />
     </div>
   )
 }

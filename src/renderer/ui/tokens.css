@@ -76,7 +76,8 @@
 
 /* Every control at least 44 × 44px (WCAG 2.5.5), small buttons included. */
 [data-larger-targets] {
-  --control-h: max(44px, calc(var(--fs-base) * 2.3));
+  --target-min: 44px;
+  --control-h: max(var(--target-min), calc(var(--fs-base) * 2.3));
 }
 [data-larger-targets] .btn-sm {
   height: var(--control-h);
@@ -88,13 +89,13 @@
 [data-larger-targets] .toggle,
 [data-larger-targets] .rail-item,
 [data-larger-targets] .link-button {
-  min-height: 44px;
+  min-height: var(--target-min);
 }
 [data-larger-targets] .segment {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 44px;
+  min-width: var(--target-min);
 }
 
 [data-underline-links] a[href],

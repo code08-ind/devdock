@@ -1,6 +1,6 @@
-import { DENSITIES, FONT_SIZES, REDUCE_MOTION, THEMES, type Settings } from '@shared/settings'
+import { DENSITIES, FONT_SIZES, MOTION_MODES, THEMES, type Settings } from '@shared/settings'
 import { useSettings, useUpdateSettings } from '../../lib/devdock'
-import { DENSITY_LABELS, THEME_LABELS } from '../../ui/appearance'
+import { DENSITY_LABELS, MOTION_LABELS, THEME_LABELS } from '../../ui/appearance'
 import { ErrorNotice } from '../../ui/Feedback'
 import { Field, SegmentedControl, Select, Toggle } from '../../ui/Field'
 import { BitbucketSection } from './BitbucketSection'
@@ -19,10 +19,7 @@ import { Section } from './Section'
 const themeOptions = THEMES.map((t) => ({ value: t, label: THEME_LABELS[t] }))
 const fontOptions = FONT_SIZES.map((s) => ({ value: s, label: `${s}px` }))
 const densityOptions = DENSITIES.map((d) => ({ value: d, label: DENSITY_LABELS[d] }))
-const motionOptions = REDUCE_MOTION.map((m) => ({
-  value: m,
-  label: m === 'system' ? 'Follow the system' : 'Always',
-}))
+const motionOptions = MOTION_MODES.map((m) => ({ value: m, label: MOTION_LABELS[m] }))
 
 function AppearanceSection({ settings }: { settings: Settings }) {
   const update = useUpdateSettings()
@@ -86,7 +83,7 @@ function AccessibilitySection({ settings }: { settings: Settings }) {
       />
       <Toggle
         label="Read out background events"
-        description="Screen readers also announce notifications (build finished, PR changed) while DevDock is open, as well as the system showing them."
+        description="Screen readers also announce notifications (build finished, PR changed) while the DevDock window or menu-bar panel is open, as well as the system showing them."
         checked={a.announce}
         onChecked={(announce) => update.mutate({ accessibility: { announce } })}
       />

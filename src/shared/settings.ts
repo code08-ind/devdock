@@ -14,7 +14,7 @@ export const THEMES = ['system', 'light', 'dark', 'high-contrast', 'paper', 'sla
 export const FONT_SIZES = [12, 13, 14, 15, 16, 18] as const
 export const DENSITIES = ['comfortable', 'compact'] as const
 /** Reduce motion: follow the OS setting, or always on. */
-export const REDUCE_MOTION = ['system', 'on'] as const
+export const MOTION_MODES = ['system', 'on'] as const
 export const NOTIFICATION_TYPES = [
   'build-finished',
   'pr-comment',
@@ -28,6 +28,7 @@ export const NOTIFICATION_TYPES = [
 export type Theme = (typeof THEMES)[number]
 export type FontSize = (typeof FONT_SIZES)[number]
 export type Density = (typeof DENSITIES)[number]
+export type MotionMode = (typeof MOTION_MODES)[number]
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number]
 
 export const UPDATE_STRATEGIES = ['merge', 'rebase'] as const
@@ -113,7 +114,7 @@ export const SettingsSchema = z.object({
     .prefault({}),
   accessibility: z
     .object({
-      reduceMotion: z.enum(REDUCE_MOTION).default('system'),
+      reduceMotion: z.enum(MOTION_MODES).default('system'),
       /** Buttons, switches and tabs at least 44px tall and wide (WCAG 2.5.5). */
       largerTargets: z.boolean().default(false),
       underlineLinks: z.boolean().default(false),

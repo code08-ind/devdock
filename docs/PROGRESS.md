@@ -14,8 +14,8 @@ Contract docs: `docs/SPEC.md`, `docs/UI-THEMES.md`, `docs/BUILD-PROMPTS.md` (pha
 
 | Field        | Value                                                         |
 | ------------ | ------------------------------------------------------------- |
-| Phase        | **Phase 7 — P7-E (accessibility) in progress on `main`.** Owner decisions recorded (DECISIONS "Phase 7 — Owner decisions"). P7-A/B/D agents still paused on their branches (p7-terminal, p7-providers, p7-website, in .claude/worktrees/). |
-| Next step    | (1) code-review P7-E; (2) resume the three agents (P7-D: switch Pages → Vercel, versionless names; P7-B: CI-actions switch) from their branches' PROGRESS notes; (3) review/merge P7-A, P7-B, P7-D; (4) start P7-C |
+| Phase        | **Paused 2026-10-26 (owner), after P7-E.** P7-E done on `main` (code-review fixes applied) except the human VoiceOver/NVDA pass. P7-A/B/D agents still paused on their branches (p7-terminal, p7-providers, p7-website, in .claude/worktrees/). |
+| Next step    | (1) Ask owner: Slate `--text-muted` #A6B1BC is now close to `--text` #ADBAC7 (AA forced it) — lighten `--text` to restore hierarchy, or accept; (2) resume the three agents from their branches' notes (P7-D: GitHub Pages → Vercel, versionless names; P7-B: CI-actions switch + confirm); (3) review/merge P7-A, P7-B, P7-D; (4) start P7-C |
 | Blockers     | None                                                          |
 | Last updated | 2026-10-26                                                    |
 
@@ -487,7 +487,7 @@ exact resume steps. Nothing pushed.
 | P7-B Providers | `p7-providers` @ `9280edb` | Provider model, PR hub, GitHub + GitLab clients (PRs/MRs, Actions/pipelines, logs, re-run), rate limits + ETag cache, run watcher, settings/IPC/keychain written. Unwired, not type-checked or tested; GitHub demo data only. | Typecheck, handlers + index wiring, GitLab demo data, unit tests, renderer, e2e, docs, code-review |
 | P7-D Website | `p7-website` @ `07d377e` | Site built (Vite + TS), OS-aware downloads + install dialog, release + Pages workflows (not run); build, 21 unit + 9 browser tests, root lint/test pass; Lighthouse 99–100. | DECISIONS rows, code-review, tick P7.10/P7.11 |
 | P7-C AI agents | — | Not started (after P7-A merges). | — |
-| P7-E Accessibility | `main` | P7.12 automated part + P7.13 done; lint, 785 unit, 51 e2e green (2026-10-26). | Manual VoiceOver/NVDA pass (owner); code-review at P7-E end |
+| P7-E Accessibility | `main` | P7.12 automated part + P7.13 done; lint, 785 unit, 51 e2e green (2026-10-26). | Manual VoiceOver/NVDA pass (owner); Slate muted/text hierarchy question |
 
 **Owner decisions waiting:** website hosting (GitHub Pages proposed) and domain; installer file names without the version vs a `releases.json`; when to tag `v0.1.0` (makes a draft release); a licence (none yet — the site's FAQ says "free"); GitHub/GitLab "CI actions" switch (off by default) on top of confirmations; GitHub/GitLab off by default until set up.
 
@@ -562,3 +562,4 @@ exact resume steps. Nothing pushed.
 | 2026-10-26 | Pause | Palette now closes on a press outside it (bug from owner; e2e `a click outside the palette closes it`, fails without the fix). Owner asked for accessibility → planned P7-E. Owner paused all agents until tomorrow: each committed WIP on its branch. | Resume per Next step |
 | 2026-10-26 | P7 decisions, P7-E | Asked the owner's 5 pending decisions: Vercel hosting, versionless installer names (`npm run dist` → `DevDock-arm64.dmg`, `DevDock-x64.dmg`), tag v0.1.0 after Phase 7, MIT licence (LICENSE added), CI actions behind a switch + confirm. P7-E: added axe e2e; fixed Slate contrast (3.44–4.47 → ≥ 5:1) and the diagnostics report's keyboard reach. | P7.13 |
 | 2026-10-26 | P7.13 | Settings → Accessibility (reduce motion, larger targets, underline links, focus ring always, read out events). Fixed the palette click-outside e2e (clicked below the page). Checks: lint ok; unit 785 passed; e2e 51 passed, 4 skipped (opt-in). | code-review P7-E |
+| 2026-10-26 | P7-E review, pause | code-review (Standards + Spec): fixed DECISIONS installer names, SPEC §6.7 + UI-THEMES motion note, announcer also in the menu-bar panel, axe on panel + palette window in all 5 themes, computed underline check, shared e2e helpers in fixtures.ts, MOTION_MODES + label map, `--target-min` token. Open: Slate muted vs text hierarchy (asked owner). Checks: lint ok; vitest 785 passed; e2e 51 passed, 4 skipped. Owner paused. | Resume per Next step |
