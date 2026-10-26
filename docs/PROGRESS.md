@@ -484,7 +484,7 @@ exact resume steps. Nothing pushed.
 | Track | Branch @ commit | State | Resume with |
 | --- | --- | --- | --- |
 | P7-A Terminal | `p7-terminal` @ `577277b` | Main process (PTY manager, shell + DevDock prompt, batching, IPC), renderer (xterm view, tabs, palette, repo buttons) and packaging config written; node-pty 1.1.0 proven to spawn a real PTY here (postinstall fixes its macOS `spawn-helper` permission). Not yet built, run or tested. | Fix palette test context and view counts, Settings → Terminal, build + launch (CSP style shim, WebGL fallback), tests, docs, lint/test/e2e/dist, code-review |
-| P7-B Providers | `p7-providers` @ `9280edb` | Provider model, PR hub, GitHub + GitLab clients (PRs/MRs, Actions/pipelines, logs, re-run), rate limits + ETag cache, run watcher, settings/IPC/keychain written. Unwired, not type-checked or tested; GitHub demo data only. | Typecheck, handlers + index wiring, GitLab demo data, unit tests, renderer, e2e, docs, code-review |
+| P7-B Providers | `p7-providers` (merged `main` at 0e91b03) | Done, awaiting owner review/merge: GitHub + GitLab PRs/MRs and Actions/pipelines, Settings → GitHub / GitLab / Actions (PR + CI actions switches), demo sites, tray/Today/panel/palette/Diagnostics; code-review fixes applied. lint ok; vitest 852 passed, 1 skipped; e2e 55 passed, 4 skipped (2026-10-26). | Owner review → merge |
 | P7-D Website | `p7-website` @ `07d377e` | Site built (Vite + TS), OS-aware downloads + install dialog, release + Pages workflows (not run); build, 21 unit + 9 browser tests, root lint/test pass; Lighthouse 99–100. | DECISIONS rows, code-review, tick P7.10/P7.11 |
 | P7-C AI agents | — | Not started (after P7-A merges). | — |
 | P7-E Accessibility | `main` | P7.12 automated part + P7.13 done; lint, 785 unit, 51 e2e green (2026-10-26). | Manual VoiceOver/NVDA pass (owner); Slate muted/text hierarchy question |
@@ -517,14 +517,18 @@ exact resume steps. Nothing pushed.
 
 ## Phase 7 — P7-B CI / Git provider integrations (branch `p7-providers`, WIP)
 
-Status: **resumed 2026-10-26; rebased onto `main`. All four steps built and tested; code-review pending.**
+Status: **done 2026-10-26, awaiting owner review.** Rebased onto `main`, later merged `main` (P7-D). code-review (Standards + Spec) run and fixed.
 
 - [x] `P7.04` Provider model — `PrHub` routes by `ref.provider`; watchers, Jenkins "my work", standup through it; `bitbucket.enabled`; `providers:detect`; tray lists watched runs; renderer lists every provider (`useQueries`), provider filter, `refLabel`, palette `watch <link>` for any provider. Evidence: `providers.test.ts`, `provider-handlers.test.ts`, e2e `providers.spec.ts` test 1.
 - [x] `P7.05` GitHub — PRs (mine, reviewing, merged, watch, actions behind the PR-actions switch + confirmation), Actions runs (jobs, steps, log tail, watch, re-run behind Settings → CI actions + confirmation), github.com + GHE. Evidence: `github-client.test.ts` 21; e2e `providers.spec.ts` test 3 (watched run → "Passed · payments-api CI #88", green dot).
 - [x] `P7.06` GitLab — MRs (approve, merge; no request changes), pipelines (jobs by stage, trace, watch, retry/cancel behind the switch + confirmation), gitlab.com + self-managed (relative root, subgroups); `demo/gitlab.ts`. Evidence: `gitlab-client.test.ts` 15; e2e `providers.spec.ts` test 2.
 - [x] `P7.07` Settings → GitHub / GitLab (Use switch, URL, Detect, Test connection) + CI actions; Today, panel, palette, Diagnostics (Test all, proxy routes) cover them; README, CHANGELOG, SPEC 6.3a, DECISIONS "P7-B". axe: new test scans PRs, both CI tabs, run dialog, CI confirm, Settings in all 5 themes.
 
-Next step on resume: code-review (Standards + Spec) and fixes; then owner review → merge.
+code-review fixes: log redirects checked hop by hop (https only, no token, opaque refused), log streamed with only the tail kept; PR actions moved with CI actions into a neutral Settings → Actions; GitHub runs also include others' runs on my branches; `providerWeb` in shared/providers; small cleanups. Left open (recorded): GitLab pipelines only `username=` me; Jenkins keeps its own CI model; `shared/bitbucket.ts` still holds the provider-neutral PR model (rename to `shared/prs.ts` would touch ~40 files).
+
+Final checks (2026-10-26): `npm run lint` ok; `npx vitest run` 60 files, 852 passed, 1 skipped; `npm run e2e` 55 passed, 4 skipped (opt-in screenshots/perf). `npm run dist` not run on this branch.
+
+Next step: owner review → merge `p7-providers` into `main`.
 
 ## Session log (append-only)
 
@@ -581,3 +585,4 @@ Next step on resume: code-review (Standards + Spec) and fixes; then owner review
 | 2026-10-26 | P7-D done | Resumed on p7-website: merged main; Vercel config replaces the Pages workflow; versionless `/releases/latest/download/` links; build-time releases.json; MIT footer; CI website job; Slate token sync + drift test; axe e2e (new dev dep @axe-core/playwright 4.13.0 in website/); macOS 15 Gatekeeper copy; DECISIONS P7-D. code-review run, fixes applied. Checks: website vitest 27, Playwright 16 passed/4 skipped; root lint ok, test 785 passed/1 skipped. Not pushed, deployed or tagged. | Owner review → merge p7-website; connect Vercel |
 | 2026-10-26 | P7-D merge | Merged `p7-website` (8f1d179): Vercel config, versionless installer links, draft-only release workflow, website axe tests. Root lint exit 0; vitest 785 passed, 1 skipped; website vitest 27 passed. Owner to do: Vercel import (Root Directory `website`), later tag v0.1.0. | Merge P7-A, P7-B |
 | 2026-10-26 | P7-B (WIP) | Branch p7-providers. Provider model (PrRef.provider, any-provider links, PrHub, watchers via hub), settings/secrets/IPC contract for GitHub + GitLab + CI, GitHub + GitLab clients and mappers, provider REST helper (ETag, rate-limit pause, log redirect), CI watcher, GitHub demo. Untested, not wired. Paused at owner request. | Lint → handlers/index wiring → GitLab demo → tests → renderer |
+| 2026-10-26 | P7-B | Resumed p7-providers: rebased on main; type-check, handlers + index wiring (HostService ×2, PrHub, CiWatcher + scheduler, tray), GitLab demo, Detect; renderer (PRs from every provider + filter, Builds GitHub Actions / GitLab pipelines tabs, run dialog with jobs/steps/log, confirmed CI actions, Settings → GitHub / GitLab / Actions, Today/panel/palette run links); e2e providers.spec (3) + axe on new UI ×5 themes; docs (SPEC 6.3a, README, CHANGELOG, DECISIONS P7-B). Merged main (P7-D). code-review run; fixes applied. lint ok; vitest 852 passed, 1 skipped; e2e 55 passed, 4 skipped. | Owner review → merge |
