@@ -119,3 +119,48 @@ test('axe: the command palette and dialogs in the main window', async ({ launche
   found.push(...(await violations(win, `diagnostics report`)))
   expect(found).toEqual([])
 })
+
+test('axe: GitHub and GitLab (P7-B) — lists, runs, the run dialog and CI action confirm, every theme', async ({
+  launched,
+}) => {
+  test.setTimeout(180_000)
+  const { win } = launched
+  await win.evaluate(() =>
+    window.devdock.settings.update({
+      github: { enabled: true },
+      gitlab: { enabled: true },
+      features: { ciActions: true },
+    } as never),
+  )
+  const found: string[] = []
+  for (const theme of THEMES) {
+    await setTheme(win, theme)
+    await show(win, 'Pull requests')
+    await expect(win.getByRole('list', { name: 'My PRs' })).toContainText('checkout !42')
+    found.push(...(await violations(win, `${theme} PRs (all providers)`)))
+    await show(win, 'Builds')
+    for (const tab of ['GitHub Actions', 'GitLab pipelines']) {
+      await segment(win, tab)
+      await expect(win.getByRole('list', { name: tab })).toBeVisible()
+      found.push(...(await violations(win, `${theme} Builds › ${tab}`)))
+    }
+    await win
+      .getByRole('button', { name: /^Jobs and log of / })
+      .first()
+      .click()
+    const dialog = win.getByRole('dialog')
+    await expect(dialog.getByRole('log', { name: 'Job log' })).not.toBeEmpty()
+    found.push(...(await violations(win, `${theme} run dialog`)))
+    await win.keyboard.press('Escape')
+    await win
+      .getByRole('button', { name: /^(Retry failed jobs|Cancel pipeline): / })
+      .first()
+      .click()
+    await win.getByRole('dialog').waitFor()
+    found.push(...(await violations(win, `${theme} CI action confirm`)))
+    await win.keyboard.press('Escape')
+    await show(win, 'Settings')
+    found.push(...(await violations(win, `${theme} Settings with GitHub / GitLab on`)))
+  }
+  expect(found).toEqual([])
+})

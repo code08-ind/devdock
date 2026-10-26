@@ -79,8 +79,8 @@ test('PRs: the three lists, the Watch field and the Watched list', async ({ laun
 
   // Watch field: checked as you type, then watched on submit.
   const field = win.getByRole('textbox', { name: 'Watch a pull request' })
-  await field.fill('https://github.com/acme/web-app/pull/1')
-  await expect(win.getByText("That isn't a Bitbucket pull request link.")).toBeVisible()
+  await field.fill('https://github.com/acme/web-app/issues/1')
+  await expect(win.getByText("That isn't a pull request link from Bitbucket.")).toBeVisible()
   await expect(win.getByRole('button', { name: 'Watch', exact: true })).toBeDisabled()
   // Another Bitbucket site: refused by main with the reason.
   await field.fill('https://bitbucket.org/acme/web-app/pull-requests/7')

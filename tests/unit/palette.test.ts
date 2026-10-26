@@ -164,16 +164,35 @@ describe('watch <PR link> (SPEC 6.1 argument command)', () => {
   })
 
   it('offers nothing for searches that are not links; `watch <not a link>` says so', () => {
-    for (const query of ['', 'watch', 'https://github.com/a/b/pull/1', 'watch x y', 'theme']) {
+    for (const query of ['', 'watch', 'https://github.com/a/b/issues/1', 'watch x y', 'theme']) {
       expect(queryCommands(query, ctx())).toEqual([])
     }
     const c = ctx()
-    const [hint, ...rest] = queryCommands('watch https://github.com/a/b/pull/1', c)
+    const [hint, ...rest] = queryCommands('watch https://github.com/a/b/issues/1', c)
     expect(rest).toEqual([])
     expect(hint).toMatchObject({ id: 'pr:watch-invalid', title: /Not a pull request link/ })
     void hint!.run()
     expect(c.goto).toHaveBeenCalledWith('prs')
     expect(c.watch).not.toHaveBeenCalled()
+  })
+
+  it('P7: GitHub / GitLab PR links and Actions run / pipeline links', () => {
+    const c = ctx()
+    expect(queryCommands('https://github.com/a/web/pull/3', c).map((x) => x.title)).toEqual([
+      'Watch pull request web #3',
+      'Watch the pipeline of web #3',
+    ])
+    expect(
+      queryCommands('watch https://gitlab.com/g/sub/app/-/merge_requests/9', c)[0]!.title,
+    ).toBe('Watch pull request app !9')
+    const [run, ...more] = queryCommands('watch https://github.com/a/web/actions/runs/77', c)
+    expect(more).toEqual([])
+    expect(run).toMatchObject({ id: 'build:watch-run-link', title: 'Watch web run #77' })
+    void run!.run()
+    expect(c.watch).toHaveBeenCalledWith('https://github.com/a/web/actions/runs/77')
+    expect(queryCommands('gitlab.com/g/app/-/pipelines/5', c)[0]!.title).toBe(
+      'Watch app pipeline #5',
+    )
   })
 
   it('"watch" alone still finds the Watch a pull request entry (it opens Pull requests)', () => {

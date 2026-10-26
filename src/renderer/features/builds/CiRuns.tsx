@@ -204,7 +204,8 @@ function CiRunRow({
           />
         </span>
       </div>
-      <h3 className="pr-title">{run.title ?? run.name}</h3>
+      {/* GitLab's pipeline list has no commit title; the label already names it. */}
+      {run.title ? <h3 className="pr-title">{run.title}</h3> : null}
       <p className="pr-meta">
         {run.branch ? <span className="mono pr-branches">{run.branch}</span> : null}
         <span className="muted">{run.event.replaceAll('_', ' ')}</span>
