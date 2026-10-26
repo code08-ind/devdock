@@ -135,6 +135,9 @@ export class TerminalManager {
       throw err
     }
     const env = terminalEnv(baseEnv, this.platform, this.opts.appVersion ?? '')
+    // DevDock's own folder isn't the shell's: without this, `pwd` would start from a stale $PWD.
+    env.PWD = req.cwd
+    delete env.OLDPWD
     let args = spec.args
     if (s.devdockPrompt) {
       const launch = await withDevdockPrompt(spec, this.opts.promptDir, baseEnv.ZDOTDIR)
