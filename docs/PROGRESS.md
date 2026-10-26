@@ -14,10 +14,10 @@ Contract docs: `docs/SPEC.md`, `docs/UI-THEMES.md`, `docs/BUILD-PROMPTS.md` (pha
 
 | Field        | Value                                                         |
 | ------------ | ------------------------------------------------------------- |
-| Phase        | **Phase 6 — P6-D nearly done** (small packages, README, CHANGELOG). P6-C committed (8a071d7), CI green. P6-D not committed. |
-| Next step    | Owner review → commit P6-D → CI (Windows packages) → D3 README walk-through, D4 QA run (owner to confirm the QA agent) → close Phase 6 |
+| Phase        | **Phase 7, resumed 2026-10-26.** P7-E done on `main` except the human VoiceOver/NVDA pass. P7-A/B/D agents resuming on their branches (p7-terminal, p7-providers, p7-website, in .claude/worktrees/). |
+| Next step    | (1) Resume the three agents from their branches' notes (P7-D: GitHub Pages → Vercel, versionless names; P7-B: CI-actions switch + confirm); (2) review/merge P7-A, P7-B, P7-D; (3) start P7-C |
 | Blockers     | None                                                          |
-| Last updated | 2026-10-25                                                    |
+| Last updated | 2026-10-26                                                    |
 
 ---
 
@@ -441,7 +441,7 @@ Done criteria:
 - [x] **P6-C — Diagnostics + performance** (P6.04, P6.05) — code-review run (Standards + Spec); fixes applied (incl. the SPEC 5 manual proxy override). Evidence: `npm run lint` exit 0; `npm test` → 56 files, 774 passed, 1 skipped (one run had 2 real-git flakes, DECISIONS P6-C); `npm run e2e` → 46 passed, 3 skipped (opt-in audit, screenshots, perf).
 - [x] **P6-E — Menu-bar / tray panel** (owner request 2026-10-25; P6.08–P6.10) — code-review run (Standards + Spec); fixes applied. Evidence: `npm run lint` exit 0; `npm test` → 52 files, 744 passed, 1 skipped; `npm run e2e` → 42 passed, 2 skipped (opt-in audit and screenshot specs); panel screenshots in every look reviewed.
 - [x] **P6-F — Agent lessons + workflow options** (owner request 2026-10-25; P6.11–P6.13) — code-review run (Standards + Spec); fixes applied. Evidence: `npm run lint` exit 0; `npm test` → 55 files, 760 passed, 1 skipped; `npm run e2e` → 43 passed, 2 skipped; Lessons tab screenshots reviewed.
-- [~] **P6-D — Packaging (small), CHANGELOG, README, QA** (P6.06, P6.07, P6.14, Done) — small packages, licenses notice, README + screenshots, CHANGELOG done; code-review run, fixes applied. Open: D3 README walk-through, D4 QA agent run, Windows packages launched by hand.
+- [x] **P6-D — Packaging (small), CHANGELOG, README, QA** (P6.06, P6.07, P6.14, Done) — small packages, licenses notice, README + screenshots, CHANGELOG; code-review run, fixes applied; QA run in demo mode: no Fail items. Open for the owner: launch the Windows installers on a Windows PC.
 
 - [x] `P6.01` Palette registry: title, keywords, arg parsers (`watch`, `branch`, `kill`, `open`), enabled reason, recents first — Evidence: `tests/unit/palette.test.ts` (disabled reasons, ranking, `branch`/`open` parsers, recents, dev server confirm, PR/build commands), `tests/e2e/palette.spec.ts` (recents, `open`, `branch` in both windows, disabled reason announced). Not yet: build trigger/deploy, baseline server, PR actions from the palette window (DECISIONS P6-B).
 - [x] `P6.02` Empty / loading / error states everywhere + "error with Details" pattern — sweep of every view and panel; repo status errors and the allowed-hosts field gained Details (shared `ErrorDetails`). Evidence: `tests/renderer/feedback-ui.test.ts` (fails with Details removed).
@@ -460,10 +460,10 @@ Done criteria:
 
 Done criteria:
 
-- [ ] `P6.D1` Full suite green — Evidence:
-- [ ] `P6.D2` Packages built (which verified on which OS) — Evidence:
-- [ ] `P6.D3` README verified step by step in demo mode — Evidence:
-- [ ] `P6.D4` qa-tester agent run in demo mode: no Fail items — Evidence:
+- [x] `P6.D1` Full suite green — Evidence: `npm run lint` exit 0; `npm test` → 56 files, 774 passed, 1 skipped; `npm run e2e` → 46 passed, 4 skipped (opt-in); CI 40221500313 green on macOS and Windows.
+- [x] `P6.D2` Packages built (which verified on which OS) — Evidence: macOS arm64 app built and launched on macOS (log "started"); DMGs arm64 103.5 MB + x64 106.2 MB built by `npm run dist` (x64 not launched); Windows NSIS Setup 98.2 MB + Portable 98.0 MB built by CI on windows-latest (not launched — needs a Windows PC).
+- [x] `P6.D3` README verified step by step in demo mode — Evidence: QA agent followed README.md step by step in demo mode (first run, every feature, palette arguments, panel, Settings, Diagnostics, shortcuts): all Pass; not checkable here: install/unsigned-warning steps, connecting real services, the OS-level global shortcut.
+- [x] `P6.D4` qa-tester agent run in demo mode: no Fail items — Evidence: QA agent run in demo mode (general-purpose agent; no "qa-tester" agent exists here — owner approved): 0 Fail items, `launched.errors` empty, no overflow at 14px Light/Dark; 6 minor observations, 3 fixed (disabled-button reason, Diagnostics alignment and Node "v", lessons tick wording), 3 noted in DECISIONS.
 
 ---
 
@@ -475,6 +475,21 @@ highlights"; "integration with GitHub Actions, GitLab CI/CD etc … features use
 Codex"; "a landing website … download for Windows and Mac … as a full-fledged application".
 Tracks run in parallel in separate git worktrees (one agent each) and are merged one at a time
 after review. Decisions in DECISIONS.md "Phase 7".
+
+### Where each track stopped (2026-10-26, paused by the owner)
+
+Each branch has its own worktree under `.claude/worktrees/` and its own PROGRESS notes with the
+exact resume steps. Nothing pushed.
+
+| Track | Branch @ commit | State | Resume with |
+| --- | --- | --- | --- |
+| P7-A Terminal | `p7-terminal` @ `577277b` | Main process (PTY manager, shell + DevDock prompt, batching, IPC), renderer (xterm view, tabs, palette, repo buttons) and packaging config written; node-pty 1.1.0 proven to spawn a real PTY here (postinstall fixes its macOS `spawn-helper` permission). Not yet built, run or tested. | Fix palette test context and view counts, Settings → Terminal, build + launch (CSP style shim, WebGL fallback), tests, docs, lint/test/e2e/dist, code-review |
+| P7-B Providers | `p7-providers` @ `9280edb` | Provider model, PR hub, GitHub + GitLab clients (PRs/MRs, Actions/pipelines, logs, re-run), rate limits + ETag cache, run watcher, settings/IPC/keychain written. Unwired, not type-checked or tested; GitHub demo data only. | Typecheck, handlers + index wiring, GitLab demo data, unit tests, renderer, e2e, docs, code-review |
+| P7-D Website | `p7-website` @ `07d377e` | Site built (Vite + TS), OS-aware downloads + install dialog, release + Pages workflows (not run); build, 21 unit + 9 browser tests, root lint/test pass; Lighthouse 99–100. | DECISIONS rows, code-review, tick P7.10/P7.11 |
+| P7-C AI agents | — | Not started (after P7-A merges). | — |
+| P7-E Accessibility | `main` | P7.12 automated part + P7.13 done; lint, 785 unit, 51 e2e green (2026-10-26). | Manual VoiceOver/NVDA pass (owner); Slate muted/text hierarchy question |
+
+**Owner decisions waiting:** website hosting (GitHub Pages proposed) and domain; installer file names without the version vs a `releases.json`; when to tag `v0.1.0` (makes a draft release); a licence (none yet — the site's FAQ says "free"); GitHub/GitLab "CI actions" switch (off by default) on top of confirmations; GitHub/GitLab off by default until set up.
 
 ### Tracks (pause points)
 
@@ -490,6 +505,9 @@ after review. Decisions in DECISIONS.md "Phase 7".
 - [ ] **P7-C — AI agents and providers** (branch `p7-agents`, after P7-A merges)
   - [ ] `P7.08` Agent launcher: detect installed agent CLIs (Claude Code, Codex, Gemini CLI, GitHub Copilot CLI) and start one in the terminal in the repo with the ticket brief/lessons; Start work offers "Start <agent> now"
   - [ ] `P7.09` Optional AI providers with your own key (Anthropic Claude, OpenAI, Google Gemini) in the keychain; first features: PR summary, review-comment → lesson wording, standup polish — off until a key is added, every call shown and confirmable
+- [ ] **P7-E — Accessibility** (owner request 2026-10-26: "add accessibility in the software")
+  - [~] `P7.12` Audit against WCAG 2.2 AA — automated part done: `tests/e2e/axe.spec.ts` (3 tests) pass; `contrast.test.ts` 32/32 incl. new 4.5:1 status-text and banner-tint checks (fail on old Slate); `a11y.spec.ts` keyboard rounds + 12/18px pass. Still open: a real VoiceOver + NVDA listening pass (needs a person). Audit: screen-reader names/roles/live regions on every view, the panel and dialogs (VoiceOver + NVDA pass), focus order and return, reduced motion, contrast in all five themes (extend tests/unit/contrast.test.ts), target sizes
+  - [x] `P7.13` Settings → Accessibility — e2e `Settings → Accessibility: each switch changes the app` (targets ≥ 44px on all 8 views, motion token 0ms, ring after click, live-region text; fails with the announcer blanked); unit `settings.test.ts` defaults. Settings → Accessibility: reduce motion (follow system or on), larger click targets, underline links, always-visible focus ring, screen-reader announcements for background events (build finished, PR changed); automated axe checks in e2e
 - [ ] **P7-D — Landing website** (folder `website/`, branch `p7-website`)
   - [ ] `P7.10` Static site: hero, features with real screenshots, download section that detects macOS (Apple silicon / Intel) or Windows and offers the right installer, unsigned-app help, privacy, FAQ; light/dark; accessible; fast
   - [ ] `P7.11` Downloads wired to GitHub Releases (latest); a release workflow building and attaching the installers on a version tag — publishing and hosting only after the owner confirms
@@ -541,5 +559,11 @@ after review. Decisions in DECISIONS.md "Phase 7".
 | 2026-10-25 | P6-C close | Committed P6-C (8a071d7) and pushed; CI 40203873707 green on macOS (6m02s) and Windows (10m16s). | P6-D |
 | 2026-10-25 | P6-D | Small packages (no runtime node_modules, English-only locales, max compression: DMG 121.5 → 103.5 MB arm64, asar 50 → 1.9 MB), THIRD_PARTY_NOTICES, README rewrite with demo screenshots, CHANGELOG, login-item noise fix. Packaged arm64 app launched. code-review run (both reviewers hit a usage limit once and were resumed); fixes applied. Not committed. | Owner review → commit → D3/D4 |
 | 2026-10-26 | P7 plan | Owner asked for an in-app terminal (oh-my-zsh look), GitHub/GitLab CI and more providers, multiple AI agents/providers (Claude, Gemini, Codex, Copilot), and a landing website with downloads. Planned Phase 7 tracks P7-A (terminal), P7-B (providers), P7-C (AI agents, after P7-A), P7-D (website); A, B, D started in parallel worktrees. Phase 6 D3/D4 QA run and P6-D CI in progress. | Merge tracks after review |
+| 2026-10-26 | P6 close | Committed P6-D (2b8cfff); CI 40221500313 green (Windows Setup 98.2 MB, Portable 98.0 MB). QA agent: README walk-through + full demo QA, 0 Fail. Fixed 3 QA observations; .claude/worktrees ignored by lint/prettier/git. Phase 6 closed (Windows installers still to launch by hand). | Phase 7 merges |
+| 2026-10-26 | Pause | Palette now closes on a press outside it (bug from owner; e2e `a click outside the palette closes it`, fails without the fix). Owner asked for accessibility → planned P7-E. Owner paused all agents until tomorrow: each committed WIP on its branch. | Resume per Next step |
+| 2026-10-26 | P7 decisions, P7-E | Asked the owner's 5 pending decisions: Vercel hosting, versionless installer names (`npm run dist` → `DevDock-arm64.dmg`, `DevDock-x64.dmg`), tag v0.1.0 after Phase 7, MIT licence (LICENSE added), CI actions behind a switch + confirm. P7-E: added axe e2e; fixed Slate contrast (3.44–4.47 → ≥ 5:1) and the diagnostics report's keyboard reach. | P7.13 |
+| 2026-10-26 | P7.13 | Settings → Accessibility (reduce motion, larger targets, underline links, focus ring always, read out events). Fixed the palette click-outside e2e (clicked below the page). Checks: lint ok; unit 785 passed; e2e 51 passed, 4 skipped (opt-in). | code-review P7-E |
+| 2026-10-26 | P7-E review, pause | code-review (Standards + Spec): fixed DECISIONS installer names, SPEC §6.7 + UI-THEMES motion note, announcer also in the menu-bar panel, axe on panel + palette window in all 5 themes, computed underline check, shared e2e helpers in fixtures.ts, MOTION_MODES + label map, `--target-min` token. Open: Slate muted vs text hierarchy (asked owner). Checks: lint ok; vitest 785 passed; e2e 51 passed, 4 skipped. Owner paused. | Resume per Next step |
+| 2026-10-26 | Resume | Owner: Slate `--text` lightened #ADBAC7 → #CDD9E5 so it stays brighter than the AA muted #A6B1BC (UI-THEMES, DECISIONS). lint ok; vitest 785 passed, 1 skipped (contrast 32). | Resume P7-A/B/D agents |
 | 2026-10-26 | P7-D | WIP on branch p7-website: website/ scaffold (Vite + plain TS), all sections, download config/detection/dialog; builds. | Tests, workflows, review |
 | 2026-10-26 | P7-D pause | Website, tests, release + Pages workflows done and committed on p7-website (not pushed/deployed). Paused by owner before DECISIONS rows and code-review. | DECISIONS P7-D → code-review → tick P7.10/P7.11 |

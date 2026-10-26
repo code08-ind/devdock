@@ -1,17 +1,21 @@
 import { StrictMode, useLayoutEffect, type ReactNode } from 'react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient, useMainEvents, useSettings } from '../../lib/devdock'
-import { applyAppearance } from '../../ui/appearance'
+import { applyAccessibility, applyAppearance } from '../../ui/appearance'
 import { ErrorNotice, ToastProvider } from '../../ui/Feedback'
 
-/** Applies theme/font/density before paint and keeps them live across windows. */
+/** Applies theme/font/density and accessibility before paint and keeps them live across windows. */
 function AppearanceSync({ children }: { children: ReactNode }) {
   useMainEvents()
   const { data, error } = useSettings()
   const appearance = data?.appearance
+  const accessibility = data?.accessibility
   useLayoutEffect(() => {
     if (appearance) applyAppearance(appearance)
   }, [appearance])
+  useLayoutEffect(() => {
+    if (accessibility) applyAccessibility(accessibility)
+  }, [accessibility])
   if (error) {
     return (
       <div className="boot-error">

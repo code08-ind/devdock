@@ -87,3 +87,18 @@ test("a command that can't run says why and stays put", async ({ launched }) => 
   )
   await expect(win.getByRole('dialog', { name: /Start work/ })).toHaveCount(0)
 })
+
+test('a click outside the palette closes it; a click inside does not', async ({ launched }) => {
+  const { win } = launched
+  const p = await palette(win)
+  // Inside: the search box keeps it open.
+  await p.getByRole('combobox', { name: 'Command' }).click()
+  await expect(p).toBeVisible()
+  // Outside: the dimmed area near the window's corner. Electron has no viewport size, and the
+  // window's size includes the title bar, so ask the page.
+  const size = await win.evaluate(() => ({ width: innerWidth, height: innerHeight }))
+  await win.mouse.click(size.width - 20, size.height - 20)
+  await expect(p).toBeHidden()
+  // And it opens again normally.
+  await palette(win)
+})

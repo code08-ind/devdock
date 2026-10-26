@@ -1,28 +1,11 @@
 import type { Page } from '@playwright/test'
-import { callHook, expect, test, windowFor } from './fixtures'
+import { VIEWS, THEMES, callHook, expect, pickSegment, showView, test, windowFor } from './fixtures'
 
 /**
  * P6.03: every view at 12px and 18px in every theme, and a keyboard-only pass through every view.
  */
-const VIEWS = [
-  'Home',
-  'Today',
-  'Repos',
-  'Pull requests',
-  'Builds',
-  'Tickets',
-  'Utilities',
-  'Settings',
-] as const
-const THEMES = ['light', 'dark', 'high-contrast', 'paper', 'slate'] as const
-
-const show = (win: Page, label: string) =>
-  win
-    .getByRole('navigation', { name: 'Main' })
-    .getByRole('button', { name: label, exact: true })
-    .click()
-const segment = (win: Page, label: string) =>
-  win.locator('label.segment', { hasText: label }).first().click()
+const show = showView
+const segment = pickSegment
 
 test('12px and 18px in every theme: no view overflows sideways or scrolls the window', async ({
   launched,
@@ -204,3 +187,75 @@ test('keyboard only: every screen and dialog — Tab goes round with a visible f
     await tabRound(panel, `panel › ${tab}`)
   }
 })
+
+test('Settings → Accessibility: each switch changes the app', async ({ launched }) => {
+  test.setTimeout(120_000)
+  const { win } = launched
+  await show(win, 'Settings')
+  const section = win.getByRole('region', { name: 'Accessibility' })
+  const html = win.locator('html')
+
+  // Reduce motion: "Always" zeroes the motion token even when the OS doesn't ask.
+  const motion = () =>
+    win.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--motion'))
+  expect(await motion()).not.toBe('0ms')
+  await section.locator('label.segment', { hasText: 'Always' }).click()
+  await expect.poll(motion).toBe('0ms')
+
+  // Larger click targets: every control on every view is at least 44 × 44px, nothing overflows.
+  await section.getByRole('switch', { name: 'Larger click targets' }).click()
+  await expect(html).toHaveAttribute('data-larger-targets', '')
+  for (const view of VIEWS) {
+    await show(win, view)
+    await expect(win.locator('main h1')).toBeVisible()
+    const small = await win.evaluate(() =>
+      [...document.querySelectorAll('button, [role="switch"], label.segment, select, .input')]
+        .filter((el) => !el.closest('.visually-hidden'))
+        .map((el) => ({ el, box: el.getBoundingClientRect() }))
+        .filter(({ box }) => box.width > 0 && (box.width < 44 || box.height < 43.5))
+        .map(
+          ({ el, box }) =>
+            `${el.textContent?.trim().slice(0, 30) || el.getAttribute('aria-label')} ${Math.round(box.width)}×${Math.round(box.height)}`,
+        ),
+    )
+    expect(small, view).toEqual([])
+    expect(
+      await win.evaluate(() => {
+        const main = document.querySelector('main')!
+        return main.scrollWidth > main.clientWidth + 1
+      }),
+      `${view} sideways`,
+    ).toBe(false)
+  }
+
+  // Always show the focus ring: a click on a button rings it too.
+  await show(win, 'Settings')
+  await section.getByRole('switch', { name: 'Always show the focus ring' }).click()
+  const underline = section.getByRole('switch', { name: 'Underline links' })
+  await underline.click()
+  await expect(html).toHaveAttribute('data-underline-links', '')
+  expect(await underline.evaluate((el) => getComputedStyle(el).boxShadow)).not.toBe('none')
+  // Underline links: the links in an issue's details (DD-102 has a Figma and a Confluence link) are underlined without a hover.
+  await show(win, 'Tickets')
+  await win.getByRole('button', { name: /^DD-102\b/ }).click()
+  const link = win.getByRole('complementary', { name: 'DD-102 details' }).locator('.link-button')
+  await expect(link.first()).toBeVisible()
+  expect(await link.first().evaluate((el) => getComputedStyle(el).textDecorationLine)).toBe(
+    'underline',
+  )
+  await show(win, 'Settings')
+
+  // Read out background events: a notification lands in the polite live region.
+  const announcer = win.getByTestId('announcer')
+  await testNotification(win)
+  await expect(announcer).toHaveText('')
+  const announce = section.getByRole('switch', { name: 'Read out background events' })
+  await announce.click()
+  await expect(announce).toBeChecked()
+  await testNotification(win)
+  await expect(announcer).toHaveText(/^Test notification\. This is how a "build-finished"/)
+})
+
+/** Sends a test notification (Settings → Notifications → Test), the same path as real ones. */
+const testNotification = (win: Page) =>
+  win.evaluate(() => window.devdock.notifications.test({ type: 'build-finished' }))

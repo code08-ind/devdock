@@ -437,4 +437,28 @@ store with migrations).
 | **Providers behind adapters**: GitHub (+ Actions) and GitLab (+ CI/CD) join Bitbucket and Jenkins; github.com/GitHub Enterprise and gitlab.com/self-managed. Others (Azure DevOps, CircleCI, Buildkite) fit the same adapters later. | Owner: "reach more users … features used in big companies". |
 | **Landing website** in `website/` (static, no tracking), downloads from GitHub Releases with OS detection. Hosting, domain and publishing releases are outward-facing: done only after the owner confirms. | Owner: "a landing website … download for Windows and Mac". |
 | Parallel work: one agent per track in its own git worktree and branch; merged one at a time after lint/test/e2e and code-review. | Avoids agents editing the same files at once. |
+| **QA (P6.D3/D4)**: a general-purpose agent drove the built app in demo mode through the README and every feature: 0 Fail. Fixed after: disabled repo actions say why on hover; Diagnostics values share one column and Node on PATH drops its "v"; the Start work lessons tick says it applies once the repo has a lessons file. Left as is: argument commands (`branch`, `kill`, `watch`) aren't recents (only registry commands are); demo data uses DD-101 for both a PR and a different Jira issue; diagnostics keep repo paths outside the home folder. | Owner approved the QA run; no "qa-tester" agent exists here. |
+| `.claude/worktrees/` (Phase 7 agents' worktrees) is ignored by eslint, prettier and git. | Lint scanned the agents' copies of the repo. |
 
+
+## Phase 7 — Owner decisions (2026-10-26, asked at session start)
+
+| Decision | Why |
+| --- | --- |
+| **Website hosting: Vercel** (static build of `website/`, Git-connected deploys). No custom domain yet. The `p7-website` GitHub Pages workflow is replaced by Vercel config; connecting the Vercel project is done by the owner. | Owner's choice (over the proposed GitHub Pages). |
+| **Installer names without the version** (`DevDock-arm64.dmg`, `DevDock-x64.dmg`, `DevDock-Setup.exe`, `DevDock-Portable.exe` — the website's `versionless` names), so the site links to `/releases/latest/download/<name>` and never needs updating. The version stays in the app, the release title and the tag. | Owner's choice. |
+| **Tag `v0.1.0` after Phase 7 merges** (P7-A–E merged, all checks green). The release workflow makes a draft; the owner publishes it. | Owner's choice. |
+| **Licence: MIT** (`LICENSE` file, `package.json` `"license": "MIT"`). Matches the website calling it free. | Owner's choice. |
+| **GitHub/GitLab re-run / retry / cancel**: behind a Settings **"CI actions"** switch (off by default) *and* a confirmation each time — the same pattern as PR actions. | Owner's choice. |
+
+## P7-E — Accessibility (2026-10-26)
+
+| Decision | Why |
+| --- | --- |
+| New dev dependency **`@axe-core/playwright` 4.13.0** (exact; not shipped). `tests/e2e/axe.spec.ts` runs axe's WCAG 2.0/2.1/2.2 A + AA rules on every view in all five themes, the four panel tabs, the palette window, the in-app palette, issue details and the Start work dialog. Run with `setLegacyMode(true)`: the default mode opens a new page, which Electron refuses. | P7.12 "automated axe checks in e2e". |
+| **Slate colours raised to AA as text**: accent/focus/info `#539BF5 → #6CB6FF`, success `#57AB5A → #6BC46D`, warning `#C69026 → #D4A72C`, danger `#E5534B → #FF7B72`, muted `#96A0AA → #A6B1BC` (supersedes the P0 row above). Axe found pills and danger buttons at 3.44–4.47:1 and Home banner text at 4.02:1; every other theme already passed. Slate stays the softest dark theme (same background and text). | WCAG 1.4.3; status colours are small text, not only icons. |
+| `contrast.test.ts` now requires status and accent colours ≥ 4.5:1 on bg and surface (was 3:1), and muted text ≥ 4.5:1 on the Home banner's 12 % accent tint. Both new checks fail on the old Slate values. | So the axe finding can't come back. |
+| **Settings → Accessibility** (new `accessibility` settings section, all off by default; old files get the defaults, no version bump): reduce motion (follow the system / always), larger click targets (buttons, switches, tabs, rail items ≥ 44 × 44px, WCAG 2.5.5 AAA), underline links, always show the focus ring (`:focus`, not only `:focus-visible`), read out background events. Applied as data attributes on `<html>` in every window, like Appearance. | P7.13. |
+| "Read out background events" puts each notification **shown** while the main window is open into a polite, visually hidden live region (`Announcer`). Off by default: the OS already shows (and VoiceOver/Narrator read) the notification, so on by default would read it twice. Held-back ones (type off, quiet hours, paused) stay silent. | P7.13; respects the notification settings. |
+| Fixed a pre-existing e2e bug: "a click outside the palette closes it" clicked at a fallback 1240 × 820 (Electron gives no viewport size), below the 788px-tall page under the title bar, so it failed on `main` too. It now reads `innerWidth`/`innerHeight`. | Found running the full e2e for P7-E. |
+| **Slate `--text` lightened `#ADBAC7 → #CDD9E5`** (8.89:1 on surface, 10.48:1 on bg) so it stays visibly brighter than the AA muted `#A6B1BC`. `#CDD9E5` is GitHub Dimmed's own bright foreground. | Owner's choice, 2026-10-26. The code review found muted and normal text looked almost the same. |

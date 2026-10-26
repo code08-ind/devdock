@@ -264,6 +264,7 @@ Place this file at `docs/SPEC.md` in the new repository. Every build phase refer
 - **Feature switches:** PR actions (off), job triggers (off; per-job allow list), Jira
   transition on Start work (off), and brief location.
 - **Appearance:** theme (5 + System), font size, density.
+- **Accessibility** (Phase 7, P7.13; all off by default): reduce motion (follow the system / always), larger click targets (44 × 44px), underline links, always show the focus ring, read out background events to screen readers.
 - **Notifications:** per type, quiet hours, sound on/off.
 - **Polling intervals**, global shortcut, launch at login, and demo mode.
 - **Import/export settings JSON.** Secrets are never included in the export.

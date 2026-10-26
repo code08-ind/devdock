@@ -55,7 +55,15 @@ export function CodeBlock({ code, label }: { code: string; label: string }) {
           </button>
         </span>
       </figcaption>
-      <pre className={`code-body mono${wrap ? ' wrap' : ''}`}>{code}</pre>
+      <pre
+        className={`code-body mono${wrap ? ' wrap' : ''}`}
+        aria-label={label}
+        // A scrollable region must be reachable by keyboard (WCAG 2.1.1).
+        // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+        tabIndex={0}
+      >
+        {code}
+      </pre>
     </figure>
   )
 }

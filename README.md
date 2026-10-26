@@ -20,12 +20,12 @@ release notes in [`CHANGELOG.md`](CHANGELOG.md).
 
 From a release (or `npm run dist`, which writes them to `release/<version>/`):
 
-| System               | File                             | Notes                                                             |
-| -------------------- | -------------------------------- | ----------------------------------------------------------------- |
-| macOS, Apple silicon | `DevDock-<version>-arm64.dmg`    | Drag DevDock to Applications.                                     |
-| macOS, Intel         | `DevDock-<version>-x64.dmg`      | Same.                                                             |
-| Windows              | `DevDock-Setup-<version>.exe`    | Installs for you only (no admin rights); you can pick the folder. |
-| Windows, no install  | `DevDock-Portable-<version>.exe` | Runs from anywhere, e.g. a USB stick.                             |
+| System               | File                   | Notes                                                             |
+| -------------------- | ---------------------- | ----------------------------------------------------------------- |
+| macOS, Apple silicon | `DevDock-arm64.dmg`    | Drag DevDock to Applications.                                     |
+| macOS, Intel         | `DevDock-x64.dmg`      | Same.                                                             |
+| Windows              | `DevDock-Setup.exe`    | Installs for you only (no admin rights); you can pick the folder. |
+| Windows, no install  | `DevDock-Portable.exe` | Runs from anywhere, e.g. a USB stick.                             |
 
 Packages are small for an Electron app: every library is bundled into the app (no
 `node_modules`), Electron's own strings are English only, and everything is compressed at the
@@ -113,7 +113,9 @@ any app. It takes arguments: `watch <PR link>`, `pipeline <PR link>`, `branch NM
 
 ![Command palette](docs/screenshots/readme-palette.png)
 
-**Settings** — appearance (five themes, font size, density), notifications (types, quiet hours,
+**Settings** — appearance (five themes, font size, density), accessibility (reduce motion,
+larger click targets, underlined links, an always-visible focus ring, screen-reader announcements
+of notifications), notifications (types, quiet hours,
 history), services and credentials, workflow options (lessons, Start work follow-ups), and
 **Diagnostics**: versions, the proxy in use (or your own), Test all connections, and a report
 to send with a bug.
@@ -222,3 +224,7 @@ To check it by hand on Windows:
 
 Processes of another user, or that need admin rights, are refused with Windows' own message under
 **Details**.
+
+## Licence
+
+MIT — see [LICENSE](LICENSE). Bundled libraries keep their own licences (`THIRD_PARTY_NOTICES.txt` in the app).

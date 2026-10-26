@@ -68,6 +68,48 @@
   }
 }
 
+/* ---- Accessibility (Settings → Accessibility) ------------------------------------------- */
+
+[data-reduce-motion='on'] {
+  --motion: 0ms;
+}
+
+/* Every control at least 44 × 44px (WCAG 2.5.5), small buttons included. */
+[data-larger-targets] {
+  --target-min: 44px;
+  --control-h: max(var(--target-min), calc(var(--fs-base) * 2.3));
+}
+[data-larger-targets] .btn-sm {
+  height: var(--control-h);
+}
+[data-larger-targets] .btn-icon.btn-sm {
+  width: var(--control-h);
+}
+[data-larger-targets] .segment,
+[data-larger-targets] .toggle,
+[data-larger-targets] .rail-item,
+[data-larger-targets] .link-button {
+  min-height: var(--target-min);
+}
+[data-larger-targets] .segment {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--target-min);
+}
+
+[data-underline-links] a[href],
+[data-underline-links] .link-button {
+  text-decoration: underline;
+}
+
+/* The ring after a click too, not only after a key press. */
+[data-focus-always] :focus,
+[data-focus-always] .segment:has(:focus) {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
 /* ---- Themes ---------------------------------------------------------------------------- */
 
 :root,
@@ -171,15 +213,15 @@
   --bg-subtle: #2d333b;
   --surface: #2d333b;
   --border: #444c56;
-  --text: #adbac7;
-  --text-muted: #96a0aa;
-  --accent: #539bf5;
+  --text: #cdd9e5;
+  --text-muted: #a6b1bc;
+  --accent: #6cb6ff;
   --accent-contrast: #1c2128;
-  --focus: #539bf5;
-  --success: #57ab5a;
-  --warning: #c69026;
-  --danger: #e5534b;
-  --info: #539bf5;
+  --focus: #6cb6ff;
+  --success: #6bc46d;
+  --warning: #d4a72c;
+  --danger: #ff7b72;
+  --info: #6cb6ff;
   --selection: #2e4a6b;
 }
 
