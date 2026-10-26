@@ -6,11 +6,15 @@ directories:
 files:
   - out/**
   - package.json
-  # node-pty (P7-A) is the one runtime node_module: only its JS and its own OS's binaries.
+  # node-pty (P7-A) is the one runtime node_module: only its JS and the binaries for the
+  # package's own OS + arch (darwin-arm64, darwin-x64, win32-x64). Kept in this one list: a
+  # `files` list under mac/win that only excludes starts from `**/*` and packs the whole repo.
   - '!node_modules/node-pty/{src,deps,third_party,scripts,typings}/**'
   - '!node_modules/node-pty/binding.gyp'
   - '!node_modules/node-pty/**/*.pdb'
   - '!node_modules/node-addon-api/**'
+  - '!node_modules/node-pty/prebuilds/**'
+  - node_modules/node-pty/prebuilds/${platform}-${arch}/**
 # Small packages (P6.14): every library is bundled into out/ (no node_modules except node-pty;
 # their licenses are in out/THIRD_PARTY_NOTICES.txt), Electron's UI strings only in English
 # (macOS keeps en.lproj, Windows en-US.pak), maximum compression.
@@ -21,13 +25,11 @@ compression: maximum
 asarUnpack:
   - node_modules/node-pty/prebuilds/**
 # node-pty's prebuilds are N-API (one binary per OS + arch, any Electron), so nothing is
-# compiled at package time: the arm64 DMG loads prebuilds/darwin-arm64, x64 darwin-x64,
+# compiled at package time: the arm64 DMG carries prebuilds/darwin-arm64, x64 darwin-x64,
 # Windows win32-x64 (DECISIONS P7-A).
 npmRebuild: false
 mac:
   category: public.app-category.developer-tools
-  files:
-    - '!node_modules/node-pty/prebuilds/win32-*/**'
   icon: build/icon.png
   target:
     - target: dmg
@@ -38,9 +40,6 @@ mac:
   identity: null
 win:
   icon: build/icon.ico
-  files:
-    - '!node_modules/node-pty/prebuilds/darwin-*/**'
-    - '!node_modules/node-pty/prebuilds/win32-arm64/**'
   target:
     - target: nsis
       arch: [x64]
