@@ -49,7 +49,7 @@ Every component uses **only** these semantic tokens — never raw hex values in 
 | `--bg-subtle` | #F5F6F8 | #26282C | #000000 | #EFE9DC | #2D333B |
 | `--surface` | #FFFFFF | #2B2D31 | #0A0A0A | #FBF8F1 | #2D333B |
 | `--border` | #D8DBE0 | #3C3F45 | #FFFFFF | #D9CFBD | #444C56 |
-| `--text` | #1F2328 | #E6E7EA | #FFFFFF | #2B2620 | #ADBAC7 |
+| `--text` | #1F2328 | #E6E7EA | #FFFFFF | #2B2620 | #CDD9E5 |
 | `--text-muted` | #59636E | #A4A8AF | #E0E0E0 | #5E5548 | #A6B1BC |
 | `--accent` | #0B5CAD | #6CB0FF | #FFD400 | #8A4B08 | #6CB6FF |
 | `--accent-contrast` | #FFFFFF | #0B1A2B | #000000 | #FFFFFF | #1C2128 |

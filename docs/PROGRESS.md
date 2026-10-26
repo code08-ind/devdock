@@ -14,8 +14,8 @@ Contract docs: `docs/SPEC.md`, `docs/UI-THEMES.md`, `docs/BUILD-PROMPTS.md` (pha
 
 | Field        | Value                                                         |
 | ------------ | ------------------------------------------------------------- |
-| Phase        | **Paused 2026-10-26 (owner), after P7-E.** P7-E done on `main` (code-review fixes applied) except the human VoiceOver/NVDA pass. P7-A/B/D agents still paused on their branches (p7-terminal, p7-providers, p7-website, in .claude/worktrees/). |
-| Next step    | (1) Ask owner: Slate `--text-muted` #A6B1BC is now close to `--text` #ADBAC7 (AA forced it) — lighten `--text` to restore hierarchy, or accept; (2) resume the three agents from their branches' notes (P7-D: GitHub Pages → Vercel, versionless names; P7-B: CI-actions switch + confirm); (3) review/merge P7-A, P7-B, P7-D; (4) start P7-C |
+| Phase        | **Phase 7, resumed 2026-10-26.** P7-E done on `main` except the human VoiceOver/NVDA pass. P7-A/B/D agents resuming on their branches (p7-terminal, p7-providers, p7-website, in .claude/worktrees/). |
+| Next step    | (1) Resume the three agents from their branches' notes (P7-D: GitHub Pages → Vercel, versionless names; P7-B: CI-actions switch + confirm); (2) review/merge P7-A, P7-B, P7-D; (3) start P7-C |
 | Blockers     | None                                                          |
 | Last updated | 2026-10-26                                                    |
 
@@ -563,3 +563,4 @@ exact resume steps. Nothing pushed.
 | 2026-10-26 | P7 decisions, P7-E | Asked the owner's 5 pending decisions: Vercel hosting, versionless installer names (`npm run dist` → `DevDock-arm64.dmg`, `DevDock-x64.dmg`), tag v0.1.0 after Phase 7, MIT licence (LICENSE added), CI actions behind a switch + confirm. P7-E: added axe e2e; fixed Slate contrast (3.44–4.47 → ≥ 5:1) and the diagnostics report's keyboard reach. | P7.13 |
 | 2026-10-26 | P7.13 | Settings → Accessibility (reduce motion, larger targets, underline links, focus ring always, read out events). Fixed the palette click-outside e2e (clicked below the page). Checks: lint ok; unit 785 passed; e2e 51 passed, 4 skipped (opt-in). | code-review P7-E |
 | 2026-10-26 | P7-E review, pause | code-review (Standards + Spec): fixed DECISIONS installer names, SPEC §6.7 + UI-THEMES motion note, announcer also in the menu-bar panel, axe on panel + palette window in all 5 themes, computed underline check, shared e2e helpers in fixtures.ts, MOTION_MODES + label map, `--target-min` token. Open: Slate muted vs text hierarchy (asked owner). Checks: lint ok; vitest 785 passed; e2e 51 passed, 4 skipped. Owner paused. | Resume per Next step |
+| 2026-10-26 | Resume | Owner: Slate `--text` lightened #ADBAC7 → #CDD9E5 so it stays brighter than the AA muted #A6B1BC (UI-THEMES, DECISIONS). lint ok; vitest 785 passed, 1 skipped (contrast 32). | Resume P7-A/B/D agents |
