@@ -52,6 +52,18 @@ export function contrast(a: string, b: string): number {
   return (hi + 0.05) / (lo + 0.05)
 }
 
+/** sRGB `color-mix(in srgb, a share, b)`, rounded like the browser's computed colour. */
+function mix(a: string, b: string, share: number): string {
+  const ch = (h: string, i: number) => parseInt(h.slice(i, i + 2), 16)
+  return `#${[1, 3, 5]
+    .map((i) =>
+      Math.round(ch(a, i) * share + ch(b, i) * (1 - share))
+        .toString(16)
+        .padStart(2, '0'),
+    )
+    .join('')}`
+}
+
 const named = THEMES.filter((t) => t !== 'system')
 const palettes = Object.fromEntries(
   named.map((t) => [t, palette(block(`[data-theme='${t}'] {`))]),
@@ -84,13 +96,28 @@ describe('theme tokens', () => {
     expect(contrast(p.text, p.selection)).toBeGreaterThanOrEqual(min)
   })
 
-  it.each(named)('%s: status colours and focus are >= 3:1 against bg and surface', (t) => {
+  it.each(named)('%s: focus is >= 3:1 against bg and surface', (t) => {
     const p = palettes[t]
-    for (const k of ['success', 'warning', 'danger', 'info', 'accent', 'focus'] as const) {
+    for (const bg of [p.bg, p.surface]) {
+      expect(contrast(p.focus, bg), `${t} focus`).toBeGreaterThanOrEqual(3)
+    }
+  })
+
+  // Status colours are also small text (pills, danger buttons, links), so they need text contrast.
+  it.each(named)('%s: status and accent colours are readable as text on bg and surface', (t) => {
+    const p = palettes[t]
+    for (const k of ['success', 'warning', 'danger', 'info', 'accent'] as const) {
       for (const bg of [p.bg, p.surface]) {
-        expect(contrast(p[k], bg), `${t} ${k}`).toBeGreaterThanOrEqual(3)
+        expect(contrast(p[k], bg), `${t} ${k}`).toBeGreaterThanOrEqual(4.5)
       }
     }
+  })
+
+  it.each(named)('%s: muted text is readable on the Home banner tint', (t) => {
+    const p = palettes[t]
+    // shell.css .home-hero: color-mix(in srgb, var(--accent) 12%, var(--surface)).
+    const tint = mix(p.accent, p.surface, 0.12)
+    expect(contrast(p['text-muted'], tint), `${t} on ${tint}`).toBeGreaterThanOrEqual(4.5)
   })
 
   it.each(named)('%s: primary button label is readable', (t) => {

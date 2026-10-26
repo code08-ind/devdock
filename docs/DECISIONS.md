@@ -450,3 +450,11 @@ store with migrations).
 | **Tag `v0.1.0` after Phase 7 merges** (P7-A–E merged, all checks green). The release workflow makes a draft; the owner publishes it. | Owner's choice. |
 | **Licence: MIT** (`LICENSE` file, `package.json` `"license": "MIT"`). Matches the website calling it free. | Owner's choice. |
 | **GitHub/GitLab re-run / retry / cancel**: behind a Settings **"CI actions"** switch (off by default) *and* a confirmation each time — the same pattern as PR actions. | Owner's choice. |
+
+## P7-E — Accessibility (2026-10-26)
+
+| Decision | Why |
+| --- | --- |
+| New dev dependency **`@axe-core/playwright` 4.13.0** (exact; not shipped). `tests/e2e/axe.spec.ts` runs axe's WCAG 2.0/2.1/2.2 A + AA rules on every view in all five themes, the four panel tabs, the palette window, the in-app palette, issue details and the Start work dialog. Run with `setLegacyMode(true)`: the default mode opens a new page, which Electron refuses. | P7.12 "automated axe checks in e2e". |
+| **Slate colours raised to AA as text**: accent/focus/info `#539BF5 → #6CB6FF`, success `#57AB5A → #6BC46D`, warning `#C69026 → #D4A72C`, danger `#E5534B → #FF7B72`, muted `#96A0AA → #A6B1BC` (supersedes the P0 row above). Axe found pills and danger buttons at 3.44–4.47:1 and Home banner text at 4.02:1; every other theme already passed. Slate stays the softest dark theme (same background and text). | WCAG 1.4.3; status colours are small text, not only icons. |
+| `contrast.test.ts` now requires status and accent colours ≥ 4.5:1 on bg and surface (was 3:1), and muted text ≥ 4.5:1 on the Home banner's 12 % accent tint. Both new checks fail on the old Slate values. | So the axe finding can't come back. |

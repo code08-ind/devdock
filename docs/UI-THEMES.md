@@ -50,14 +50,14 @@ Every component uses **only** these semantic tokens — never raw hex values in 
 | `--surface` | #FFFFFF | #2B2D31 | #0A0A0A | #FBF8F1 | #2D333B |
 | `--border` | #D8DBE0 | #3C3F45 | #FFFFFF | #D9CFBD | #444C56 |
 | `--text` | #1F2328 | #E6E7EA | #FFFFFF | #2B2620 | #ADBAC7 |
-| `--text-muted` | #59636E | #A4A8AF | #E0E0E0 | #5E5548 | #8B949E |
-| `--accent` | #0B5CAD | #6CB0FF | #FFD400 | #8A4B08 | #539BF5 |
+| `--text-muted` | #59636E | #A4A8AF | #E0E0E0 | #5E5548 | #A6B1BC |
+| `--accent` | #0B5CAD | #6CB0FF | #FFD400 | #8A4B08 | #6CB6FF |
 | `--accent-contrast` | #FFFFFF | #0B1A2B | #000000 | #FFFFFF | #1C2128 |
-| `--focus` | #0B5CAD | #6CB0FF | #FFD400 | #8A4B08 | #539BF5 |
-| `--success` | #1A7F37 | #57C27A | #7CFF7C | #2F6B2F | #57AB5A |
-| `--warning` | #9A6700 | #E3B341 | #FFD400 | #8A5A00 | #C69026 |
-| `--danger` | #C21F3A | #FF7B8A | #FF6B6B | #A3222E | #E5534B |
-| `--info` | #0B5CAD | #6CB0FF | #66CCFF | #2F5F8A | #539BF5 |
+| `--focus` | #0B5CAD | #6CB0FF | #FFD400 | #8A4B08 | #6CB6FF |
+| `--success` | #1A7F37 | #57C27A | #7CFF7C | #2F6B2F | #6BC46D |
+| `--warning` | #9A6700 | #E3B341 | #FFD400 | #8A5A00 | #D4A72C |
+| `--danger` | #C21F3A | #FF7B8A | #FF6B6B | #A3222E | #FF7B72 |
+| `--info` | #0B5CAD | #6CB0FF | #66CCFF | #2F5F8A | #6CB6FF |
 | `--selection` | #DCEBFF | #2F4A6B | #333300 | #EADFC8 | #2E4A6B |
 
 Theme options in Settings: **System (Light/Dark)**, Light, Dark, High Contrast, Paper (low-glare
