@@ -123,7 +123,9 @@ export function TerminalPage({ request }: { request?: { n: number; repoId: strin
   }, [store])
 
   useEffect(() => {
-    if (settings) store.setOptions(settings.terminal)
+    if (settings) {
+      store.setOptions({ ...settings.terminal, appFontSize: settings.appearance.fontSize })
+    }
   }, [settings, store])
 
   // Colours follow the theme: the setting, and the OS scheme for System.

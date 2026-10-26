@@ -100,12 +100,13 @@ export const TerminalSettingsSchema = z
   .object({
     /** '' = the login shell ($SHELL) on macOS, PowerShell on Windows. */
     shell: ShellOverrideSchema.default(''),
+    /** 'app': the app's font size (Settings → Appearance), else pixels. */
     fontSize: z
-      .number()
-      .int()
-      .min(TERMINAL_FONT_SIZES.min)
-      .max(TERMINAL_FONT_SIZES.max)
-      .default(13),
+      .union([
+        z.literal('app'),
+        z.number().int().min(TERMINAL_FONT_SIZES.min).max(TERMINAL_FONT_SIZES.max),
+      ])
+      .default('app'),
     cursorStyle: z.enum(CURSOR_STYLES).default('block'),
     cursorBlink: z.boolean().default(true),
     /** Lines kept above the screen per terminal. */
@@ -119,9 +120,18 @@ export const TerminalSettingsSchema = z
   .prefault({})
 export type TerminalSettings = z.infer<typeof TerminalSettingsSchema>
 
-/** The terminal font: a monospace stack, system fonts only (UI-THEMES: no web fonts). */
+/**
+ * The terminal font: system monospace fonts only (UI-THEMES: no web fonts). Owner: "a little
+ * bold, like a real terminal" — normal text at 500, bold (ANSI 1) at 700 (DECISIONS P7-A).
+ */
 export const TERMINAL_FONT_STACK =
-  '"JetBrains Mono", "SF Mono", Menlo, "Cascadia Mono", Consolas, "DejaVu Sans Mono", ui-monospace, monospace'
+  '"SF Mono", Menlo, "Cascadia Mono", Consolas, "DejaVu Sans Mono", ui-monospace, monospace'
+export const TERMINAL_FONT_WEIGHT = '500'
+export const TERMINAL_FONT_WEIGHT_BOLD = '700'
+
+/** The terminal's font size in pixels for a `fontSize` setting and the app's font size. */
+export const terminalFontSize = (setting: number | 'app', appFontSize: number) =>
+  setting === 'app' ? appFontSize : setting
 
 // --- Colours ------------------------------------------------------------------------------------
 
@@ -232,7 +242,7 @@ export const minContrastFor = (highContrast: boolean) => (highContrast ? 7 : 4.5
  * between danger and info — so oh-my-zsh's robbyrussell prompt (green/red arrow, cyan folder,
  * blue `git:(`, red branch, yellow ✗) reads in the theme's own colours. Bright colours step
  * towards the text colour. Every colour except black/white (which are meant to be close to
- * the background on one side) is raised to the theme's text contrast.
+ * the background on one side) is raised to the theme's text contrast; those two to 3:1.
  */
 export function terminalPalette(
   t: ThemeTokens,
@@ -250,9 +260,12 @@ export function terminalPalette(
   const cyan = fit(mix(t.info, t.success, 0.5))
   const magenta = fit(mix(t.danger, t.info, 0.5))
   // Dark themes: black is a step above the background, white is the text colour.
-  // Light themes: black is the text colour, white a step below the background.
-  const black = dark ? t.border : t.text
-  const white = dark ? t.text : t.border
+  // Light themes: black is the text colour, white a step below the background. The colour
+  // meant to sit near the background is still raised to 3:1 (4.5:1 in High Contrast, the
+  // non-text minimum), so text printed in it stays visible.
+  const faint = (c: string) => ensureContrast(c, t.bg, t.text, opts.highContrast ? 4.5 : 3)
+  const black = dark ? faint(t.border) : t.text
+  const white = dark ? t.text : faint(t.border)
   return {
     background: t.bg,
     foreground: fit(t.text),
@@ -277,6 +290,6 @@ export function terminalPalette(
     brightBlue: brighter(t.info),
     brightMagenta: brighter(mix(t.danger, t.info, 0.5)),
     brightCyan: brighter(mix(t.info, t.success, 0.5)),
-    brightWhite: dark ? '#ffffff' : t.bgSubtle,
+    brightWhite: dark ? '#ffffff' : faint(mix(t.border, t.bgSubtle, 0.5)),
   }
 }

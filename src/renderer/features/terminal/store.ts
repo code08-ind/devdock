@@ -13,6 +13,9 @@ import '@xterm/xterm/css/xterm.css'
 import {
   MAX_WRITE,
   TERMINAL_FONT_STACK,
+  TERMINAL_FONT_WEIGHT,
+  TERMINAL_FONT_WEIGHT_BOLD,
+  terminalFontSize,
   type TerminalExitEvent,
   type TerminalOutputEvent,
   type TerminalSettings,
@@ -44,6 +47,9 @@ export interface TerminalHooks {
   onError: (message: string, details?: string) => void
 }
 
+/** Settings → Terminal plus the app's font size (for "Same as the app"). */
+export type TerminalOptions = TerminalSettings & { appFontSize: number }
+
 type Listener = () => void
 
 /** Leaves these to DevDock even while the terminal has focus: views, palette, Settings. */
@@ -65,7 +71,7 @@ class TerminalSession {
   constructor(
     readonly tab: TerminalTab,
     private readonly store: TerminalStore,
-    options: TerminalSettings,
+    options: TerminalOptions,
   ) {
     this.element = document.createElement('div')
     this.element.className = 'terminal-screen'
@@ -73,7 +79,9 @@ class TerminalSession {
     this.term = new Terminal({
       allowProposedApi: true,
       fontFamily: TERMINAL_FONT_STACK,
-      fontSize: options.fontSize,
+      fontSize: terminalFontSize(options.fontSize, options.appFontSize),
+      fontWeight: TERMINAL_FONT_WEIGHT,
+      fontWeightBold: TERMINAL_FONT_WEIGHT_BOLD,
       cursorStyle: options.cursorStyle,
       cursorBlink: options.cursorBlink,
       scrollback: options.scrollback,
@@ -228,8 +236,8 @@ class TerminalSession {
     )
   }
 
-  setOptions(o: TerminalSettings): void {
-    this.term.options.fontSize = o.fontSize
+  setOptions(o: TerminalOptions): void {
+    this.term.options.fontSize = terminalFontSize(o.fontSize, o.appFontSize)
     this.term.options.cursorStyle = o.cursorStyle
     this.term.options.cursorBlink = o.cursorBlink
     this.term.options.scrollback = o.scrollback
@@ -258,7 +266,7 @@ export class TerminalStore {
   private readonly listeners = new Set<Listener>()
   private viewport: HTMLElement | null = null
   private next = 1
-  private options: TerminalSettings | null = null
+  private options: TerminalOptions | null = null
   hooks: TerminalHooks | null = null
   private snapshot: { tabs: TerminalTab[]; active: string | null } = { tabs: [], active: null }
 
@@ -394,7 +402,7 @@ export class TerminalStore {
   }
 
   /** Settings → Terminal changed. */
-  setOptions(o: TerminalSettings): void {
+  setOptions(o: TerminalOptions): void {
     this.options = o
     for (const s of this.sessions.values()) s.setOptions(o)
   }
@@ -418,9 +426,10 @@ export class TerminalStore {
   }
 }
 
-const DEFAULT_OPTIONS: TerminalSettings = {
+const DEFAULT_OPTIONS: TerminalOptions = {
   shell: '',
-  fontSize: 13,
+  fontSize: 'app',
+  appFontSize: 14,
   cursorStyle: 'block',
   cursorBlink: true,
   scrollback: 5000,

@@ -18,10 +18,10 @@ const CURSOR_LABELS: Record<CursorStyle, string> = {
   underline: 'Underline',
 }
 const cursorOptions = CURSOR_STYLES.map((c) => ({ value: c, label: CURSOR_LABELS[c] }))
-const fontOptions = Array.from(
+const sizeOptions = Array.from(
   { length: TERMINAL_FONT_SIZES.max - TERMINAL_FONT_SIZES.min + 1 },
   (_, i) => TERMINAL_FONT_SIZES.min + i,
-).map((s) => ({ value: s, label: `${s}px` }))
+).map((s) => ({ value: s as number | 'app', label: `${s}px` }))
 const scrollbackOptions = [1000, 5000, 10_000, 50_000, 100_000].map((n) => ({
   value: n,
   label: `${n.toLocaleString('en')} lines`,
@@ -65,7 +65,10 @@ export function TerminalSection({ settings }: { settings: Settings }) {
         {({ id }) => (
           <Select
             id={id}
-            options={fontOptions}
+            options={[
+              { value: 'app', label: `Same as the app (${settings.appearance.fontSize}px)` },
+              ...sizeOptions,
+            ]}
             value={t.fontSize}
             onValue={(fontSize) => update.mutate({ terminal: { fontSize } })}
           />
