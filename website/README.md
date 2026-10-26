@@ -19,7 +19,7 @@ npm run preview    # serves website/dist at http://localhost:4173 (what gets pub
 
 ```sh
 npm test                                   # Vitest: OS/CPU detection, file names and links, manifest, install steps
-npm run build && PW_CHANNEL=chrome npx playwright test site   # page in a browser: downloads, dialog, tabs, theme
+npm run build && PW_CHANNEL=chrome npx playwright test site axe   # in a browser: downloads, dialog, tabs, theme; axe WCAG 2.2 AA in all 5 themes
 SHOTS_DIR=/tmp/devdock-shots PW_CHANNEL=chrome npx playwright test screens   # light/dark × desktop/phone screenshots
 ```
 

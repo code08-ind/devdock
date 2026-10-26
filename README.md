@@ -35,15 +35,15 @@ highest level — 103.5 MB for the Apple silicon DMG and 106.2 MB for Intel (0.1
 
 DevDock isn't code-signed yet, so your system warns you the first time:
 
-- **macOS (Gatekeeper):** "DevDock can't be opened because Apple cannot check it for malicious
-  software." Open **System Settings → Privacy & Security**, scroll to the message about DevDock
-  and choose **Open Anyway** (or Control-click DevDock in Applications → **Open** → **Open**).
-  You only do this once.
+- **macOS (Gatekeeper):** "DevDock Not Opened" (macOS 15 and later; older versions say Apple
+  cannot check it for malicious software). Choose **Done**, open **System Settings → Privacy &
+  Security**, scroll to the message about DevDock and choose **Open Anyway**. You only do this
+  once. (The old Control-click → **Open** shortcut no longer works on macOS 15.)
 - **Windows (SmartScreen):** "Windows protected your PC." Choose **More info → Run anyway**.
 
 **At work:** company Macs and PCs are often managed so that unsigned apps are blocked outright
 (MDM, Intune, AppLocker). Then the options above aren't offered, and your IT team needs to
-approve DevDock — point them to this repository: the source is here, the build is reproducible
+approve DevDock — point them to this repository: the source is here, they can build it themselves
 with `npm run dist`, it needs no admin rights, and it only talks to the Jira, Bitbucket and
 Jenkins addresses you enter.
 

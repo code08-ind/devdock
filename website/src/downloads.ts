@@ -56,17 +56,15 @@ export function assetUrl(id: AssetId): string {
   return `${REPO_URL}/releases/latest/download/${FILE_NAMES[id]}`
 }
 
+function installer(id: AssetId, size: number | undefined): Installer {
+  return { id, ...META[id], file: FILE_NAMES[id], url: assetUrl(id), size }
+}
+
 export function releaseFromConfig(config: ReleaseConfig = RELEASE_CONFIG): Release {
   return {
     available: config.available,
     version: config.version,
-    installers: ASSET_IDS.map((id) => ({
-      id,
-      ...META[id],
-      file: FILE_NAMES[id],
-      url: assetUrl(id),
-      size: config.sizes[id],
-    })),
+    installers: ASSET_IDS.map((id) => installer(id, config.sizes[id])),
   }
 }
 
@@ -85,13 +83,7 @@ export function releaseFromManifest(data: unknown): Release | null {
     const a = (assets as Record<string, unknown>)[id] as
       { name?: unknown; size?: unknown } | undefined
     if (!a || a.name !== FILE_NAMES[id]) return null
-    installers.push({
-      id,
-      ...META[id],
-      file: FILE_NAMES[id],
-      url: assetUrl(id),
-      size: typeof a.size === 'number' ? a.size : undefined,
-    })
+    installers.push(installer(id, typeof a.size === 'number' ? a.size : undefined))
   }
   return { available: true, version, installers }
 }

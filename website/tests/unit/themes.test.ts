@@ -21,7 +21,7 @@ function siteTokens(selector: string): Record<string, string> {
   return Object.fromEntries(
     [...block.matchAll(/(--[\w-]+):\s*(#[0-9a-fA-F]{6})\s*;/g)].map((m) => [
       m[1],
-      m[2].toLowerCase(),
+      (m[2] ?? '').toLowerCase(),
     ]),
   )
 }
@@ -29,17 +29,21 @@ function siteTokens(selector: string): Record<string, string> {
 function specTokens(): Record<string, string[]> {
   const rows = [...doc.matchAll(/^\| `(--[\w-]+)` \|(.+)\|$/gm)]
   return Object.fromEntries(
-    rows.map((m) => [m[1], m[2].split('|').map((c) => c.trim().toLowerCase())]),
+    rows.map((m) => [m[1], (m[2] ?? '').split('|').map((c) => c.trim().toLowerCase())]),
   )
 }
 
 describe('theme tokens match UI-THEMES.md', () => {
+  it('the system-dark copy (no theme chosen) equals the Dark theme', () => {
+    expect(siteTokens('@media (prefers-color-scheme: dark)')).toEqual(siteTokens(SELECTOR.Dark))
+  })
+
   const spec = specTokens()
   it.each(THEMES.map((t, i) => [t, i] as const))('%s', (theme, column) => {
     const site = siteTokens(SELECTOR[theme])
     const shared = Object.keys(site).filter((token) => token in spec)
     expect(shared.length).toBeGreaterThanOrEqual(10)
     for (const token of shared)
-      expect(`${token} ${site[token]}`).toBe(`${token} ${spec[token][column]}`)
+      expect(`${token} ${site[token]}`).toBe(`${token} ${spec[token]?.[column]}`)
   })
 })

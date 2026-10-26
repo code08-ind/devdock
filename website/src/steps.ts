@@ -23,9 +23,8 @@ const AFTER: Rich =
   'DevDock starts in **demo mode**: every screen works on sample data, with no accounts and no network calls. Turn it off in **Settings → Demo mode** when you want to connect Jira, Bitbucket and Jenkins.'
 
 const GATEKEEPER: Rich[] = [
-  'The first time, macOS says **“DevDock can’t be opened because Apple cannot check it for malicious software.”** Choose **Done**.',
-  'Open **System Settings → Privacy & Security**, scroll to the message about DevDock and choose **Open Anyway**, then confirm with your password or Touch ID.',
-  'Or: Control-click DevDock in Applications, choose **Open**, then **Open** again. You only do this once.',
+  'The first time, macOS says DevDock can’t be checked for malicious software (on macOS 15 and later: **“DevDock Not Opened”**). Choose **Done**.',
+  'Open **System Settings → Privacy & Security**, scroll to the message about DevDock and choose **Open Anyway**, then confirm with your password or Touch ID. You only do this once.',
 ]
 
 const SMARTSCREEN: Rich[] = [
