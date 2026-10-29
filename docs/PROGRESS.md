@@ -14,10 +14,10 @@ Contract docs: `docs/SPEC.md`, `docs/UI-THEMES.md`, `docs/BUILD-PROMPTS.md` (pha
 
 | Field        | Value                                                         |
 | ------------ | ------------------------------------------------------------- |
-| Phase        | **Phase 7, resumed 2026-10-26.** P7-E done on `main` except the human VoiceOver/NVDA pass. P7-A resuming on branch `p7-terminal` (rebased onto main). |
-| Next step    | P7-A: see "Phase 7 → Where P7-A stopped" below |
+| Phase        | **Phase 7.** On `main`: P7-B merged 2026-10-29 (lint, 852 unit, 55 e2e pass), P7-D merged, P7-E done, website redesigned. P7-A paused on `p7-terminal` @ 65cc022 with review fixes left (its PROGRESS: "Where P7-A stopped"). |
+| Next step    | (1) ~~Merge `p7-providers`~~ done; (2) ask owner: CSP `style-src-attr 'unsafe-inline'` vs the P7-A style shim (recommend shim); (3) resume P7-A from its notes, then merge; (4) swap the website's drawn terminal for a real screenshot; (5) start P7-C; (6) update website copy for GitHub/GitLab + AI |
 | Blockers     | None                                                          |
-| Last updated | 2026-10-26                                                    |
+| Last updated | 2026-10-29                                                    |
 
 ---
 
@@ -484,7 +484,7 @@ exact resume steps. Nothing pushed.
 | Track | Branch @ commit | State | Resume with |
 | --- | --- | --- | --- |
 | P7-A Terminal | `p7-terminal` (rebased, resumed 2026-10-26) | Main process (PTY manager, shell + DevDock prompt, batching, IPC), renderer (xterm view, tabs, palette, repo buttons) and packaging config written; node-pty 1.1.0 proven to spawn a real PTY here (postinstall fixes its macOS `spawn-helper` permission). Not yet built, run or tested. | Fix palette test context and view counts, Settings → Terminal, build + launch (CSP style shim, WebGL fallback), tests, docs, lint/test/e2e/dist, code-review |
-| P7-B Providers | `p7-providers` @ `9280edb` | Provider model, PR hub, GitHub + GitLab clients (PRs/MRs, Actions/pipelines, logs, re-run), rate limits + ETag cache, run watcher, settings/IPC/keychain written. Unwired, not type-checked or tested; GitHub demo data only. | Typecheck, handlers + index wiring, GitLab demo data, unit tests, renderer, e2e, docs, code-review |
+| P7-B Providers | merged into `main` 2026-10-29 | Done and merged: GitHub + GitLab PRs/MRs and Actions/pipelines, Settings → GitHub / GitLab / Actions (PR + CI actions switches), demo sites, tray/Today/panel/palette/Diagnostics; code-review fixes applied. lint ok; vitest 852 passed, 1 skipped; e2e 55 passed, 4 skipped (2026-10-26). | Owner review → merge |
 | P7-D Website | `p7-website` @ `07d377e` | Site built (Vite + TS), OS-aware downloads + install dialog, release + Pages workflows (not run); build, 21 unit + 9 browser tests, root lint/test pass; Lighthouse 99–100. | DECISIONS rows, code-review, tick P7.10/P7.11 |
 | P7-C AI agents | — | Not started (after P7-A merges). | — |
 | P7-E Accessibility | `main` | P7.12 automated part + P7.13 done; lint, 785 unit, 51 e2e green (2026-10-26). | Manual VoiceOver/NVDA pass (owner); Slate muted/text hierarchy question |
@@ -508,9 +508,10 @@ exact resume steps. Nothing pushed.
 - [ ] **P7-E — Accessibility** (owner request 2026-10-26: "add accessibility in the software")
   - [~] `P7.12` Audit against WCAG 2.2 AA — automated part done: `tests/e2e/axe.spec.ts` (3 tests) pass; `contrast.test.ts` 32/32 incl. new 4.5:1 status-text and banner-tint checks (fail on old Slate); `a11y.spec.ts` keyboard rounds + 12/18px pass. Still open: a real VoiceOver + NVDA listening pass (needs a person). Audit: screen-reader names/roles/live regions on every view, the panel and dialogs (VoiceOver + NVDA pass), focus order and return, reduced motion, contrast in all five themes (extend tests/unit/contrast.test.ts), target sizes
   - [x] `P7.13` Settings → Accessibility — e2e `Settings → Accessibility: each switch changes the app` (targets ≥ 44px on all 8 views, motion token 0ms, ring after click, live-region text; fails with the announcer blanked); unit `settings.test.ts` defaults. Settings → Accessibility: reduce motion (follow system or on), larger click targets, underline links, always-visible focus ring, screen-reader announcements for background events (build finished, PR changed); automated axe checks in e2e
-- [ ] **P7-D — Landing website** (folder `website/`, branch `p7-website`)
-  - [ ] `P7.10` Static site: hero, features with real screenshots, download section that detects macOS (Apple silicon / Intel) or Windows and offers the right installer, unsigned-app help, privacy, FAQ; light/dark; accessible; fast
-  - [ ] `P7.11` Downloads wired to GitHub Releases (latest); a release workflow building and attaching the installers on a version tag — publishing and hosting only after the owner confirms
+- [x] **P7-D — Landing website** (folder `website/`, branch `p7-website`) — built and reviewed; not merged, hosted or released (owner)
+  - [x] `P7.10` Static site: hero, features with real screenshots, download section that detects macOS (Apple silicon / Intel) or Windows and offers the right installer, unsigned-app help, privacy, FAQ; light/dark; accessible; fast
+  - [x] `P7.11` Downloads wired to GitHub Releases (latest); a release workflow building and attaching the installers on a version tag — publishing and hosting only after the owner confirms
+  - Status (p7-website, done 2026-10-26, not merged): merged `main` (owner decisions). Vercel (`website/vercel.json`, Root Directory `website`, `npm run build:site`) replaces the Pages workflow (deleted); versionless names → links always `/releases/latest/download/<name>` (unit test checks `electron-builder.yml`); `releases.json` written at build time (version + sizes only, never fails the build); release workflow: lint + unit tests, versionless names, draft only; footer MIT; CI `website` job; Slate tokens synced to UI-THEMES + drift test; axe WCAG 2.2 AA e2e (5 themes, coming-soon, dialog); macOS 15 Gatekeeper copy; DECISIONS "P7-D". code-review (Standards + Spec) run, fixes applied. Evidence: website Vitest 27/27 (5 files); website Playwright (Chrome) 16 passed, 4 skipped (opt-in screenshots) incl. `axe.spec.ts` 7/7 (mutation: Slate muted #555b62 fails it); root `npm run lint` exit 0; root `npm test` 785 passed/1 skipped. Root e2e not run (no app code changed on this branch). Lighthouse (earlier, before this session): mobile 99/100/100/100, desktop 100. OWNER: connect Vercel (Root Directory `website`), publish the draft release after tagging, then redeploy on Vercel. FOLLOW-UP after P7-B/C merge: update site copy (GitHub/GitLab, opt-in AI providers; it now says Jira/Bitbucket/Jenkins and "no AI service").
 
 ---
 
@@ -544,6 +545,21 @@ Resume, in order:
 Owner to check by hand: how their own oh-my-zsh prompt/plugins look in DevDock's terminal (Light, Dark, Slate); Windows (PowerShell, ConPTY) on a real machine; CSP alternative (`style-src-attr 'unsafe-inline'` for the main window) was **not** applied — the shim is used instead.
 
 ---
+
+## Phase 7 — P7-B CI / Git provider integrations (branch `p7-providers`, WIP)
+
+Status: **done 2026-10-26, awaiting owner review.** Rebased onto `main`, later merged `main` (P7-D). code-review (Standards + Spec) run and fixed.
+
+- [x] `P7.04` Provider model — `PrHub` routes by `ref.provider`; watchers, Jenkins "my work", standup through it; `bitbucket.enabled`; `providers:detect`; tray lists watched runs; renderer lists every provider (`useQueries`), provider filter, `refLabel`, palette `watch <link>` for any provider. Evidence: `providers.test.ts`, `provider-handlers.test.ts`, e2e `providers.spec.ts` test 1.
+- [x] `P7.05` GitHub — PRs (mine, reviewing, merged, watch, actions behind the PR-actions switch + confirmation), Actions runs (jobs, steps, log tail, watch, re-run behind Settings → CI actions + confirmation), github.com + GHE. Evidence: `github-client.test.ts` 21; e2e `providers.spec.ts` test 3 (watched run → "Passed · payments-api CI #88", green dot).
+- [x] `P7.06` GitLab — MRs (approve, merge; no request changes), pipelines (jobs by stage, trace, watch, retry/cancel behind the switch + confirmation), gitlab.com + self-managed (relative root, subgroups); `demo/gitlab.ts`. Evidence: `gitlab-client.test.ts` 15; e2e `providers.spec.ts` test 2.
+- [x] `P7.07` Settings → GitHub / GitLab (Use switch, URL, Detect, Test connection) + CI actions; Today, panel, palette, Diagnostics (Test all, proxy routes) cover them; README, CHANGELOG, SPEC 6.3a, DECISIONS "P7-B". axe: new test scans PRs, both CI tabs, run dialog, CI confirm, Settings in all 5 themes.
+
+code-review fixes: log redirects checked hop by hop (https only, no token, opaque refused), log streamed with only the tail kept; PR actions moved with CI actions into a neutral Settings → Actions; GitHub runs also include others' runs on my branches; `providerWeb` in shared/providers; small cleanups. Left open (recorded): GitLab pipelines only `username=` me; Jenkins keeps its own CI model; `shared/bitbucket.ts` still holds the provider-neutral PR model (rename to `shared/prs.ts` would touch ~40 files).
+
+Final checks (2026-10-26): `npm run lint` ok; `npx vitest run` 60 files, 852 passed, 1 skipped; `npm run e2e` 55 passed, 4 skipped (opt-in screenshots/perf). `npm run dist` not run on this branch.
+
+Next step: owner review → merge `p7-providers` into `main`.
 
 ## Session log (append-only)
 
@@ -595,5 +611,14 @@ Owner to check by hand: how their own oh-my-zsh prompt/plugins look in DevDock's
 | 2026-10-26 | P7.13 | Settings → Accessibility (reduce motion, larger targets, underline links, focus ring always, read out events). Fixed the palette click-outside e2e (clicked below the page). Checks: lint ok; unit 785 passed; e2e 51 passed, 4 skipped (opt-in). | code-review P7-E |
 | 2026-10-26 | P7-E review, pause | code-review (Standards + Spec): fixed DECISIONS installer names, SPEC §6.7 + UI-THEMES motion note, announcer also in the menu-bar panel, axe on panel + palette window in all 5 themes, computed underline check, shared e2e helpers in fixtures.ts, MOTION_MODES + label map, `--target-min` token. Open: Slate muted vs text hierarchy (asked owner). Checks: lint ok; vitest 785 passed; e2e 51 passed, 4 skipped. Owner paused. | Resume per Next step |
 | 2026-10-26 | Resume | Owner: Slate `--text` lightened #ADBAC7 → #CDD9E5 so it stays brighter than the AA muted #A6B1BC (UI-THEMES, DECISIONS). lint ok; vitest 785 passed, 1 skipped (contrast 32). | Resume P7-A/B/D agents |
+| 2026-10-26 | P7-D | WIP on branch p7-website: website/ scaffold (Vite + plain TS), all sections, download config/detection/dialog; builds. | Tests, workflows, review |
+| 2026-10-26 | P7-D pause | Website, tests, release + Pages workflows done and committed on p7-website (not pushed/deployed). Paused by owner before DECISIONS rows and code-review. | DECISIONS P7-D → code-review → tick P7.10/P7.11 |
+| 2026-10-26 | P7-D done | Resumed on p7-website: merged main; Vercel config replaces the Pages workflow; versionless `/releases/latest/download/` links; build-time releases.json; MIT footer; CI website job; Slate token sync + drift test; axe e2e (new dev dep @axe-core/playwright 4.13.0 in website/); macOS 15 Gatekeeper copy; DECISIONS P7-D. code-review run, fixes applied. Checks: website vitest 27, Playwright 16 passed/4 skipped; root lint ok, test 785 passed/1 skipped. Not pushed, deployed or tagged. | Owner review → merge p7-website; connect Vercel |
+| 2026-10-26 | P7-D merge | Merged `p7-website` (8f1d179): Vercel config, versionless installer links, draft-only release workflow, website axe tests. Root lint exit 0; vitest 785 passed, 1 skipped; website vitest 27 passed. Owner to do: Vercel import (Root Directory `website`), later tag v0.1.0. | Merge P7-A, P7-B |
+| 2026-10-26 | P7-B (WIP) | Branch p7-providers. Provider model (PrRef.provider, any-provider links, PrHub, watchers via hub), settings/secrets/IPC contract for GitHub + GitLab + CI, GitHub + GitLab clients and mappers, provider REST helper (ETag, rate-limit pause, log redirect), CI watcher, GitHub demo. Untested, not wired. Paused at owner request. | Lint → handlers/index wiring → GitLab demo → tests → renderer |
+| 2026-10-26 | P7-B | Resumed p7-providers: rebased on main; type-check, handlers + index wiring (HostService ×2, PrHub, CiWatcher + scheduler, tray), GitLab demo, Detect; renderer (PRs from every provider + filter, Builds GitHub Actions / GitLab pipelines tabs, run dialog with jobs/steps/log, confirmed CI actions, Settings → GitHub / GitLab / Actions, Today/panel/palette run links); e2e providers.spec (3) + axe on new UI ×5 themes; docs (SPEC 6.3a, README, CHANGELOG, DECISIONS P7-B). Merged main (P7-D). code-review run; fixes applied. lint ok; vitest 852 passed, 1 skipped; e2e 55 passed, 4 skipped. | Owner review → merge |
+| 2026-10-26 | Website redesign | Owner: chainyourmac-style look, Light/Dark toggle, hero shows only the panel (larger), Mac/Windows logo buttons, Terminal tab (drawn until P7-A screenshot). Root lint 0; website vitest 24 passed; playwright site+axe 13 passed, 4 skipped. P7-A agent stopped with review fixes left (see p7-terminal PROGRESS). | Resume P7-A; P7-B running |
+| 2026-10-26 | Pause | P7-B agent finished (ready to merge); P7-A agent paused by owner. P7-B merge started then aborted to respect the pause; `main` clean at 95749aa. | Resume per Next step |
 | 2026-10-26 | P7-A (WIP) | Branch p7-terminal. node-pty 1.1.0 verified under Electron 45 (prebuilds; spawn-helper chmod fix). Terminal contract, PTY manager, shell/prompt, handlers, main wiring, packaging config, renderer store/view/palette/repo buttons written. Not built or tested yet. Paused by owner. | P7-A step 1 in Phase 7 "Where P7-A stopped" |
 | 2026-10-26 | P7-A resume, pause | Rebased p7-terminal onto main (P7-E, Slate text). Settings → Terminal, CSP-safe style shim, owner's bold text (500/700), readable ANSI black/white, a11y fixes, tests (terminal e2e 5, unit/integration 37), docs, packaging fix (asar 10.6 → 2.9 MB); dist arm64 + x64 built (108.5 / 111.6 MB) and the packaged app ran zsh. code-review run; part of its fixes done. Owner paused. | P7-A "Where P7-A stopped (evening)" |
+| 2026-10-29 | P7-B merge | Merged `p7-providers` into `main` (conflicts only in DECISIONS/PROGRESS rows; both sides kept). `npm run lint` exit 0; `npm test` 60 files, 852 passed, 1 skipped; `npm run e2e` 55 passed, 4 skipped. Not pushed. | Owner: CSP vs style shim for P7-A → resume P7-A |

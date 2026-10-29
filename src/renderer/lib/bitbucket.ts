@@ -1,12 +1,18 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import type { PrActionRequest, PrList } from '@shared/bitbucket'
-import { bridge, keys, queryClient, unwrap, useSettings } from './devdock'
+import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
+import type { PrActionRequest, PrList, PullRequest } from '@shared/bitbucket'
+import type { Provider } from '@shared/providers'
+import { enabledProviders } from '@shared/settings'
+import { DevDockError, bridge, keys, queryClient, unwrap, useSettings } from './devdock'
 
-/** Bitbucket data (SPEC 6.3). Lists come from the main process; tokens never get here. */
+/**
+ * Pull requests from every provider turned on (SPEC 6.3, P7.04: Bitbucket, GitHub, GitLab).
+ * Lists come from the main process; tokens never get here.
+ */
 
 export const prKeys = {
-  all: ['bitbucket'] as const,
-  list: (list: PrList) => ['bitbucket', 'list', list] as const,
+  all: ['prs'] as const,
+  list: (list: PrList) => ['prs', 'list', list] as const,
+  listOf: (list: PrList, provider: Provider) => ['prs', 'list', list, provider] as const,
 }
 
 export const LIST_LABELS: Record<PrList, string> = {
@@ -15,19 +21,68 @@ export const LIST_LABELS: Record<PrList, string> = {
   merged: 'Recently merged',
 }
 
+export interface PrListResult {
+  /** Every provider's PRs that loaded, newest activity first. */
+  data: PullRequest[] | undefined
+  /** Set only when every provider failed (the first failure). */
+  error: unknown
+  /** Providers that failed while others loaded: shown under the list. */
+  failures: { provider: Provider; error: unknown }[]
+  isPending: boolean
+  isFetching: boolean
+}
+
+const NONE_ON = new DevDockError(
+  'NOT_CONFIGURED',
+  'Pull requests are turned off for Bitbucket, GitHub and GitLab. Turn one on in Settings.',
+)
+
 /**
- * Lists refresh at the foreground interval while the window has focus (React Query pauses
- * the timer otherwise) and on focus. Watched PRs are polled by the main process instead.
+ * One list across the providers that are on, each its own query (one slow or failing provider
+ * doesn't hold up the others). Refreshes at the foreground interval while the window has
+ * focus and on focus; watched PRs are polled by the main process instead.
  */
-export function usePrList(list: PrList, enabled = true) {
-  const intervalMs = (useSettings().data?.polling.foregroundSec ?? 60) * 1000
-  return useQuery({
-    queryKey: prKeys.list(list),
-    queryFn: () => unwrap(bridge.bitbucket.list({ list })),
-    enabled,
-    staleTime: intervalMs,
-    refetchInterval: intervalMs,
-    refetchOnWindowFocus: true,
+export function usePrList(list: PrList, enabled = true): PrListResult {
+  const settings = useSettings().data
+  const intervalMs = (settings?.polling.foregroundSec ?? 60) * 1000
+  const providers = settings ? enabledProviders(settings) : []
+  return useQueries({
+    queries: providers.map((provider) => ({
+      queryKey: prKeys.listOf(list, provider),
+      queryFn: () => unwrap(bridge.prs.list({ provider, list })),
+      enabled,
+      staleTime: intervalMs,
+      refetchInterval: intervalMs,
+      refetchOnWindowFocus: true,
+    })),
+    combine: (results) => {
+      const failed = results.flatMap((r, i) =>
+        r.error ? [{ provider: providers[i]!, error: r.error as unknown }] : [],
+      )
+      const loaded = results.filter((r) => r.data)
+      const allFailed = results.length > 0 && failed.length === results.length
+      if (settings && providers.length === 0) {
+        return {
+          data: undefined,
+          error: NONE_ON,
+          failures: [],
+          isPending: false,
+          isFetching: false,
+        }
+      }
+      return {
+        data:
+          !settings || (results.some((r) => r.isPending && !r.error) && loaded.length === 0)
+            ? undefined
+            : loaded
+                .flatMap((r) => r.data!)
+                .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt)),
+        error: allFailed ? failed[0]!.error : null,
+        failures: allFailed ? [] : failed,
+        isPending: !settings || results.some((r) => r.isPending && !r.error),
+        isFetching: results.some((r) => r.isFetching),
+      }
+    },
   })
 }
 
@@ -65,7 +120,7 @@ export function useRemoveWatch() {
 export function usePrAction() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (request: PrActionRequest) => unwrap(bridge.bitbucket.action(request)),
+    mutationFn: (request: PrActionRequest) => unwrap(bridge.prs.action(request)),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: prKeys.all })
       void qc.invalidateQueries({ queryKey: keys.watches })

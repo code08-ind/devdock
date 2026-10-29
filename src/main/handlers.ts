@@ -23,6 +23,12 @@ import { WatchError } from './services/watch'
 import { triggerRefusal } from '@shared/jenkins'
 import type { JenkinsService } from './services/jenkins/service'
 import type { BuildWatcher } from './services/jenkins/watcher'
+import type { CiWatcher } from './services/ci/watcher'
+import { CiActionError } from './services/providers/common'
+import type { PrHub } from './services/providers/hub'
+import type { HostService } from './services/providers/service'
+import type { RemoteHost } from '@shared/hosting'
+import type { CiProvider } from '@shared/providers'
 import type { JiraService } from './services/jira/service'
 import { StartWorkError, type StartWorkService } from './services/startwork'
 import type { NotificationService } from './services/notifications'
@@ -70,6 +76,13 @@ export interface HandlerDeps {
   devServers: DevServerManager
   jira: JiraService
   bitbucket: BitbucketService
+  /** P7.04: PRs from Bitbucket, GitHub or GitLab, routed by the ref's provider. */
+  prs: PrHub
+  /** P7.05 / P7.06: GitHub and GitLab (PRs through `prs`; Test connection and CI here). */
+  hosts: Record<CiProvider, HostService>
+  ciWatcher: CiWatcher
+  /** Hosts in the registered repos' remotes and the provider each one means. */
+  detectProviders: () => Promise<RemoteHost[]>
   prWatcher: PrWatcher
   jenkins: JenkinsService
   ports: PortService
@@ -433,7 +446,7 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
         if (!deps.settings.get().features.prActions) {
           throw new IpcError(
             'NOT_ALLOWED',
-            'PR actions are turned off. Turn them on in Settings → Bitbucket (only if your role permits).',
+            'PR actions are turned off. Turn them on in Settings → Actions (only if your role permits).',
           )
         }
         try {
@@ -445,6 +458,54 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
           throw err
         }
       }),
+    'prs:list': ({ provider, list }) => withService(() => deps.prs.list(provider, list)),
+    'prs:pr': (ref) => withService(() => deps.prs.pr(ref)),
+    'prs:action': (request) =>
+      withService(async () => {
+        // SPEC 6.3: one switch for every provider, checked here whatever the renderer sent.
+        if (!deps.settings.get().features.prActions) {
+          throw new IpcError(
+            'NOT_ALLOWED',
+            'PR actions are turned off. Turn them on in Settings → Actions (only if your role permits).',
+          )
+        }
+        try {
+          const result = await deps.prs.act(request)
+          deps.prWatcher.acknowledge(result)
+          return result.pr
+        } catch (err) {
+          if (err instanceof PrActionError) throw new IpcError('PRECONDITION_FAILED', err.message)
+          throw err
+        }
+      }),
+    'providers:detect': () => withGit(() => deps.detectProviders()),
+    'github:testConnection': () => recorded('GitHub', () => deps.hosts.github.testConnection()),
+    'gitlab:testConnection': () => recorded('GitLab', () => deps.hosts.gitlab.testConnection()),
+    'ci:runs': ({ provider }) => withService(() => deps.hosts[provider].runs()),
+    'ci:run': (ref) => withService(() => deps.hosts[ref.provider].run(ref)),
+    'ci:log': ({ ref, jobId }) => withService(() => deps.hosts[ref.provider].log(ref, jobId)),
+    'ci:action': (request) =>
+      withService(async () => {
+        // Owner decision (P7): off by default and confirmed each time, like PR actions.
+        if (!deps.settings.get().features.ciActions) {
+          throw new IpcError(
+            'NOT_ALLOWED',
+            'CI actions are turned off. Turn them on in Settings → Actions (only if your role permits).',
+          )
+        }
+        try {
+          const run = await deps.hosts[request.ref.provider].ciAct(request)
+          deps.ciWatcher.restarted(run)
+          return run
+        } catch (err) {
+          if (err instanceof CiActionError) throw new IpcError('PRECONDITION_FAILED', err.message)
+          throw err
+        }
+      }),
+    'ciwatch:list': () => deps.ciWatcher.list(),
+    'ciwatch:add': (request) => withWatch(() => deps.ciWatcher.add(request)),
+    'ciwatch:remove': ({ key }) => deps.ciWatcher.remove(key),
+    'ciwatch:clearFinished': () => deps.ciWatcher.clearFinished(),
     'watch:list': () => deps.prWatcher.list(),
     'watch:add': ({ link }) => withWatch(() => deps.prWatcher.add(link)),
     'watch:remove': ({ key }) => deps.prWatcher.remove(key),

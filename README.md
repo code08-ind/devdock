@@ -1,7 +1,7 @@
 # DevDock
 
-A menu-bar / tray app for a frontend developer's daily chores: local git repos, Bitbucket pull
-requests, Jenkins builds, Jira tickets, and the small tools in between (ports, env profiles,
+A menu-bar / tray app for a frontend developer's daily chores: local git repos, pull requests
+(Bitbucket, GitHub, GitLab), Jenkins builds, GitHub Actions and GitLab pipelines, Jira tickets, and the small tools in between (ports, env profiles,
 caches, quick links, standup). Click the icon for one-click actions; open the app only when you
 need the detail. It works fully offline in **demo mode**, which is on until you turn it off.
 
@@ -35,15 +35,15 @@ highest level — 103.5 MB for the Apple silicon DMG and 106.2 MB for Intel (0.1
 
 DevDock isn't code-signed yet, so your system warns you the first time:
 
-- **macOS (Gatekeeper):** "DevDock can't be opened because Apple cannot check it for malicious
-  software." Open **System Settings → Privacy & Security**, scroll to the message about DevDock
-  and choose **Open Anyway** (or Control-click DevDock in Applications → **Open** → **Open**).
-  You only do this once.
+- **macOS (Gatekeeper):** "DevDock Not Opened" (macOS 15 and later; older versions say Apple
+  cannot check it for malicious software). Choose **Done**, open **System Settings → Privacy &
+  Security**, scroll to the message about DevDock and choose **Open Anyway**. You only do this
+  once. (The old Control-click → **Open** shortcut no longer works on macOS 15.)
 - **Windows (SmartScreen):** "Windows protected your PC." Choose **More info → Run anyway**.
 
 **At work:** company Macs and PCs are often managed so that unsigned apps are blocked outright
 (MDM, Intune, AppLocker). Then the options above aren't offered, and your IT team needs to
-approve DevDock — point them to this repository: the source is here, the build is reproducible
+approve DevDock — point them to this repository: the source is here, they can build it themselves
 with `npm run dist`, it needs no admin rights, and it only talks to the Jira, Bitbucket and
 Jenkins addresses you enter.
 
@@ -79,14 +79,18 @@ conflicts stop safely with Abort. Start and stop the dev server and see its log.
 ![Repos](docs/screenshots/readme-repos.png)
 
 **Pull requests** — yours, the ones waiting for your review, recently merged, and watched ones
-(paste a link). Notifications when a build, review or comment changes. Approve, needs work and
-merge can be turned on in Settings → Bitbucket.
+(paste a link) — from Bitbucket, and GitHub or GitLab once turned on in Settings. Notifications
+when a build, review or comment changes. Approve, needs work and merge can be turned on in
+Settings → Actions (for every provider).
 
 ![Pull requests](docs/screenshots/readme-prs.png)
 
 **Builds** — Jenkins builds of your branches and your PRs' pipelines, stages and the live
 console; watch a build, a job or your branch's deploy and get notified when it finishes.
-Triggering builds is off by default and never offered for protected jobs.
+Triggering builds is off by default and never offered for protected jobs. With GitHub or GitLab
+on, their tabs list your recent **Actions runs** / **pipelines** with jobs, steps and the end of
+each job's log; watch one (or paste its link). Re-run, retry and cancel stay off until you turn
+on Settings → Actions → CI actions, and each one asks first.
 
 ![Builds](docs/screenshots/readme-builds.png)
 
@@ -159,6 +163,21 @@ check. DevDock asks only for read access unless you turn on an action that write
 - _Data Center_: an **HTTP access token** with repository **read** (write for PR actions),
   sent as Bearer. Use **Detect** to check the server address.
 
+**GitHub** (off until Settings → GitHub → Use GitHub)
+
+- github.com, or your GitHub Enterprise Server URL (Detect reads it from your repos' remotes).
+- A **fine-grained personal access token** with access to your repositories and **read** on
+  _Pull requests_, _Contents_ and _Actions_; add **write** on _Pull requests_ only for PR actions
+  and on _Actions_ only for CI actions. A classic token needs `repo` (and `workflow` for re-runs).
+  Organisations with SSO may need to authorise the token.
+- Actions runs are read for the registered repos whose remote is on that GitHub.
+
+**GitLab** (off until Settings → GitLab → Use GitLab)
+
+- gitlab.com, or your self-managed URL (with its relative root, e.g. `/gitlab`, if it has one).
+- A **personal access token** with `read_api`; `api` only for approve, merge, retry and cancel.
+- Pipelines are read for the registered repos whose remote is on that GitLab.
+
 **Jenkins**
 
 - Your Jenkins user name and an **API token** (your user → Security → API Token).
@@ -178,7 +197,7 @@ company needs a specific one, set it in **Settings → Diagnostics → Proxy**.
 - **Nothing changes without you.** Pushing, merging, approving, triggering a build, moving an
   issue or stopping a process always shows exactly what will happen and waits for you; git
   commands are shown before they run, and protected branches and jobs are refused.
-- **Only your services.** DevDock talks to the Jira, Bitbucket and Jenkins addresses you enter,
+- **Only your services.** DevDock talks to the Jira, Bitbucket, GitHub, GitLab and Jenkins addresses you enter,
   and opens links only on hosts you allow (Settings → Links). There's no telemetry, no account,
   and no AI service: demo mode makes no network calls at all.
 - **The terminal is your shell.** It runs with your permissions, like Terminal.app; the screens

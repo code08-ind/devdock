@@ -1,0 +1,6 @@
+node_modules
+dist
+test-results
+playwright-report
+# Written by the Vercel build (npm run build:site) from the latest GitHub release.
+public/releases.json

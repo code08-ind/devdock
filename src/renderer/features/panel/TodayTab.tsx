@@ -6,6 +6,9 @@ import { byLiveFirst, useBuildWatches } from '../../lib/jenkins'
 import { useJiraList } from '../../lib/jira'
 import { IconButton } from '../../ui/Button'
 import { watchLabel } from '../builds/BuildBits'
+import { WatchedRunRow } from '../builds/CiRuns'
+import { ciRunLabel } from '@shared/ci'
+import { useCiWatches } from '../../lib/providers'
 import { PrRow } from '../prs/PrRow'
 import { SetUp, WatchedBuildRow } from '../today/TodayPage'
 import { PanelSection, goto } from './bits'
@@ -18,6 +21,7 @@ export function TodayTab() {
   const mineKeys = new Set((mine.data ?? []).map((p) => p.key))
   const otherWatched = (useWatches().data ?? []).filter((w) => isLive(w) && !mineKeys.has(w.key))
   const builds = byLiveFirst(useBuildWatches().data ?? [])
+  const runs = [...(useCiWatches().data ?? [])].sort((a, b) => Number(a.done) - Number(b.done))
   const tickets = useJiraList({ list: 'mine' })
   const started = (tickets.data ?? []).filter(inProgress)
   return (
@@ -25,7 +29,7 @@ export function TodayTab() {
       <PanelSection title="My pull requests">
         {mine.error ? (
           <SetUp error={mine.error} onView={goto} />
-        ) : mine.isPending ? (
+        ) : mine.isPending || !mine.data ? (
           <Loading what="pull requests" />
         ) : mine.data.length === 0 ? (
           <p className="muted">You have no open pull requests.</p>
@@ -47,7 +51,7 @@ export function TodayTab() {
         </PanelSection>
       ) : null}
       <PanelSection title="Watched builds">
-        {builds.length === 0 ? (
+        {builds.length === 0 && runs.length === 0 ? (
           <p className="muted">No builds watched. Watch one from Builds or a pull request.</p>
         ) : (
           <ul className="pr-list" aria-label="Watched builds">
@@ -58,6 +62,19 @@ export function TodayTab() {
                 actions={
                   <IconButton
                     label={`Show ${watchLabel(w)} in Builds`}
+                    icon={<ArrowUpRight size={16} aria-hidden="true" />}
+                    onClick={() => goto('builds')}
+                  />
+                }
+              />
+            ))}
+            {runs.map((w) => (
+              <WatchedRunRow
+                key={w.key}
+                watch={w}
+                actions={
+                  <IconButton
+                    label={`Show ${ciRunLabel(w.run)} in Builds`}
                     icon={<ArrowUpRight size={16} aria-hidden="true" />}
                     onClick={() => goto('builds')}
                   />

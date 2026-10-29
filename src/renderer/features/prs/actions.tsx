@@ -1,6 +1,17 @@
 import type { ReactNode } from 'react'
 import { Check, GitMerge, MessageSquareWarning } from 'lucide-react'
-import type { PrAction, PrList, PullRequest } from '@shared/bitbucket'
+import {
+  PROVIDER_ACTIONS,
+  providerOf,
+  type PrAction,
+  type PrList,
+  type PullRequest,
+} from '@shared/bitbucket'
+import { PR_NOUN, PROVIDER_NAMES } from '@shared/providers'
+
+/** "Bitbucket", "GitHub", "GitLab": where the action is sent. */
+const site = (pr: PullRequest) => PROVIDER_NAMES[providerOf(pr.ref)]
+const noun = (pr: PullRequest) => PR_NOUN[providerOf(pr.ref)]
 
 /** Everything the UI says about a PR action: its button, dialog and result toast. */
 export interface ActionCopy {
@@ -25,7 +36,7 @@ export const ACTION_COPY: Record<PrAction, ActionCopy> = {
     title: 'Approve',
     confirm: () => 'Approve',
     done: 'Approved',
-    explain: () => 'DevDock adds your approval to this pull request on Bitbucket.',
+    explain: (pr) => `DevDock adds your approval to this ${noun(pr)} on ${site(pr)}.`,
   },
   needs_work: {
     button: 'Needs work…',
@@ -34,8 +45,8 @@ export const ACTION_COPY: Record<PrAction, ActionCopy> = {
     title: 'Mark needs work on',
     confirm: () => 'Mark needs work',
     done: 'Marked needs work on',
-    explain: () =>
-      'DevDock marks this pull request as needing work (request changes) on Bitbucket, as you.',
+    explain: (pr) =>
+      `DevDock marks this ${noun(pr)} as needing work (request changes) on ${site(pr)}, as you.`,
   },
   merge: {
     button: 'Merge…',
@@ -45,7 +56,7 @@ export const ACTION_COPY: Record<PrAction, ActionCopy> = {
     confirm: (pr) => `Merge into ${pr.targetBranch}`,
     done: 'Merged',
     explain: (pr) =>
-      `DevDock merges ${pr.sourceBranch} into ${pr.targetBranch} on Bitbucket with the repository's default merge strategy. This can't be undone from DevDock.`,
+      `DevDock merges ${pr.sourceBranch} into ${pr.targetBranch} on ${site(pr)} with the repository's default (or first allowed) merge method. This can't be undone from DevDock.`,
   },
 }
 
@@ -57,3 +68,7 @@ export const LIST_ACTIONS: Record<PrList, readonly PrAction[]> = {
   reviewing: OTHERS,
   merged: [],
 }
+
+/** Only what the PR's provider offers through its API (GitLab has no request changes). */
+export const offered = (pr: PullRequest, wanted: readonly PrAction[]) =>
+  wanted.filter((a) => PROVIDER_ACTIONS[providerOf(pr.ref)].includes(a))

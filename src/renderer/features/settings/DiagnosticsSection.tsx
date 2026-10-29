@@ -25,6 +25,8 @@ const TEST: Record<ServiceName, () => Promise<string>> = {
   Jira: async () => (await unwrap(bridge.jira.testConnection())).user.displayName,
   Bitbucket: async () => (await unwrap(bridge.bitbucket.testConnection())).user.displayName,
   Jenkins: async () => (await unwrap(bridge.jenkins.testConnection())).user.fullName,
+  GitHub: async () => (await unwrap(bridge.github.testConnection())).user.displayName,
+  GitLab: async () => (await unwrap(bridge.gitlab.testConnection())).user.displayName,
 }
 
 /**

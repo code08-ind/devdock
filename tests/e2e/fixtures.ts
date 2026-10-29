@@ -105,6 +105,8 @@ interface TestHook {
   pollBuilds(): Promise<void>
   /** PIDs of the in-app terminals' shells. */
   terminalPids(): number[]
+  /** Polls the GitHub / GitLab run watcher now (P7). */
+  pollRuns(): Promise<void>
 }
 
 export function callHook<K extends keyof TestHook>(

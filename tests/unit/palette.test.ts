@@ -31,7 +31,7 @@ const ctx = (over: Partial<CommandContext> = {}): CommandContext => ({
   quickLinks: [],
   openLink: vi.fn(),
   devServers: [],
-  configured: { bitbucket: true, jenkins: true, jira: true },
+  configured: { prs: true, jenkins: true, jira: true },
   prActions: [],
   buildWatches: [],
   finishedBuilds: false,
@@ -165,16 +165,35 @@ describe('watch <PR link> (SPEC 6.1 argument command)', () => {
   })
 
   it('offers nothing for searches that are not links; `watch <not a link>` says so', () => {
-    for (const query of ['', 'watch', 'https://github.com/a/b/pull/1', 'watch x y', 'theme']) {
+    for (const query of ['', 'watch', 'https://github.com/a/b/issues/1', 'watch x y', 'theme']) {
       expect(queryCommands(query, ctx())).toEqual([])
     }
     const c = ctx()
-    const [hint, ...rest] = queryCommands('watch https://github.com/a/b/pull/1', c)
+    const [hint, ...rest] = queryCommands('watch https://github.com/a/b/issues/1', c)
     expect(rest).toEqual([])
     expect(hint).toMatchObject({ id: 'pr:watch-invalid', title: /Not a pull request link/ })
     void hint!.run()
     expect(c.goto).toHaveBeenCalledWith('prs')
     expect(c.watch).not.toHaveBeenCalled()
+  })
+
+  it('P7: GitHub / GitLab PR links and Actions run / pipeline links', () => {
+    const c = ctx()
+    expect(queryCommands('https://github.com/a/web/pull/3', c).map((x) => x.title)).toEqual([
+      'Watch pull request web #3',
+      'Watch the pipeline of web #3',
+    ])
+    expect(
+      queryCommands('watch https://gitlab.com/g/sub/app/-/merge_requests/9', c)[0]!.title,
+    ).toBe('Watch pull request app !9')
+    const [run, ...more] = queryCommands('watch https://github.com/a/web/actions/runs/77', c)
+    expect(more).toEqual([])
+    expect(run).toMatchObject({ id: 'build:watch-run-link', title: 'Watch web run #77' })
+    void run!.run()
+    expect(c.watch).toHaveBeenCalledWith('https://github.com/a/web/actions/runs/77')
+    expect(queryCommands('gitlab.com/g/app/-/pipelines/5', c)[0]!.title).toBe(
+      'Watch app pipeline #5',
+    )
   })
 
   it('"watch" alone still finds the Watch a pull request entry (it opens Pull requests)', () => {
@@ -290,7 +309,7 @@ describe('palette completeness (P6.01)', () => {
   it('says why a command is off: no repo for Start work, a service not set up', () => {
     const c = ctx({
       issues: [{ key: 'DD-101', summary: 'Checkout total' }],
-      configured: { bitbucket: false, jenkins: true, jira: true },
+      configured: { prs: false, jenkins: true, jira: true },
     })
     const all = buildCommands(c, VIEWS)
     expect(all.find((x) => x.id === 'ticket:start:DD-101')!.disabled).toBe(
@@ -299,13 +318,13 @@ describe('palette completeness (P6.01)', () => {
     expect(queryCommands('branch DD-101', c)[0]!.disabled).toMatch(/^Add a repo first/)
     const noJira = ctx({
       repos: [repo],
-      configured: { bitbucket: true, jenkins: true, jira: false },
+      configured: { prs: true, jenkins: true, jira: false },
     })
     expect(queryCommands('branch DD-101', noJira)[0]!.disabled).toBe(
       'Set up Jira in Settings first',
     )
     expect(all.find((x) => x.id === 'pr:watch')!.disabled).toBe(
-      'Set up Bitbucket in Settings first',
+      'Turn on Bitbucket, GitHub or GitLab in Settings first',
     )
     expect(all.find((x) => x.id === 'build:pipeline')!.disabled).toBeUndefined()
   })

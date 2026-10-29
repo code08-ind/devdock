@@ -281,8 +281,12 @@ describe('PrWatcher (P3.D2)', () => {
 
   it('refuses bad links, other sites and a full list before asking Bitbucket', async () => {
     const t = setup()
-    await expect(t.watcher.add('https://github.com/a/b/pull/1')).rejects.toMatchObject({
+    await expect(t.watcher.add('https://example.com/a/b/issues/1')).rejects.toMatchObject({
       kind: 'invalid',
+    })
+    // A GitHub link is a PR link (P7.04), but not on the site GitHub is read from.
+    await expect(t.watcher.add('https://github.com/a/b/pull/1')).rejects.toMatchObject({
+      kind: 'other-site',
     })
     await expect(
       t.watcher.add('https://bitbucket.org/acme/web-app/pull-requests/1'),

@@ -11,6 +11,8 @@ import { useRepoStatus, useRepos } from '../../lib/repos'
 import { Button } from '../../ui/Button'
 import { ErrorNotice } from '../../ui/Feedback'
 import { WatchHead, watchNote } from '../builds/BuildBits'
+import { WatchedRunRow } from '../builds/CiRuns'
+import { useCiWatches } from '../../lib/providers'
 import { PrRow } from '../prs/PrRow'
 import { RepoStatusError, RepoStatusLine } from '../repos/RepoStatusLine'
 import { StatusOf } from '../tickets/IssueBits'
@@ -79,7 +81,7 @@ function MyPrs({ onView }: { onView: (v: View) => void }) {
     >
       {mine.error ? (
         <SetUp error={mine.error} onView={onView} />
-      ) : mine.isPending ? (
+      ) : mine.isPending || !mine.data ? (
         <p className="muted" role="status">
           Loading pull requests…
         </p>
@@ -120,7 +122,9 @@ function Watched({ onView }: { onView: (v: View) => void }) {
 /** SPEC 6.1 Today "watched builds": running ones first. Hidden while there are none. */
 function WatchedBuilds({ onView }: { onView: (v: View) => void }) {
   const items = byLiveFirst(useBuildWatches().data ?? [])
-  if (items.length === 0) return null
+  // P7: watched GitHub Actions runs / GitLab pipelines sit with the Jenkins builds.
+  const runs = [...(useCiWatches().data ?? [])].sort((a, b) => Number(a.done) - Number(b.done))
+  if (items.length === 0 && runs.length === 0) return null
   return (
     <TodaySection
       id="today-builds"
@@ -130,6 +134,9 @@ function WatchedBuilds({ onView }: { onView: (v: View) => void }) {
       <ul className="pr-list" aria-label="Watched builds">
         {items.map((w) => (
           <WatchedBuildRow key={w.key} watch={w} />
+        ))}
+        {runs.map((w) => (
+          <WatchedRunRow key={w.key} watch={w} />
         ))}
       </ul>
     </TodaySection>
@@ -160,7 +167,7 @@ function InProgress({ onView }: { onView: (v: View) => void }) {
     >
       {mine.error ? (
         <SetUp error={mine.error} onView={onView} />
-      ) : mine.isPending ? (
+      ) : mine.isPending || !mine.data ? (
         <p className="muted" role="status">
           Loading tickets…
         </p>

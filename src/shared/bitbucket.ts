@@ -1,6 +1,11 @@
 import { z } from 'zod'
+import type { Provider } from './providers'
 
-/** Normalised Bitbucket model (SPEC 6.3): Cloud (REST 2.0) and Data Center (REST 1.0) map onto it. */
+/**
+ * Normalised pull-request model (SPEC 6.3): Bitbucket Cloud (REST 2.0) and Data Center (REST
+ * 1.0) map onto it, and since P7.04 GitHub pull requests and GitLab merge requests too (the
+ * ref's `provider`; absent means Bitbucket, so stored watches and Bitbucket code are unchanged).
+ */
 
 export const BITBUCKET_FLAVORS = ['cloud', 'datacenter'] as const
 export type BitbucketFlavor = (typeof BITBUCKET_FLAVORS)[number]
@@ -8,13 +13,42 @@ export type BitbucketFlavor = (typeof BITBUCKET_FLAVORS)[number]
 /** Workspace / project key / repo slug. DC user repos use the personal project key `~user`. */
 const SLUG = /^~?[A-Za-z0-9][A-Za-z0-9._-]{0,99}$/
 
-/** One pull request: Cloud workspace or DC project (`~user` for personal repos), repo, id. */
-export const PrRefSchema = z.object({
-  owner: z.string().regex(SLUG, 'Not a workspace or project key'),
-  repo: z.string().regex(SLUG, 'Not a repository slug'),
-  id: z.number().int().positive().max(1e9),
-})
+/** A SLUG, or a GitLab namespace with subgroups, `group/sub/team` (each part a slug). */
+const OWNER =
+  /^(?:~?[A-Za-z0-9][A-Za-z0-9._-]{0,99}|[A-Za-z0-9][A-Za-z0-9._-]{0,99}(?:\/[A-Za-z0-9][A-Za-z0-9._-]{0,99}){1,19})$/
+
+/** Providers other than Bitbucket, as stored on a ref. */
+export const OTHER_PROVIDERS = ['github', 'gitlab'] as const
+
+/**
+ * One pull request: Bitbucket workspace or DC project (`~user` for personal repos), GitHub
+ * owner, or GitLab namespace (`group/sub`); repo / project slug; id (GitLab: the MR's `iid`).
+ * Checked like renderer input before any of it reaches a URL path.
+ */
+export const PrRefSchema = z
+  .object({
+    /** Absent: Bitbucket (every ref before P7.04). */
+    provider: z.enum(OTHER_PROVIDERS).optional(),
+    owner: z.string().max(2100).regex(OWNER, 'Not a workspace or project key'),
+    repo: z.string().regex(SLUG, 'Not a repository slug'),
+    id: z.number().int().positive().max(1e9),
+  })
+  .refine((r) => r.provider === 'gitlab' || !r.owner.includes('/'), {
+    message: 'Only a GitLab namespace has subgroups',
+    path: ['owner'],
+  })
+  .refine((r) => !r.provider || (!r.owner.startsWith('~') && !r.repo.startsWith('~')), {
+    message: 'Not an owner name',
+    path: ['owner'],
+  })
 export type PrRef = z.infer<typeof PrRefSchema>
+
+/** The provider a ref belongs to. */
+export const providerOf = (ref: { provider?: Provider }): Provider => ref.provider ?? 'bitbucket'
+
+/** `web-app #412`, GitLab `web-app !12`. */
+export const refLabel = (ref: PrRef) =>
+  `${ref.repo} ${ref.provider === 'gitlab' ? '!' : '#'}${ref.id}`
 /** A repository: Cloud workspace or DC project key, and repo slug. */
 export type RepoRef = Omit<PrRef, 'id'>
 
@@ -22,7 +56,8 @@ export type RepoRef = Omit<PrRef, 'id'>
  * Stable key for a PR, e.g. `proj/web-app#42`. Lower case: slugs and project keys are
  * case-insensitive, and DC spells a personal project `~JDOE` where its links say `/users/jdoe`.
  */
-export const prKey = (ref: PrRef) => `${ref.owner}/${ref.repo}#${ref.id}`.toLowerCase()
+export const prKey = (ref: PrRef) =>
+  `${ref.provider ? `${ref.provider}:` : ''}${ref.owner}/${ref.repo}#${ref.id}`.toLowerCase()
 
 export const PR_STATES = ['open', 'merged', 'declined'] as const
 export const REVIEW_STATUSES = ['approved', 'needs_work', 'unapproved'] as const
@@ -115,6 +150,16 @@ export function summariseBuilds(statuses: BuildStatus[]): BuildSummary {
 /** SPEC 6.3 PR actions; off unless `features.prActions`, each confirmed in the renderer. */
 export const PR_ACTIONS = ['approve', 'needs_work', 'merge'] as const
 export type PrAction = (typeof PR_ACTIONS)[number]
+
+/**
+ * The actions each provider's API offers. GitLab's REST API has no "request changes" (only
+ * approve / unapprove), so `needs_work` isn't offered there.
+ */
+export const PROVIDER_ACTIONS: Record<Provider, readonly PrAction[]> = {
+  bitbucket: PR_ACTIONS,
+  github: PR_ACTIONS,
+  gitlab: ['approve', 'merge'],
+}
 
 export const PrActionRequestSchema = z
   .object({

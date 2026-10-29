@@ -60,7 +60,7 @@ const input = (over: Partial<ReportInput> = {}): ReportInput => ({
   settings: settings(),
   log: '',
   tests: {},
-  credentials: { Jira: true, Bitbucket: false, Jenkins: false },
+  credentials: { Jira: true, Bitbucket: false, Jenkins: false, GitHub: false, GitLab: false },
   identity: { home: '/Users/aryan', user: 'aryan' },
   now: new Date('2026-10-25T12:00:00Z'),
   ...over,
@@ -86,7 +86,13 @@ describe('diagnostics (P6.04)', () => {
     expect(report.settings.quickLinks).toEqual([
       { name: 'Orders', group: 'AWS', host: 'eu-west-1.console.aws.amazon.com' },
     ])
-    expect(report.credentialsSaved).toEqual({ Jira: true, Bitbucket: false, Jenkins: false })
+    expect(report.credentialsSaved).toEqual({
+      Jira: true,
+      Bitbucket: false,
+      Jenkins: false,
+      GitHub: false,
+      GitLab: false,
+    })
     expect(report.log).toHaveLength(3)
     for (const leaked of ['abc123', 'priya', 'aryan']) {
       expect(text.toLowerCase()).not.toContain(leaked)
@@ -164,6 +170,9 @@ describe('diagnostics (P6.04)', () => {
       },
       { service: 'Bitbucket', origin: 'https://bitbucket.org', route: 'DIRECT' },
       { service: 'Jenkins', origin: null, route: null },
+      // P7: GitHub / GitLab are routed only while turned on.
+      { service: 'GitHub', origin: null, route: null },
+      { service: 'GitLab', origin: null, route: null },
     ])
     svc.recordTest('Jira', false, 'SERVICE_AUTH')
     svc.recordTest('Bitbucket', true, null)
@@ -172,7 +181,13 @@ describe('diagnostics (P6.04)', () => {
       Jira: { ok: false, code: 'SERVICE_AUTH', at: '2026-10-25T12:00:00.000Z' },
       Bitbucket: { ok: true, code: null, at: '2026-10-25T12:00:00.000Z' },
     })
-    expect(report.credentialsSaved).toEqual({ Jira: true, Bitbucket: false, Jenkins: false })
+    expect(report.credentialsSaved).toEqual({
+      Jira: true,
+      Bitbucket: false,
+      Jenkins: false,
+      GitHub: false,
+      GitLab: false,
+    })
     // A missing log file still exports.
     expect(report.log).toEqual([])
     expect(svc.fileName()).toBe('devdock-diagnostics-2026-10-25.json')

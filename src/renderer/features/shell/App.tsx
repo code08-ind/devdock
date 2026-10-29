@@ -1,3 +1,5 @@
+import { ciRunLabel, parseRunLink } from '@shared/ci'
+import { useAddCiWatch } from '../../lib/providers'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { VIEWS, type View } from '@shared/channels'
 import type { ActionRequest } from '@shared/repos'
@@ -155,8 +157,19 @@ export function App() {
   const toast = useToast()
   const addWatch = useAddWatch().mutateAsync
   const watchPipeline = useWatchPipeline().mutateAsync
+  const addRun = useAddCiWatch().mutateAsync
   const watchLink = useCallback(
     (link: string, pipeline = false) => {
+      // A GitHub Actions run / GitLab pipeline link (P7): watched as a run, shown in Builds.
+      if (parseRunLink(link)) {
+        setView('builds')
+        void run(addRun({ link })).then((r) => {
+          if (!r.ok) return
+          toast(`Watching ${ciRunLabel(r.value.run)}`)
+          setBuildsKey((k) => k + 1)
+        })
+        return
+      }
       if (pipeline) {
         setView('builds')
         void run(watchPipeline(link)).then((r) => {
@@ -171,7 +184,7 @@ export function App() {
         if (r.ok) toast(`Watching ${prLabel(r.value.pr)}`)
       })
     },
-    [run, toast, addWatch, watchPipeline],
+    [run, toast, addWatch, watchPipeline, addRun],
   )
   // `branch <KEY>` (palette or palette window): Start work over whatever view is showing.
   const [startKey, setStartKey] = useState<string | null>(null)

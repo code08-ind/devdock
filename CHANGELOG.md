@@ -15,6 +15,14 @@ versions follow [Semantic Versioning](https://semver.org/).
   optional robbyrussell-style DevDock prompt for zsh and bash (your dotfiles are never edited).
   Shells stop when their tab closes or DevDock quits. Adds `node-pty` (the one native module).
 - **Accessibility** (P7-E): Settings → Accessibility and axe checks of every view.
+- **GitHub and GitLab** (off until turned on in Settings): pull requests / merge requests join
+  the PR lists, Watch field, notifications, Today, the menu-bar panel and the palette, with a
+  provider filter; github.com and GitHub Enterprise Server, gitlab.com and self-managed.
+- **GitHub Actions and GitLab pipelines** in Builds: my recent runs, jobs and steps, the end of
+  each job's log, watch a run (or paste its link anywhere, `watch <run link>` in the palette),
+  one notification when it finishes and the tray dot follows it.
+- **Settings → Actions**: PR actions (now for every provider) and **CI actions** (off by default): re-run / retry failed jobs and cancel, each
+  confirmed. Settings → Detect reads your repos' remotes; Bitbucket can be turned off.
 
 ## [0.1.0] — 2026-10-25
 

@@ -23,6 +23,18 @@ import {
   type WatchItem,
 } from './bitbucket'
 import {
+  CiActionRequestSchema,
+  CiLogSchema,
+  CiRunDetailSchema,
+  CiRunRefSchema,
+  CiRunSchema,
+  CiRunsResultSchema,
+  CiWatchSchema,
+  type CiWatch,
+} from './ci'
+import { HostConnectionSchema, RemoteHostSchema } from './hosting'
+import { CI_PROVIDERS, PROVIDERS } from './providers'
+import {
   BranchesResultSchema,
   BuildDetailSchema,
   BuildRefSchema,
@@ -92,7 +104,13 @@ import {
 const none = z.undefined()
 const repoId = z.string().min(1).max(100)
 
-export const SECRET_KEYS = ['bitbucket.token', 'jenkins.token', 'jira.token'] as const
+export const SECRET_KEYS = [
+  'bitbucket.token',
+  'jenkins.token',
+  'jira.token',
+  'github.token',
+  'gitlab.token',
+] as const
 export const SecretKeySchema = z.enum(SECRET_KEYS)
 export type SecretKey = z.infer<typeof SecretKeySchema>
 
@@ -233,6 +251,39 @@ export const contract = {
     req: z.object({ link: z.string().min(1).max(2000), pipeline: z.boolean().optional() }),
     res: none,
   },
+  'prs:list': {
+    req: z.object({ provider: z.enum(PROVIDERS), list: z.enum(PR_LISTS) }),
+    res: z.array(PullRequestSchema),
+  },
+  'prs:pr': { req: PrRefSchema, res: PullRequestSchema },
+  'prs:action': { req: PrActionRequestSchema, res: PullRequestSchema },
+  'providers:detect': { req: none, res: z.array(RemoteHostSchema) },
+  'github:testConnection': { req: none, res: HostConnectionSchema },
+  'gitlab:testConnection': { req: none, res: HostConnectionSchema },
+  'ci:runs': { req: z.object({ provider: z.enum(CI_PROVIDERS) }), res: CiRunsResultSchema },
+  'ci:run': { req: CiRunRefSchema, res: CiRunDetailSchema },
+  'ci:log': {
+    req: z.object({
+      ref: CiRunRefSchema,
+      jobId: z
+        .number()
+        .int()
+        .positive()
+        .max(2 ** 53),
+    }),
+    res: CiLogSchema,
+  },
+  'ci:action': { req: CiActionRequestSchema, res: CiRunSchema },
+  'ciwatch:list': { req: none, res: z.array(CiWatchSchema) },
+  'ciwatch:add': {
+    req: z.union([
+      z.object({ ref: CiRunRefSchema }),
+      z.object({ link: z.string().min(1).max(2000) }),
+    ]),
+    res: CiWatchSchema,
+  },
+  'ciwatch:remove': { req: z.object({ key: z.string().min(1).max(2400) }), res: none },
+  'ciwatch:clearFinished': { req: none, res: none },
   'jenkins:testConnection': { req: none, res: JenkinsConnectionSchema },
   'jenkins:branches': { req: none, res: BranchesResultSchema },
   'jenkins:build': { req: BuildRefSchema, res: BuildDetailSchema },
@@ -372,6 +423,7 @@ export interface EventPayloads {
   'watch:changed': WatchItem[]
   'watch:requested': { link: string; pipeline?: boolean }
   'buildwatch:changed': BuildWatch[]
+  'ciwatch:changed': CiWatch[]
   'utilities:requested': z.infer<typeof UtilityRequestSchema>
   'tickets:requested': { key: string }
   'terminal:output': TerminalOutputEvent

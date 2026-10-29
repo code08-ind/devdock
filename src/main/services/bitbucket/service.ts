@@ -74,6 +74,8 @@ export class BitbucketService {
    * Watched links must belong to it. Doesn't need a token (null when no DC URL is set).
    */
   site(): string | null {
+    // P7.04: Bitbucket can be turned off (people on GitHub / GitLab only).
+    if (!this.deps.settings().bitbucket.enabled) return null
     if (this.deps.http.demo) return siteKey(this.deps.demo.config.baseUrl)
     const { flavor, baseUrl } = this.deps.settings().bitbucket
     if (flavor === 'cloud') return siteKey(baseUrl || CLOUD_WEB)
@@ -103,6 +105,12 @@ export class BitbucketService {
   }
 
   private config(): BitbucketConfig {
+    if (!this.deps.settings().bitbucket.enabled) {
+      throw new ServiceError(
+        'not_configured',
+        'Bitbucket is turned off. Turn it on in Settings → Bitbucket.',
+      )
+    }
     if (this.deps.http.demo) return this.deps.demo.config
     const { flavor, baseUrl, username } = this.deps.settings().bitbucket
     const token = this.deps.token()
