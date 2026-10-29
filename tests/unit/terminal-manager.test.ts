@@ -400,25 +400,29 @@ describe('DevDock prompt files', () => {
     writeFileSync(f, bashRc())
     execFileSync('bash', ['-n', f])
   })
-  it.skipIf(!has('bash'))('a branch name is shown, never run', () => {
-    const repo = tmp()
-    const marker = join(repo, 'ran')
-    execFileSync('git', ['init', '-q', '-b', `x$(touch${'${IFS}'}${marker})`, repo])
-    const rc = join(tmp(), 'bashrc')
-    writeFileSync(rc, bashRc())
-    const ps1 = execFileSync(
-      'bash',
-      ['--rcfile', rc, '-i', '-c', '__devdock_ps1; printf %s "$__devdock_b"'],
-      {
-        cwd: repo,
-        env: { PATH: process.env.PATH, HOME: tmp() },
-        encoding: 'utf8',
-        stdio: ['ignore', 'pipe', 'ignore'],
-      },
-    )
-    expect(ps1).toContain('x$(touch')
-    expect(existsSync(marker)).toBe(false)
-  })
+  // POSIX only: the test's branch name holds the temp path, and a Windows path isn't a valid one.
+  it.skipIf(!has('bash') || process.platform === 'win32')(
+    'a branch name is shown, never run',
+    () => {
+      const repo = tmp()
+      const marker = join(repo, 'ran')
+      execFileSync('git', ['init', '-q', '-b', `x$(touch${'${IFS}'}${marker})`, repo])
+      const rc = join(tmp(), 'bashrc')
+      writeFileSync(rc, bashRc())
+      const ps1 = execFileSync(
+        'bash',
+        ['--rcfile', rc, '-i', '-c', '__devdock_ps1; printf %s "$__devdock_b"'],
+        {
+          cwd: repo,
+          env: { PATH: process.env.PATH, HOME: tmp() },
+          encoding: 'utf8',
+          stdio: ['ignore', 'pipe', 'ignore'],
+        },
+      )
+      expect(ps1).toContain('x$(touch')
+      expect(existsSync(marker)).toBe(false)
+    },
+  )
   it('other shells start as usual', async () => {
     expect(
       await withDevdockPrompt(
