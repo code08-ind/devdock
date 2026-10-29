@@ -318,7 +318,7 @@ Place this file at `docs/SPEC.md` in the new repository. Every build phase refer
   (`claude`), Codex (`codex`), Gemini CLI (`gemini`), GitHub Copilot CLI (`copilot`).
 - Start work offers "Start <agent> now": a terminal tab in the repo runs that CLI with the Start
   work message as its first prompt. Settings → Workflow → Agent picks which one (default: the
-  first installed).
+  first installed). The palette has "Start <agent> — <repo>" (no first message) for later runs.
 - The CLI is the tab's process, started with an argument array — never through a shell, so text
   from a ticket is never run as a command. On Windows, an npm `.cmd` script gets the message only
   when cmd.exe would find nothing to interpret in it; otherwise it starts without it and says

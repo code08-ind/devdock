@@ -40,21 +40,26 @@ export const AgentLaunchSchema = z.object({
 })
 export type AgentLaunch = z.infer<typeof AgentLaunchSchema>
 
-export const AgentInfoSchema = z.object({
+/** What the renderer learns about each CLI: installed or not (main keeps the path to itself). */
+export const AgentStatusSchema = z.object({
   id: AgentCliIdSchema,
   name: z.string(),
-  /** Where it was found on PATH; null = not installed (or not on the login shell's PATH). */
-  path: z.string().nullable(),
+  /** On the login shell's PATH. */
+  installed: z.boolean(),
 })
-export type AgentInfo = z.infer<typeof AgentInfoSchema>
+export type AgentStatus = z.infer<typeof AgentStatusSchema>
+
+/** A terminal tab's title: the place, with the agent's name in front when one runs there. */
+export const tabTitle = (place: string, agent?: AgentCliId | null): string =>
+  agent ? `${agentCli(agent).name} · ${place}` : place
 
 /** Settings → Workflow → Agent: `auto` = the first installed one in AGENT_CLIS order. */
 export const AgentPreferenceSchema = z.enum(['auto', ...AGENT_CLI_IDS])
 export type AgentPreference = z.infer<typeof AgentPreferenceSchema>
 
 /** The agent Start work offers: the preferred one when installed, else the first installed. */
-export function pickAgent(agents: AgentInfo[], preference: AgentPreference): AgentInfo | null {
-  const installed = agents.filter((a) => a.path)
+export function pickAgent(agents: AgentStatus[], preference: AgentPreference): AgentStatus | null {
+  const installed = agents.filter((a) => a.installed)
   if (preference !== 'auto') {
     const chosen = installed.find((a) => a.id === preference)
     if (chosen) return chosen

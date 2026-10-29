@@ -1,3 +1,4 @@
+import type { AgentLaunch } from '@shared/agents'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Bell, BellOff, Search, Settings } from 'lucide-react'
 import type { ActionRequest } from '@shared/repos'
@@ -65,7 +66,8 @@ export function PanelWindow() {
 
   const requestAction = (id: string, request: ActionRequest) => setRequested({ id, request })
   // The terminal lives in the main window.
-  const openTerminal = (repoId: string | null) => void bridge.terminal.request({ repoId })
+  const openTerminal = (repoId: string | null, agent?: AgentLaunch) =>
+    void bridge.terminal.request({ repoId, agent })
   const utility = (request: UtilityRequest) => {
     const port = request.tab === 'ports' ? request.stopPort : undefined
     if (port === undefined) {

@@ -1,3 +1,5 @@
+import type { AgentLaunch } from '@shared/agents'
+import { usePreferredAgent } from '../../lib/agents'
 import { PROVIDER_ACTIONS, providerOf, type PrAction, type PullRequest } from '@shared/bitbucket'
 import { ciRunLabel } from '@shared/ci'
 import { enabledProviders } from '@shared/settings'
@@ -35,7 +37,7 @@ export interface CommandHandlers {
   /** Opens Start work for an issue key. */
   startWork: (key: string) => void
   /** A new DevDock terminal tab (in a repo, or the home folder), in the main window. */
-  openTerminal: (repoId: string | null) => void
+  openTerminal: (repoId: string | null, agent?: AgentLaunch) => void
   /** Windows that can show dialogs (main, panel): stopping a process and PR actions ask first. */
   confirm?: (request: ConfirmRequest) => void
   prAction?: (pr: PullRequest, action: PrAction) => void
@@ -54,6 +56,7 @@ export function useCommands(h: CommandHandlers): {
   const update = useUpdateSettingsAction()
   const openRepo = useOpenRepo()
   const settings = useSettings().data
+  const agent = usePreferredAgent()
   const paused = usePauseState().data?.pausedUntil != null
   const repos = useRepos()
   const servers = useDevServers()
@@ -99,6 +102,7 @@ export function useCommands(h: CommandHandlers): {
   const commands = buildCommands(
     {
       ...h,
+      agent: agent ? { id: agent.id, name: agent.name } : null,
       viewShortcut: (i) => modLabel(String(i + 1)),
       theme: settings.appearance.theme,
       themeLabel: (t) => THEME_LABELS[t],

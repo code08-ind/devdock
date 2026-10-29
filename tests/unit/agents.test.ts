@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { AgentNotFoundError, agentSpawn, detectAgents } from '../../src/main/services/agents'
-import { isCmdSafePrompt, pickAgent, type AgentInfo } from '../../src/shared/agents'
+import {
+  AgentNotFoundError,
+  agentSpawn,
+  agentStatus,
+  detectAgents,
+  type AgentInfo,
+} from '../../src/main/services/agents'
+import { isCmdSafePrompt, pickAgent, tabTitle } from '../../src/shared/agents'
 
 const found = (paths: Partial<Record<AgentInfo['id'], string>>): AgentInfo[] =>
   (['claude', 'codex', 'gemini', 'copilot'] as const).map((id) => ({
@@ -23,12 +29,17 @@ describe('detectAgents', () => {
       ['copilot', null],
     ])
     expect(mac[0]!.name).toBe('Claude Code')
+    // npm's global folder holds an extensionless sh shim beside the .cmd: never that one.
+    const npm = new Set(['C:\\npm\\codex', 'C:\\npm\\codex.cmd', 'C:\\bin\\claude.exe'])
     const win = detectAgents({
       platform: 'win32',
-      env: { Path: 'C:\\npm' },
-      isExecutable: (p) => p === 'C:\\npm\\codex.cmd',
+      env: { Path: 'C:\\npm;C:\\bin' },
+      isExecutable: (p) => npm.has(p),
     })
     expect(win.find((a) => a.id === 'codex')!.path).toBe('C:\\npm\\codex.cmd')
+    expect(win.find((a) => a.id === 'claude')!.path).toBe('C:\\bin\\claude.exe')
+    // The screens only learn installed or not.
+    expect(agentStatus(win)[1]).toEqual({ id: 'codex', name: 'Codex', installed: true })
   })
 })
 
@@ -88,10 +99,12 @@ describe('isCmdSafePrompt / pickAgent', () => {
     }
   })
   it('the preferred agent when installed, else the first installed', () => {
-    const agents = found({ codex: '/b/codex', gemini: '/b/gemini' })
+    const agents = agentStatus(found({ codex: '/b/codex', gemini: '/b/gemini' }))
     expect(pickAgent(agents, 'gemini')!.id).toBe('gemini')
     expect(pickAgent(agents, 'claude')!.id).toBe('codex')
     expect(pickAgent(agents, 'auto')!.id).toBe('codex')
-    expect(pickAgent(found({}), 'auto')).toBeNull()
+    expect(pickAgent(agentStatus(found({})), 'auto')).toBeNull()
+    expect(tabTitle('web-app', 'gemini')).toBe('Gemini CLI · web-app')
+    expect(tabTitle('Home')).toBe('Home')
   })
 })

@@ -21,7 +21,7 @@ export function WorkflowSection({ settings }: { settings: Settings }) {
   const toast = useToast()
   const w = settings.workflow
   const agents = useAgents().data
-  const installed = (id: string) => agents?.find((a) => a.id === id)?.path
+  const installed = (id: string) => agents?.find((a) => a.id === id)?.installed
   const agentOptions: { value: AgentPreference; label: string }[] = [
     { value: 'auto', label: 'The first one installed' },
     ...AGENT_CLIS.map((a) => ({

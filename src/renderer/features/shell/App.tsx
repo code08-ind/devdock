@@ -1,3 +1,4 @@
+import type { TerminalRequest } from '@shared/terminal'
 import type { AgentLaunch } from '@shared/agents'
 import { ciRunLabel, parseRunLink } from '@shared/ci'
 import { useAddCiWatch } from '../../lib/providers'
@@ -31,7 +32,7 @@ import { TodayPage } from '../today/TodayPage'
 import type { UtilityRequest } from '@shared/utilities'
 import { UtilitiesPage } from '../utilities/UtilitiesPage'
 import { Announcer } from './Announcer'
-import { TerminalPage, type TerminalRequest } from '../terminal/TerminalPage'
+import { TerminalPage, type TerminalOpenRequest } from '../terminal/TerminalPage'
 import { NavRail } from './NavRail'
 import { EMPTY_COPY, VIEW_ICONS } from './views'
 
@@ -45,7 +46,7 @@ function ViewBody({
   terminal,
 }: {
   /** The last "open a terminal" request (palette, repo card, panel). */
-  terminal: TerminalRequest | null
+  terminal: TerminalOpenRequest | null
   onUtility: (request: UtilityRequest) => void
   buildsKey: number
   /** The palette's last request for Utilities (remounts the view on its tab). */
@@ -135,17 +136,16 @@ export function App() {
     setView('utilities')
   }, [])
   useBridgeEvent('utilities:requested', openUtility)
-  const [terminal, setTerminal] = useState<TerminalRequest | null>(null)
+  const [terminal, setTerminal] = useState<TerminalOpenRequest | null>(null)
   const openTerminal = useCallback((repoId: string | null, agent?: AgentLaunch) => {
     setTerminal((t) => ({ n: (t?.n ?? 0) + 1, repoId, agent }))
     setView('terminal')
   }, [])
-  const onTerminalRequested = useCallback(
-    ({ repoId, agent }: { repoId: string | null; agent?: AgentLaunch }) =>
-      openTerminal(repoId, agent),
+  const onTerminalOpenRequested = useCallback(
+    ({ repoId, agent }: TerminalRequest) => openTerminal(repoId, agent),
     [openTerminal],
   )
-  useBridgeEvent('terminal:requested', onTerminalRequested)
+  useBridgeEvent('terminal:requested', onTerminalOpenRequested)
   const [requested, setRequested] = useState<{ id: string; request: ActionRequest } | null>(null)
   const repos = useRepos()
   const requestedRepo = requested ? repos.find((r) => r.id === requested.id) : undefined

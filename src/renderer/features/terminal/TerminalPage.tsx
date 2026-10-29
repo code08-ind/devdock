@@ -93,14 +93,14 @@ function focusBeside(terminal: HTMLElement | null, back: boolean): void {
  * the shell; F6 / Shift+F6 or ⌘/Ctrl+1–9 and ⌘/Ctrl+K leave it.
  */
 /** An "open a terminal" request (palette, repo card, panel); `n` makes each one new. */
-export interface TerminalRequest {
+export interface TerminalOpenRequest {
   n: number
   repoId: string | null
   /** Start this agent CLI in the new tab instead of the shell (P7-C). */
   agent?: AgentLaunch
 }
 
-export function TerminalPage({ request }: { request?: TerminalRequest }) {
+export function TerminalPage({ request }: { request?: TerminalOpenRequest }) {
   const store = terminalStore()
   const { tabs, active } = useSyncExternalStore(store.subscribe, store.getSnapshot)
   const settings = useSettings().data

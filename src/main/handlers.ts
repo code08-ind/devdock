@@ -43,8 +43,8 @@ import { ServiceError, type ServiceErrorKind } from './services/service-error'
 import type { SettingsStore } from './services/settings'
 import type { ShortcutService } from './services/shortcut'
 import { TerminalError, type TerminalManager } from './services/terminal/manager'
-import { AgentNotFoundError, agentSpawn } from './services/agents'
-import type { AgentInfo } from '@shared/agents'
+import { AgentNotFoundError, agentSpawn, agentStatus, type AgentInfo } from './services/agents'
+import { tabTitle } from '@shared/agents'
 import type { TerminalRequest } from '@shared/terminal'
 
 /** Everything the handlers touch, injected so they can be tested without Electron. */
@@ -596,11 +596,10 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
         }
         // P7-C: the agent CLI is the PTY's process, started with an argument array.
         const program = agent ? agentSpawn(agent, await deps.agents(), deps.platform) : undefined
-        const place = repo ? repo.name : 'Home'
         return deps.terminal.create({
           owner,
           cwd,
-          title: program ? `${program.name} · ${place}` : place,
+          title: tabTitle(repo ? repo.name : 'Home', agent?.id),
           repoId: repo ? repo.id : null,
           cols,
           rows,
@@ -619,6 +618,6 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
         if (request.repoId) deps.repos.get(request.repoId)
         deps.requestTerminal(request)
       }),
-    'agents:detect': () => deps.agents(),
+    'agents:detect': async () => agentStatus(await deps.agents()),
   }
 }

@@ -43,6 +43,7 @@ const ctx = (over: Partial<CommandContext> = {}): CommandContext => ({
   watches: [],
   unwatch: vi.fn(),
   openTerminal: vi.fn(),
+  agent: null,
   ...over,
 })
 
@@ -262,6 +263,17 @@ describe('Utilities in the palette (SPEC 6.1 / 6.6)', () => {
 
 describe('palette completeness (P6.01)', () => {
   const repo = { id: 'r1', name: 'web-app' }
+
+  it('P7-C: the installed agent CLI per repo, started in a terminal tab there', () => {
+    const find = (c: CommandContext) =>
+      buildCommands(c, VIEWS).find((x) => x.id === 'repo:r1:agent')
+    expect(find(ctx({ repos: [repo] }))).toBeUndefined()
+    const openTerminal = vi.fn()
+    const c = find(ctx({ repos: [repo], openTerminal, agent: { id: 'codex', name: 'Codex' } }))!
+    expect(c.title).toBe('Start Codex — web-app')
+    void c.run()
+    expect(openTerminal).toHaveBeenCalledWith('r1', { id: 'codex' })
+  })
 
   it('dev server per repo: Start; Stop asks first, and only where a dialog can show', () => {
     const find = (c: CommandContext) =>

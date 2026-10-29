@@ -96,7 +96,12 @@ describe('terminal IPC (P7-A)', { timeout: 30_000 }, () => {
     const { handlers, ptys, deps } = await handlerSetup()
     expect(await dispatch('agents:detect', undefined, handlers)).toMatchObject({
       ok: true,
-      data: [{ id: 'claude', path: '/usr/local/bin/claude' }, { id: 'codex', path: null }, {}, {}],
+      data: [
+        { id: 'claude', name: 'Claude Code', installed: true },
+        { id: 'codex', name: 'Codex', installed: false },
+        {},
+        {},
+      ],
     })
     const prompt = 'Use the bug-fixer agent. Ticket brief: docs/ai/specs/DD-7/TICKET.md.'
     const made = await dispatch(

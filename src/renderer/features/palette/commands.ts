@@ -1,3 +1,4 @@
+import type { AgentCliId, AgentLaunch } from '@shared/agents'
 import type { PrAction } from '@shared/bitbucket'
 import type { View } from '@shared/channels'
 import { ISSUE_KEY } from '@shared/jira'
@@ -120,8 +121,10 @@ export interface CommandContext {
   /** Watched pull requests, to stop watching. */
   watches: readonly { key: string; label: string }[]
   unwatch: (key: string) => unknown
-  /** A new tab in DevDock's own terminal (P7-A), in a repo or the home folder. */
-  openTerminal: (repoId: string | null) => unknown
+  /** A new tab in DevDock's own terminal (P7-A), in a repo or the home folder; or an agent CLI there. */
+  openTerminal: (repoId: string | null, agent?: AgentLaunch) => unknown
+  /** The agent CLI to offer per repo (P7-C: Settings → Workflow → Agent, if installed). */
+  agent: { id: AgentCliId; name: string } | null
 }
 
 /**
@@ -209,7 +212,23 @@ function repoCommands(ctx: CommandContext): Command[] {
       keywords: ['terminal', 'shell', 'zsh', 'console', 'tab'],
       run: () => ctx.openTerminal(r.id),
     },
+    ...(ctx.agent ? [agentCommand(ctx.agent, r, ctx)] : []),
   ])
+}
+
+/** P7-C: the agent CLI in a terminal tab in the repo (no first message: Start work gives that). */
+function agentCommand(
+  agent: { id: AgentCliId; name: string },
+  r: { id: string; name: string },
+  ctx: Pick<CommandContext, 'openTerminal'>,
+): Command {
+  return {
+    id: `repo:${r.id}:agent`,
+    title: `Start ${agent.name} — ${r.name}`,
+    group: 'Terminal',
+    keywords: ['agent', 'ai', 'claude', 'codex', 'gemini', 'copilot'],
+    run: () => ctx.openTerminal(r.id, { id: agent.id }),
+  }
 }
 
 /** A confirmation a command asks for before it runs. */

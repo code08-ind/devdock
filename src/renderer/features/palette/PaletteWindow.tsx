@@ -1,3 +1,4 @@
+import type { AgentLaunch } from '@shared/agents'
 import { useCallback, useState } from 'react'
 import type { View } from '@shared/channels'
 import type { ActionRequest } from '@shared/repos'
@@ -14,7 +15,8 @@ const requestAction = (id: string, request: ActionRequest) =>
 const watch = (link: string, pipeline?: boolean) => void bridge.watch.request({ link, pipeline })
 const utility = (request: UtilityRequest) => void bridge.utilities.request(request)
 const startWork = (key: string) => void bridge.tickets.request({ key })
-const openTerminal = (repoId: string | null) => void bridge.terminal.request({ repoId })
+const openTerminal = (repoId: string | null, agent?: AgentLaunch) =>
+  void bridge.terminal.request({ repoId, agent })
 
 /** The global-shortcut palette window. It is hidden, not destroyed, so reset on each show. */
 export function PaletteWindow() {

@@ -4,6 +4,7 @@ import { TriangleAlert } from 'lucide-react'
 import type { View } from '@shared/channels'
 import type { JiraIssueDetail } from '@shared/jira'
 import type { Agent, StartWorkResult } from '@shared/startwork'
+import { AGENT_CLIS, MAX_AGENT_PROMPT } from '@shared/agents'
 import {
   bridge,
   DevDockError,
@@ -15,7 +16,6 @@ import {
 import { BRIEF_LOCATION_OPTIONS, jiraKeys } from '../../lib/jira'
 import { forgetRuns, useOpenDevdockTerminal, useRepos, useRunOutput } from '../../lib/repos'
 import { usePreferredAgent } from '../../lib/agents'
-import { MAX_AGENT_PROMPT } from '@shared/agents'
 import { Button } from '../../ui/Button'
 import { Dialog } from '../../ui/Dialog'
 import { ErrorNotice, StatusPill, useToast } from '../../ui/Feedback'
@@ -166,10 +166,14 @@ export function StartWorkDialog({
               variant="primary"
               onClick={() => {
                 const prompt = stage.result.message
-                openTerminal(repoId, {
-                  id: agentCli.id,
-                  ...(prompt.length <= MAX_AGENT_PROMPT ? { prompt } : {}),
-                })
+                const fits = prompt.length <= MAX_AGENT_PROMPT
+                openTerminal(repoId, { id: agentCli.id, prompt: fits ? prompt : undefined })
+                if (!fits) {
+                  toast(
+                    `The message is too long to hand to ${agentCli.name}: paste it from the clipboard.`,
+                    'warning',
+                  )
+                }
                 onClose()
               }}
             >
@@ -315,6 +319,11 @@ export function StartWorkDialog({
   )
 }
 
+/** "Claude Code, Codex, Gemini CLI or GitHub Copilot CLI" (follows AGENT_CLIS). */
+const AGENT_NAMES = AGENT_CLIS.map((a) => a.name)
+  .join(', ')
+  .replace(/, ([^,]*)$/, ' or $1')
+
 function Result({ result, agentFound }: { result: StartWorkResult; agentFound: boolean }) {
   const transition = TRANSITION_TEXT[result.transition.result]
   return (
@@ -343,8 +352,7 @@ function Result({ result, agentFound }: { result: StartWorkResult; agentFound: b
       <CodeBlock code={result.message} label="On the clipboard: paste it into your agent" />
       {agentFound ? null : (
         <p className="muted">
-          With Claude Code, Codex, Gemini CLI or GitHub Copilot CLI installed, DevDock can start it
-          here in the repo with this message.
+          With {AGENT_NAMES} installed, DevDock can start it here in the repo with this message.
         </p>
       )}
       {result.warnings.map((w) => (

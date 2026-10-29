@@ -21,7 +21,7 @@ import {
   type TerminalOutputEvent,
   type TerminalSettings,
 } from '@shared/terminal'
-import { agentCli, type AgentLaunch } from '@shared/agents'
+import { tabTitle, type AgentLaunch } from '@shared/agents'
 import { bridge, DevDockError, unwrap } from '../../lib/devdock'
 import { hasMod, isMac } from '../../lib/keyboard'
 import { installStyleShim } from './styleShim'
@@ -157,7 +157,7 @@ class TerminalTabView {
           repoId: this.tab.repoId,
           cols,
           rows,
-          ...(this.tab.agent ? { agent: this.tab.agent } : {}),
+          agent: this.tab.agent ?? undefined,
         }),
       )
       if (this.disposed) {
@@ -352,11 +352,10 @@ export class TerminalStore {
   open(repo: { id: string; name: string } | null, agent?: AgentLaunch): string {
     installStyleShim()
     const key = `k${this.next++}`
-    const place = repo?.name ?? 'Home'
     const tab: TerminalTab = {
       key,
       id: null,
-      title: agent ? `${agentCli(agent.id).name} · ${place}` : place,
+      title: tabTitle(repo?.name ?? 'Home', agent?.id),
       repoId: repo?.id ?? null,
       shell: '',
       status: 'starting',
