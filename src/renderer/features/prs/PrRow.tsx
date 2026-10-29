@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react'
-import { Eye, EyeOff, ExternalLink } from 'lucide-react'
+import { Eye, EyeOff, ExternalLink, Sparkles } from 'lucide-react'
 import { providerOf, type PrAction, type PullRequest } from '@shared/bitbucket'
 import { PROVIDER_NAMES } from '@shared/providers'
 import { useAddWatch, useRemoveWatch } from '../../lib/bitbucket'
@@ -9,6 +9,8 @@ import { Button, IconButton } from '../../ui/Button'
 import { AgeOf, BuildPill, ReviewState, StatePill, prLabel } from './PrBits'
 import { ACTION_COPY } from './actions'
 import { PrActionDialog } from './PrActionDialog'
+import { useAiAvailable } from '../../lib/ai'
+import { AiDialog } from '../ai/AiDialog'
 
 /**
  * One PR (SPEC 6.3 card): title, source → target, build, reviews, open threads, conflicts,
@@ -33,6 +35,8 @@ export function PrRow({
   const addWatch = useAddWatch()
   const removeWatch = useRemoveWatch()
   const [acting, setActing] = useState<PrAction | null>(null)
+  const aiAvailable = useAiAvailable()
+  const [noting, setNoting] = useState(false)
   const label = prLabel(pr)
   const provider = PROVIDER_NAMES[providerOf(pr.ref)]
 
@@ -64,6 +68,13 @@ export function PrRow({
             disabled={pending}
             onClick={toggleWatch}
           />
+          {aiAvailable ? (
+            <IconButton
+              label={`Draft a status note for ${label} with Claude`}
+              icon={<Sparkles size={16} aria-hidden="true" />}
+              onClick={() => setNoting(true)}
+            />
+          ) : null}
           <IconButton
             label={`Open ${label} in ${provider}`}
             icon={<ExternalLink size={16} aria-hidden="true" />}
@@ -97,6 +108,12 @@ export function PrRow({
       ) : null}
       {children}
       {acting ? <PrActionDialog pr={pr} action={acting} onClose={() => setActing(null)} /> : null}
+      {noting ? (
+        <AiDialog
+          request={{ feature: 'pr-summary', ref: pr.ref }}
+          onClose={() => setNoting(false)}
+        />
+      ) : null}
     </li>
   )
 }

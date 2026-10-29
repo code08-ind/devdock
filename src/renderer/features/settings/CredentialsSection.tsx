@@ -15,11 +15,11 @@ const SECRET_LABELS: Record<SecretKey, string> = {
   'jenkins.token': 'Jenkins API token',
   'jira.token': 'Jira API token or personal access token',
   'github.token': 'GitHub personal access token (fine-grained or classic)',
-  'anthropic.key': 'Anthropic API key (Settings → AI)',
+  'anthropic.key': 'Anthropic API key (for the AI features)',
   'gitlab.token': 'GitLab personal access token',
 }
 
-function SecretRow({
+export function SecretRow({
   secretKey,
   saved,
   disabled,

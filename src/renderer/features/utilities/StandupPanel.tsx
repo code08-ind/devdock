@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { Copy, RefreshCw } from 'lucide-react'
+import { Copy, RefreshCw, Sparkles } from 'lucide-react'
 import { draftMarkdown, draftText, longDay, type StandupDraft } from '@shared/standup'
 import { useStandupDraft, utilityKeys } from '../../lib/utilities'
 import { Button, IconButton } from '../../ui/Button'
 import { ErrorNotice, useToast } from '../../ui/Feedback'
 import { Field, Textarea } from '../../ui/Field'
 import { fromLines, toLines } from './pure'
+import { useAiAvailable } from '../../lib/ai'
+import { AiDialog } from '../ai/AiDialog'
 
 type Section = 'yesterday' | 'today' | 'blockers'
 
@@ -50,6 +52,8 @@ function DraftEditor({
   onRegenerate: () => void
 }) {
   const toast = useToast()
+  const aiAvailable = useAiAvailable()
+  const [polishing, setPolishing] = useState(false)
   const [text, setText] = useState<Record<Section, string>>({
     yesterday: toLines(draft.yesterday),
     today: toLines(draft.today),
@@ -113,7 +117,21 @@ function DraftEditor({
         >
           Copy as Markdown
         </Button>
+        {aiAvailable ? (
+          <Button
+            icon={<Sparkles size={16} aria-hidden="true" />}
+            onClick={() => setPolishing(true)}
+          >
+            Polish with Claude
+          </Button>
+        ) : null}
       </div>
+      {polishing ? (
+        <AiDialog
+          request={{ feature: 'standup', draft: edited }}
+          onClose={() => setPolishing(false)}
+        />
+      ) : null}
     </section>
   )
 }

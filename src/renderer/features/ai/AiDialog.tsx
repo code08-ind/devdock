@@ -1,0 +1,158 @@
+import { useEffect, useState } from 'react'
+import { TriangleAlert } from 'lucide-react'
+import {
+  AI_FEATURE_LABELS,
+  aiModel,
+  formatUsd,
+  type AiPrepare,
+  type AiPreview,
+  type AiResult,
+} from '@shared/ai'
+import { bridge, unwrap } from '../../lib/devdock'
+import { Button } from '../../ui/Button'
+import { Dialog } from '../../ui/Dialog'
+import { ErrorNotice } from '../../ui/Feedback'
+import { CodeBlock, KeyValue } from '../../ui/Text'
+
+type Stage =
+  | { kind: 'preparing' }
+  | { kind: 'preview'; preview: AiPreview }
+  | { kind: 'sending'; preview: AiPreview }
+  | { kind: 'done'; preview: AiPreview; result: AiResult }
+  | { kind: 'error'; error: unknown; preview?: AiPreview }
+
+/**
+ * One Claude request (P7-C-B): main prepares it, this shows exactly what will be sent, to which
+ * model and about what it costs, and sends it only when the user presses Send. The answer can
+ * be copied, or handed to the caller with `onUse` (e.g. into the lesson being edited).
+ */
+export function AiDialog({
+  request,
+  onClose,
+  onUse,
+}: {
+  request: AiPrepare
+  onClose: () => void
+  onUse?: { label: string; use: (text: string) => void }
+}) {
+  const [stage, setStage] = useState<Stage>({ kind: 'preparing' })
+  // The request as it was when the dialog opened: callers build it inline on every render, and
+  // each prepare is a new held request in main.
+  const [asked] = useState(request)
+
+  useEffect(() => {
+    let live = true
+    unwrap(bridge.ai.prepare(asked)).then(
+      (preview) => live && setStage({ kind: 'preview', preview }),
+      (error: unknown) => live && setStage({ kind: 'error', error }),
+    )
+    return () => {
+      live = false
+    }
+  }, [asked])
+
+  const send = async (preview: AiPreview) => {
+    setStage({ kind: 'sending', preview })
+    try {
+      const result = await unwrap(bridge.ai.run({ id: preview.id }))
+      setStage({ kind: 'done', preview, result })
+    } catch (error) {
+      setStage({ kind: 'error', error, preview })
+    }
+  }
+
+  const sending = stage.kind === 'sending'
+  return (
+    <Dialog
+      open
+      wide
+      title={AI_FEATURE_LABELS[asked.feature]}
+      onClose={onClose}
+      dismissible={!sending}
+      actions={
+        <>
+          <Button onClick={onClose} disabled={sending}>
+            {stage.kind === 'done' || stage.kind === 'error' ? 'Close' : 'Cancel'}
+          </Button>
+          {stage.kind === 'preview' || stage.kind === 'sending' ? (
+            <Button
+              variant="primary"
+              disabled={sending}
+              onClick={() => stage.kind === 'preview' && void send(stage.preview)}
+            >
+              {sending ? 'Sending…' : 'Send to Claude'}
+            </Button>
+          ) : null}
+          {stage.kind === 'done' && onUse ? (
+            <Button
+              variant="primary"
+              onClick={() => {
+                onUse.use(stage.result.text)
+                onClose()
+              }}
+            >
+              {onUse.label}
+            </Button>
+          ) : null}
+        </>
+      }
+    >
+      {stage.kind === 'preparing' ? <p role="status">Preparing the request…</p> : null}
+      {stage.kind === 'preview' || stage.kind === 'sending' ? (
+        <Preview preview={stage.preview} />
+      ) : null}
+      {stage.kind === 'done' ? <Answer preview={stage.preview} result={stage.result} /> : null}
+      {stage.kind === 'error' ? <ErrorNotice error={stage.error} /> : null}
+    </Dialog>
+  )
+}
+
+function Preview({ preview }: { preview: AiPreview }) {
+  return (
+    <div className="stack">
+      <p>
+        {preview.demo
+          ? 'Demo mode: a sample answer is made on this computer. Nothing is sent.'
+          : 'Nothing has been sent yet. Press Send to send the text below to Anthropic with your API key.'}
+      </p>
+      <KeyValue
+        items={[
+          ['Model', aiModel(preview.model).name],
+          [
+            'About',
+            `${formatUsd(preview.estimatedCostUsd)} (at most ${formatUsd(preview.maxCostUsd)})`,
+          ],
+          ['Size', `about ${preview.estimatedInputTokens.toLocaleString('en-GB')} tokens`],
+        ]}
+      />
+      <CodeBlock code={preview.prompt} label="The text that will be sent" />
+      <details>
+        <summary>Instructions sent with it</summary>
+        <CodeBlock code={preview.system} label="Instructions" />
+      </details>
+    </div>
+  )
+}
+
+function Answer({ preview, result }: { preview: AiPreview; result: AiResult }) {
+  const other = result.model !== preview.model
+  return (
+    <div className="stack">
+      <div role="status">
+        <CodeBlock code={result.text} label="Claude's answer" />
+      </div>
+      {result.truncated ? (
+        <div className="notice notice-warning">
+          <TriangleAlert size={16} aria-hidden="true" />
+          <p>The answer hit its length limit and may stop mid-sentence.</p>
+        </div>
+      ) : null}
+      <p className="muted">
+        {result.inputTokens.toLocaleString('en-GB')} tokens in,{' '}
+        {result.outputTokens.toLocaleString('en-GB')} out — {formatUsd(result.costUsd)}
+        {preview.demo ? ' (demo: not charged)' : ''}.
+        {other ? ` Answered by ${result.model} (Anthropic's fallback for declined requests).` : ''}
+      </p>
+    </div>
+  )
+}

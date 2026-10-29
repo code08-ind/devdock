@@ -3,6 +3,7 @@ import { useSettings, useUpdateSettings } from '../../lib/devdock'
 import { DENSITY_LABELS, MOTION_LABELS, THEME_LABELS } from '../../ui/appearance'
 import { ErrorNotice } from '../../ui/Feedback'
 import { Field, SegmentedControl, Select, Toggle } from '../../ui/Field'
+import { AiSection } from './AiSection'
 import { BitbucketSection } from './BitbucketSection'
 import { CredentialsSection } from './CredentialsSection'
 import { DataSection } from './DataSection'
@@ -128,6 +129,7 @@ export function SettingsPage() {
       <JiraSection settings={settings} />
       <StandupSection settings={settings} />
       <WorkflowSection settings={settings} />
+      <AiSection settings={settings} />
       <NotificationsSection settings={settings} />
       <CredentialsSection />
       <DiagnosticsSection settings={settings} />

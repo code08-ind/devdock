@@ -47,7 +47,7 @@ export function lessonPrompt(comment: string, where?: string): string {
     .join('\n')
 }
 
-export function standupPrompt(draft: StandupDraft): string {
+export function standupPrompt(draft: Omit<StandupDraft, 'notes'>): string {
   const list = (items: string[]) =>
     items.length ? items.map((i) => `- ${i}`).join('\n') : '- (none)'
   return [

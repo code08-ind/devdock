@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { BookOpenCheck, MessageSquareText, Plus } from 'lucide-react'
+import { BookOpenCheck, MessageSquareText, Plus, Sparkles } from 'lucide-react'
 import type { View } from '@shared/channels'
 import { groupComments, lessonFromComment, prRepo } from '@shared/lessons'
 import { useAddLessons, useLessons, useReviewComments } from '../../lib/utilities'
@@ -7,6 +7,8 @@ import { Button } from '../../ui/Button'
 import { ErrorNotice, useToast } from '../../ui/Feedback'
 import { Checkbox, Field, Input, SegmentedControl } from '../../ui/Field'
 import { SetUp } from '../today/TodayPage'
+import { useAiAvailable } from '../../lib/ai'
+import { AiDialog } from '../ai/AiDialog'
 
 interface Candidate {
   /** Stable across refetches: reviewer + comment text (or "own-n" for my own). */
@@ -15,6 +17,8 @@ interface Candidate {
   source: string
   text: string
   picked: boolean
+  /** The reviewer's comment it came from (P7-C-B: Claude can word it as a lesson). */
+  comment?: { text: string; where: string }
 }
 
 type Scope = 'repo' | 'all'
@@ -36,6 +40,8 @@ export function LessonsPanel({ repoId, onView }: { repoId: string; onView: (v: V
   const ownCount = useRef(0)
   const [draft, setDraft] = useState('')
   const [scope, setScope] = useState<Scope | null>(null)
+  const aiAvailable = useAiAvailable()
+  const [wording, setWording] = useState<Candidate | null>(null)
 
   const path = state.data?.path ?? 'the lessons file'
   const remotes = state.data?.remoteRepos ?? []
@@ -50,6 +56,7 @@ export function LessonsPanel({ repoId, onView }: { repoId: string; onView: (v: V
       source: `${c.author} on ${c.pr}`,
       text: lessonFromComment(c),
       picked: false,
+      comment: { text: c.text, where: c.path ? `${c.pr} ${c.path}` : c.pr },
       ...edits[key],
     }
   })
@@ -98,6 +105,20 @@ export function LessonsPanel({ repoId, onView }: { repoId: string; onView: (v: V
 
   return (
     <section className="stack" aria-label="Lessons">
+      {wording?.comment ? (
+        <AiDialog
+          request={{
+            feature: 'lesson',
+            comment: wording.comment.text,
+            where: wording.comment.where,
+          }}
+          onClose={() => setWording(null)}
+          onUse={{
+            label: 'Use as the lesson',
+            use: (text) => change(wording, { text: text.slice(0, 500), picked: true }),
+          }}
+        />
+      ) : null}
       <p className="muted">
         Your agent reads <span className="mono">{path}</span> when you start work on a ticket, and
         adds what it learns there. Pick what reviewers keep asking for; the file and these options
@@ -180,6 +201,16 @@ export function LessonsPanel({ repoId, onView }: { repoId: string; onView: (v: V
                 maxLength={500}
                 onChange={(e) => change(c, { text: e.target.value, picked: true })}
               />
+              {aiAvailable && c.comment ? (
+                <Button
+                  variant="ghost"
+                  icon={<Sparkles size={16} aria-hidden="true" />}
+                  aria-label={`Word the lesson from ${c.source} with Claude`}
+                  onClick={() => setWording(c)}
+                >
+                  Word with Claude
+                </Button>
+              ) : null}
             </li>
           ))}
         </ul>

@@ -623,16 +623,14 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
         deps.requestTerminal(request)
       }),
     'agents:detect': async () => agentStatus(await deps.agents()),
-    // P7-C-B: main builds the text from data it loads itself (only a comment's text comes from
-    // the screen), holds it, and sends it on `ai:run` once the user has seen it.
+    // P7-C-B: main builds the text (loading the PR itself; a comment and the edited standup come
+    // from the screen), holds it, and sends it on `ai:run` once the user has seen it.
     'ai:prepare': (req) =>
       withService(async () => {
         if (req.feature === 'pr-summary') {
           return deps.ai.prepare('pr-summary', prPrompt(await deps.prs.pr(req.ref)))
         }
-        if (req.feature === 'standup') {
-          return deps.ai.prepare('standup', standupPrompt(await deps.standupDraft()))
-        }
+        if (req.feature === 'standup') return deps.ai.prepare('standup', standupPrompt(req.draft))
         return deps.ai.prepare('lesson', lessonPrompt(req.comment, req.where))
       }),
     'ai:run': ({ id }) => withService(() => deps.ai.run(id)),

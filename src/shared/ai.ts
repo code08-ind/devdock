@@ -37,7 +37,7 @@ export const AiSettingsSchema = z
   .prefault({})
 export type AiSettings = z.infer<typeof AiSettingsSchema>
 
-/** What to prepare. Main loads the data itself; only a comment's text comes from the screen. */
+/** What to prepare. Main loads the PR itself; a comment and the edited standup come from the screen. */
 export const AiPrepareSchema = z.discriminatedUnion('feature', [
   z.object({
     feature: z.literal('pr-summary'),
@@ -50,7 +50,16 @@ export const AiPrepareSchema = z.discriminatedUnion('feature', [
     /** The file or PR it was left on, for context ("web-app#412 src/Button.tsx"). */
     where: z.string().max(300).optional(),
   }),
-  z.object({ feature: z.literal('standup') }),
+  z.object({
+    feature: z.literal('standup'),
+    /** The standup as the user edited it (the polish starts from their words). */
+    draft: z.object({
+      yesterdayDate: z.string().max(20),
+      yesterday: z.array(z.string().max(500)).max(50),
+      today: z.array(z.string().max(500)).max(50),
+      blockers: z.array(z.string().max(500)).max(50),
+    }),
+  }),
 ])
 export type AiPrepare = z.infer<typeof AiPrepareSchema>
 
