@@ -3,23 +3,70 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>DevDock — your dev chores, one click from the menu bar</title>
+    <title>DevDock — Repos, PRs, builds and tickets from your menu bar</title>
     <meta
       name="description"
       content="DevDock is a free desktop app for macOS and Windows: local git repos, pull requests, builds, Jira tickets and a terminal, one click from the menu bar or tray. Starts in demo mode; no account, no telemetry."
     />
     <meta name="author" content="Aryan Garg" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <link rel="canonical" href="https://devdock.aryangarg.com/" />
     <meta name="color-scheme" content="light dark" />
     <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#09090B" media="(prefers-color-scheme: dark)" />
-    <meta property="og:title" content="DevDock" />
+
+    <!-- Link previews (Open Graph: Slack, LinkedIn, iMessage…; Twitter/X card). -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="DevDock" />
+    <meta property="og:url" content="https://devdock.aryangarg.com/" />
+    <meta property="og:title" content="DevDock — your dev day, one click from the menu bar" />
     <meta
       property="og:description"
-      content="Repos, pull requests, builds, tickets and a terminal, one click from the menu bar. For macOS and Windows."
+      content="Repos, pull requests, builds, Jira tickets and a terminal in one free desktop app for macOS and Windows."
     />
-    <meta property="og:image" content="img/readme-home.webp" />
-    <link rel="icon" type="image/png" href="favicon.png" />
-    <link rel="apple-touch-icon" href="img/icon-192.png" />
+    <meta property="og:image" content="https://devdock.aryangarg.com/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="DevDock: your dev day, one click from the menu bar, next to the menu-bar panel with pull requests and their builds."
+    />
+    <meta property="og:locale" content="en_GB" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="DevDock — your dev day, one click from the menu bar" />
+    <meta
+      name="twitter:description"
+      content="Repos, pull requests, builds, Jira tickets and a terminal in one free desktop app for macOS and Windows."
+    />
+    <meta name="twitter:image" content="https://devdock.aryangarg.com/og.png" />
+
+    <!-- Icons: .ico for old browsers and /favicon.ico requests, PNG for the rest, Apple, PWA. -->
+    <link rel="icon" href="favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="64x64" href="favicon.png" />
+    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+    <link rel="manifest" href="site.webmanifest" />
+    <meta name="apple-mobile-web-app-title" content="DevDock" />
+
+    <!-- Structured data for search engines (a data block: not run, so the CSP is unaffected). -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "DevDock",
+        "url": "https://devdock.aryangarg.com/",
+        "description": "A desktop app for frontend developers: local git repos, pull requests, builds, Jira tickets and a terminal, one click from the menu bar or tray.",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "macOS 12 or later, Windows 10 or later",
+        "image": "https://devdock.aryangarg.com/og.png",
+        "screenshot": "https://devdock.aryangarg.com/img/readme-home.webp",
+        "downloadUrl": "https://github.com/code08-ind/devdock/releases/latest",
+        "license": "https://github.com/code08-ind/devdock/blob/main/LICENSE",
+        "isAccessibleForFree": true,
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "author": { "@type": "Person", "name": "Aryan Garg", "url": "https://www.aryangarg.com/" }
+      }
+    </script>
     <link
       rel="preload"
       href="fonts/geist-latin.woff2"
@@ -55,7 +102,7 @@
       <div class="rail header-row">
         <div class="brand-group">
           <a class="brand" href="#top" aria-label="DevDock, back to top">
-            <img src="img/icon-192.png" alt="" width="28" height="28" />
+            <img src="img/icon-192.png" alt="" width="36" height="36" />
             <span>DevDock</span>
           </a>
           <a class="byline" href="https://www.aryangarg.com/">by Aryan Garg</a>
@@ -682,7 +729,7 @@
       <div class="rail footer-grid">
         <div class="footer-brand">
           <p class="brand">
-            <img src="img/icon-192.png" alt="" width="24" height="24" />
+            <img src="img/icon-192.png" alt="" width="32" height="32" />
             <span>DevDock</span>
           </p>
           <p class="footer-note">

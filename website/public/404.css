@@ -1,0 +1,59 @@
+/* The 404 page (Vercel serves public/404.html for unknown paths). Same zinc palette as the site. */
+:root {
+  --bg: #ffffff;
+  --fg: #09090b;
+  --muted: #52525b;
+  --primary: #18181b;
+  --on-primary: #fafafa;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #09090b;
+    --fg: #fafafa;
+    --muted: #a1a1aa;
+    --primary: #f4f4f5;
+    --on-primary: #18181b;
+  }
+}
+@font-face {
+  font-family: 'Geist';
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/geist-latin.woff2') format('woff2');
+}
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Geist', system-ui, sans-serif;
+  text-align: center;
+}
+img {
+  border-radius: 14px;
+}
+h1 {
+  margin: 24px 0 8px;
+  font-size: 32px;
+  letter-spacing: -0.02em;
+}
+p {
+  margin: 0 0 28px;
+  color: var(--muted);
+}
+.btn {
+  display: inline-block;
+  padding: 10px 18px;
+  border-radius: 8px;
+  background: var(--primary);
+  color: var(--on-primary);
+  font-weight: 500;
+  text-decoration: none;
+}
+.btn:focus-visible {
+  outline: 2px solid var(--fg);
+  outline-offset: 3px;
+}

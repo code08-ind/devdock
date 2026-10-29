@@ -122,7 +122,7 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   scroll-behavior: smooth;
-  scroll-padding-top: 72px;
+  scroll-padding-top: 80px;
 }
 
 body {
@@ -444,12 +444,12 @@ main:focus {
   display: flex;
   align-items: center;
   gap: 16px;
-  height: 56px;
+  height: 64px;
 }
 
 .brand-group {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 10px;
   min-width: 0;
 }
@@ -458,14 +458,24 @@ main:focus {
   display: inline-flex;
   align-items: center;
   align-self: center;
-  gap: 8px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  gap: 10px;
+  font-size: 19px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
   text-decoration: none;
 }
 
+/* The app icon, a little larger than a nav item so the product reads first (owner). */
 .brand img {
-  border-radius: 7px;
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+}
+
+.footer-brand .brand img {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
 }
 
 .byline {

@@ -111,16 +111,25 @@ subdomain.
 
 ## Files
 
-| Path                        | What                                                               |
-| --------------------------- | ------------------------------------------------------------------ |
-| `index.html`                | All content (works without JavaScript; JS adds detection and tabs) |
-| `src/style.css`             | aryangarg.com palette (Light/Dark), fonts, layout                  |
-| `public/fonts/`             | Geist, Geist Mono, Doto (latin WOFF2, OFL; `LICENSE.txt`)          |
-| `src/config.ts`             | Where installers live; the "coming soon" switch                    |
-| `src/detect.ts`             | OS and CPU detection → installer                                   |
-| `src/downloads.ts`          | File names, links, `releases.json`                                 |
-| `vercel.json`               | Vercel build settings and response headers                         |
-| `src/steps.ts`              | Install steps per installer, for the dialog                        |
-| `public/theme.js`           | Applies the saved theme before first paint                         |
-| `public/img/`               | WebP copies of `docs/screenshots` (`sh website/scripts/images.sh`) |
-| `scripts/releases-json.mjs` | Latest GitHub release → `releases.json` (run by `build:site`)      |
+| Path                                                   | What                                                               |
+| ------------------------------------------------------ | ------------------------------------------------------------------ |
+| `index.html`                                           | All content (works without JavaScript; JS adds detection and tabs) |
+| `src/style.css`                                        | aryangarg.com palette (Light/Dark), fonts, layout                  |
+| `public/fonts/`                                        | Geist, Geist Mono, Doto (latin WOFF2, OFL; `LICENSE.txt`)          |
+| `src/config.ts`                                        | Where installers live; the "coming soon" switch                    |
+| `src/detect.ts`                                        | OS and CPU detection → installer                                   |
+| `src/downloads.ts`                                     | File names, links, `releases.json`                                 |
+| `vercel.json`                                          | Vercel build settings and response headers                         |
+| `src/steps.ts`                                         | Install steps per installer, for the dialog                        |
+| `public/theme.js`                                      | Applies the saved theme before first paint                         |
+| `public/img/`                                          | WebP copies of `docs/screenshots` (`sh website/scripts/images.sh`) |
+| `scripts/releases-json.mjs`                            | Latest GitHub release → `releases.json` (run by `build:site`)      |
+| `scripts/og-image.mjs`                                 | Renders `scripts/og-card.html` → `public/og.png` (link previews)   |
+| `public/404.html`                                      | Page for unknown paths (Vercel serves it), styled by `404.css`     |
+| `public/robots.txt`, `sitemap.xml`, `site.webmanifest` | Search engines and "add to home screen"                            |
+| `public/favicon.*`, `apple-touch-icon.png`             | Icons, made from `build/icon.png` / `icon.ico`                     |
+
+The site's URL (`https://devdock.aryangarg.com/`) is written in `index.html` (canonical, Open
+Graph, JSON-LD), `public/robots.txt` and `public/sitemap.xml`; `tests/unit/seo.test.ts` checks
+they agree. If the domain changes, change all of them and re-run `node scripts/og-image.mjs`
+(the card shows the domain).

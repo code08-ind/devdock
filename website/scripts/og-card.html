@@ -1,0 +1,97 @@
+<!doctype html>
+<!-- The 1200×630 link-preview card (og:image). Rendered by og-image.mjs; not part of the site. -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      @font-face {
+        font-family: 'Geist';
+        font-weight: 100 900;
+        src: url('../public/fonts/geist-latin.woff2');
+      }
+      @font-face {
+        font-family: 'Geist Mono';
+        font-weight: 100 900;
+        src: url('../public/fonts/geist-mono-latin.woff2');
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+      }
+      body {
+        width: 1200px;
+        height: 630px;
+        overflow: hidden;
+        background: #09090b;
+        color: #fafafa;
+        font-family: 'Geist', system-ui, sans-serif;
+        display: grid;
+        grid-template-columns: 560px 1fr;
+        background-image: radial-gradient(#27272a 1px, transparent 1px);
+        background-size: 22px 22px;
+      }
+      .copy {
+        padding: 72px 0 64px 72px;
+        display: flex;
+        flex-direction: column;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        font-size: 34px;
+        font-weight: 650;
+        letter-spacing: -0.02em;
+      }
+      .brand img {
+        width: 64px;
+        height: 64px;
+        border-radius: 15px;
+      }
+      h1 {
+        margin-top: 56px;
+        font-size: 64px;
+        line-height: 1.04;
+        font-weight: 600;
+        letter-spacing: -0.035em;
+      }
+      p {
+        margin-top: 24px;
+        font-size: 24px;
+        line-height: 1.4;
+        color: #a1a1aa;
+      }
+      .meta {
+        margin-top: auto;
+        font-family: 'Geist Mono', monospace;
+        font-size: 18px;
+        color: #a1a1aa;
+      }
+      .meta b {
+        color: #22c55e;
+        font-weight: 500;
+      }
+      .shot {
+        position: relative;
+      }
+      .shot img {
+        position: absolute;
+        left: 24px;
+        top: 64px;
+        width: 560px;
+        border-radius: 18px;
+        border: 1px solid #3f3f46;
+        box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="copy">
+      <div class="brand"><img src="../public/img/icon-512.png" alt="" />DevDock</div>
+      <h1>Your dev day, one click from the menu bar.</h1>
+      <p>Repos, pull requests, builds, Jira tickets and a terminal in one desktop app.</p>
+      <div class="meta"><b>●</b> Free · macOS &amp; Windows · devdock.aryangarg.com</div>
+    </div>
+    <div class="shot"><img src="../public/img/readme-panel.webp" alt="" /></div>
+  </body>
+</html>
