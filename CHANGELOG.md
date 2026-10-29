@@ -17,6 +17,10 @@ versions follow [Semantic Versioning](https://semver.org/).
 - **Agent CLIs** (P7-C): Start work offers "Start Claude Code now" (or Codex, Gemini CLI, GitHub
   Copilot CLI — whichever you installed): the agent opens in a DevDock terminal tab in the repo
   with the Start work message as its first prompt. Settings → Workflow → Agent picks one.
+- **AI with your own key** (P7-C-B, optional): Settings → AI takes your Anthropic API key (kept in
+  the OS keychain) and a model (Claude Opus 5.5 by default, or Sonnet 5.5 / Haiku 5.5). Then
+  DevDock can draft a PR status note, word a review comment as a lesson and polish the standup.
+  Every request is shown first (text, model, estimated cost) and sent only on **Send**.
 - **Accessibility** (P7-E): Settings → Accessibility and axe checks of every view.
 - **GitHub and GitLab** (off until turned on in Settings): pull requests / merge requests join
   the PR lists, Watch field, notifications, Today, the menu-bar panel and the palette, with a
