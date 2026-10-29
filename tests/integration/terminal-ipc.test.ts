@@ -64,14 +64,11 @@ describe('terminal IPC (P7-A)', { timeout: 30_000 }, () => {
   })
 
   it('a window only sees and drives its own terminals', async () => {
-    const { handlers, ptys } = await handlerSetup()
+    const { handlers, ptys, deps } = await handlerSetup()
     const made = await dispatch('terminal:create', { cols: 80, rows: 24 }, handlers, from(1))
     if (!made.ok) throw new Error(made.error.message)
     const id = made.data.id
-    expect(await dispatch('terminal:list', undefined, handlers, from(2))).toEqual({
-      ok: true,
-      data: [],
-    })
+    expect(deps.terminal.list(2)).toEqual([])
     for (const [channel, payload] of [
       ['terminal:write', { id, data: 'rm -rf ~\r' }],
       ['terminal:resize', { id, cols: 10, rows: 10 }],
@@ -92,10 +89,7 @@ describe('terminal IPC (P7-A)', { timeout: 30_000 }, () => {
       ok: true,
       data: undefined,
     })
-    expect(await dispatch('terminal:list', undefined, handlers, from(1))).toEqual({
-      ok: true,
-      data: [],
-    })
+    expect(deps.terminal.list(1)).toEqual([])
   })
 
   it('rejects calls without a window and malformed payloads', async () => {

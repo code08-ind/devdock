@@ -1,6 +1,6 @@
 /**
  * Collects PTY output and hands it on at most once per `intervalMs` (one IPC message per frame
- * instead of one per read), or straight away once `maxBytes` have piled up so a flood of
+ * instead of one per read), or straight away once `maxChars` (UTF-16 code units) have piled up so a flood of
  * output (`cat` of a big file) still moves in bounded messages.
  */
 export class OutputBatcher {
@@ -11,14 +11,14 @@ export class OutputBatcher {
   constructor(
     private readonly flushTo: (data: string) => void,
     private readonly intervalMs = 16,
-    private readonly maxBytes = 256 * 1024,
+    private readonly maxChars = 256 * 1024,
   ) {}
 
   push(data: string): void {
     if (!data) return
     this.chunks.push(data)
     this.size += data.length
-    if (this.size >= this.maxBytes) {
+    if (this.size >= this.maxChars) {
       this.flush()
       return
     }

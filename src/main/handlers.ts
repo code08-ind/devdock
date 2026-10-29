@@ -1,4 +1,6 @@
 /** One handler per IPC channel in @shared/ipc `contract`. Electron-free: adapters are injected. */
+import { stat } from 'node:fs/promises'
+import type { IpcMainInvokeEvent } from 'electron'
 import type { ServiceName } from '@shared/diagnostics'
 import type { DiagnosticsService } from './services/diagnostics'
 import { LessonsError, type LessonsService } from './services/lessons'
@@ -35,8 +37,6 @@ import { ServiceError, type ServiceErrorKind } from './services/service-error'
 import type { SettingsStore } from './services/settings'
 import type { ShortcutService } from './services/shortcut'
 import { TerminalError, type TerminalManager } from './services/terminal/manager'
-import { stat } from 'node:fs/promises'
-import type { IpcMainInvokeEvent } from 'electron'
 
 /** Everything the handlers touch, injected so they can be tested without Electron. */
 export interface HandlerDeps {
@@ -267,7 +267,10 @@ function terminalOwner(event: IpcMainInvokeEvent | null): number {
   return event.sender.id
 }
 
-/** Terminal calls: typed failures (unknown or someone else's session → NOT_FOUND). */
+/**
+ * Terminal calls: typed failures (unknown or someone else's session → NOT_FOUND). Wraps `withGit`
+ * because `terminal:create` looks the repo up (`RepoNotFoundError` → NOT_FOUND).
+ */
 async function withTerminal<T>(fn: () => Promise<T> | T): Promise<T> {
   try {
     return await withGit(fn)
@@ -539,7 +542,6 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
       withTerminal(() => deps.terminal.resize(terminalOwner(event), id, cols, rows)),
     'terminal:kill': ({ id }, event) =>
       withTerminal(() => deps.terminal.kill(terminalOwner(event), id)),
-    'terminal:list': (_req, event) => deps.terminal.list(terminalOwner(event)),
     'terminal:request': ({ repoId }) =>
       withGit(() => {
         if (repoId) deps.repos.get(repoId)

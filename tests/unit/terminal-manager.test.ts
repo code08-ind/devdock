@@ -20,6 +20,8 @@ import {
 } from '../../src/main/services/terminal/shell'
 import {
   MAX_SESSIONS,
+  MAX_WRITE,
+  splitWrite,
   TerminalSettingsSchema,
   type TerminalSettings,
 } from '../../src/shared/terminal'
@@ -277,6 +279,19 @@ describe('OutputBatcher', () => {
   })
 })
 
+describe('splitWrite', () => {
+  it('splits a paste into writes the IPC contract accepts, never inside a surrogate pair', () => {
+    expect(splitWrite('')).toEqual([])
+    expect(splitWrite('abcdef', 4)).toEqual(['abcd', 'ef'])
+    // '😀' is two code units: a cut after its first half moves the whole emoji on.
+    expect(splitWrite('abc😀d', 4)).toEqual(['abc', '😀d'])
+    const paste = 'x'.repeat(MAX_WRITE - 1) + '😀'.repeat(3)
+    const parts = splitWrite(paste)
+    expect(parts.join('')).toBe(paste)
+    expect(parts.every((p) => p.length <= MAX_WRITE && !/[\ud800-\udbff]$/.test(p))).toBe(true)
+  })
+})
+
 describe('shell resolution', () => {
   const env = (e: NodeJS.ProcessEnv, platform: NodeJS.Platform = 'darwin') => ({
     platform,
@@ -335,6 +350,28 @@ describe('DevDock prompt files', () => {
       writeFileSync(join(d, name), text)
       execFileSync('zsh', ['-n', join(d, name)])
     }
+  })
+  it.skipIf(!has('zsh'))('in zsh it steps aside for oh-my-zsh and keeps the user’s options', () => {
+    const zdot = tmp()
+    for (const [name, text] of Object.entries(zshFiles())) writeFileSync(join(zdot, name), text)
+    const run = (zshrc: string) => {
+      const home = tmp()
+      writeFileSync(join(home, '.zshrc'), zshrc)
+      return execFileSync(
+        'zsh',
+        ['-i', '-c', 'print -r -- "$PROMPT"; zstyle -L ":completion:*" menu; true'],
+        {
+          env: { PATH: process.env.PATH, HOME: home, ZDOTDIR: zdot, DEVDOCK_ZDOTDIR: zdot },
+          encoding: 'utf8',
+          stdio: ['ignore', 'pipe', 'ignore'],
+        },
+      )
+    }
+    // A stand-in for oh-my-zsh: its theme variable and its prompt.
+    expect(run("ZSH_THEME=agnoster\nPROMPT='mine> '\n").trim()).toBe('mine>')
+    const own = run("PROMPT='mine> '\n")
+    expect(own).toContain('➜')
+    expect(own).not.toContain('menu select')
   })
   it.skipIf(!has('bash'))('the bash rc file parses (bash -n)', () => {
     const f = join(tmp(), 'bashrc')

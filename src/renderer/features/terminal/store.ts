@@ -11,11 +11,12 @@ import { WebglAddon } from '@xterm/addon-webgl'
 import { Terminal, type ITheme } from '@xterm/xterm'
 import '@xterm/xterm/css/xterm.css'
 import {
-  MAX_WRITE,
+  splitWrite,
   TERMINAL_FONT_STACK,
   TERMINAL_FONT_WEIGHT,
   TERMINAL_FONT_WEIGHT_BOLD,
   terminalFontSize,
+  TerminalSettingsSchema,
   type TerminalExitEvent,
   type TerminalOutputEvent,
   type TerminalSettings,
@@ -59,7 +60,7 @@ function isAppShortcut(e: KeyboardEvent): boolean {
   return !e.shiftKey && (k === 'k' || k === ',' || /^[1-9]$/.test(k))
 }
 
-class TerminalSession {
+class TerminalTabView {
   readonly term: Terminal
   readonly fit = new FitAddon()
   readonly search = new SearchAddon()
@@ -150,6 +151,7 @@ class TerminalSession {
     try {
       const session = await unwrap(bridge.terminal.create({ repoId: this.tab.repoId, cols, rows }))
       if (this.disposed) {
+        this.store.forget(session.id)
         void bridge.terminal.kill({ id: session.id })
         return
       }
@@ -187,9 +189,7 @@ class TerminalSession {
     }
     if (!id || status !== 'running') return
     // Large pastes go in chunks the IPC contract accepts, in order.
-    for (let i = 0; i < data.length; i += MAX_WRITE) {
-      void bridge.terminal.write({ id, data: data.slice(i, i + MAX_WRITE) })
-    }
+    for (const part of splitWrite(data)) void bridge.terminal.write({ id, data: part })
   }
 
   private onKey(e: KeyboardEvent): boolean {
@@ -259,10 +259,15 @@ class TerminalSession {
 export class TerminalStore {
   private tabs: TerminalTab[] = []
   private active: string | null = null
-  private readonly sessions = new Map<string, TerminalSession>()
-  private readonly byId = new Map<string, TerminalSession>()
+  private readonly sessions = new Map<string, TerminalTabView>()
+  private readonly byId = new Map<string, TerminalTabView>()
   /** Output for a session id that isn't bound yet (it raced the create reply). */
   private readonly early = new Map<string, string[]>()
+  /**
+   * Ids of tabs closed here: output still in flight for them is dropped, not kept in `early`.
+   * Main sends nothing after a kill, so this only grows by one short id per closed tab.
+   */
+  private readonly closed = new Set<string>()
   private readonly listeners = new Set<Listener>()
   private viewport: HTMLElement | null = null
   private next = 1
@@ -294,11 +299,18 @@ export class TerminalStore {
     this.changed()
   }
 
-  bind(id: string, s: TerminalSession): void {
+  bind(id: string, s: TerminalTabView): void {
     this.byId.set(id, s)
     const early = this.early.get(id)
     this.early.delete(id)
     if (early) for (const d of early) s.output(d)
+  }
+
+  /** A session this window no longer shows (closed, or its tab went before it started). */
+  forget(id: string): void {
+    this.byId.delete(id)
+    this.early.delete(id)
+    this.closed.add(id)
   }
 
   private onOutput(e: TerminalOutputEvent): void {
@@ -307,13 +319,16 @@ export class TerminalStore {
       s.output(e.data)
       return
     }
+    if (this.closed.has(e.id)) return
     const list = this.early.get(e.id) ?? []
     list.push(e.data)
     this.early.set(e.id, list)
   }
 
   private onExit(e: TerminalExitEvent): void {
-    this.byId.get(e.id)?.exited(e)
+    const s = this.byId.get(e.id)
+    if (s) s.exited(e)
+    else this.early.delete(e.id)
   }
 
   /** The Terminal view's callbacks (find bar, leaving with F6, errors); null when it goes away. */
@@ -336,7 +351,7 @@ export class TerminalStore {
       error: null,
     }
     this.tabs.push(tab)
-    const session = new TerminalSession(tab, this, this.options ?? DEFAULT_OPTIONS)
+    const session = new TerminalTabView(tab, this, this.options ?? defaultOptions())
     this.sessions.set(key, session)
     this.select(key)
     return key
@@ -357,7 +372,7 @@ export class TerminalStore {
     this.tabs.splice(index, 1)
     this.sessions.delete(key)
     const id = s.tab.id
-    if (id) this.byId.delete(id)
+    if (id) this.forget(id)
     s.dispose()
     if (this.active === key) {
       const neighbour = this.tabs[Math.min(index, this.tabs.length - 1)]
@@ -397,7 +412,7 @@ export class TerminalStore {
     if (this.active) this.sessions.get(this.active)?.term.focus()
   }
 
-  activeSession(): TerminalSession | undefined {
+  activeSession(): TerminalTabView | undefined {
     return this.active ? this.sessions.get(this.active) : undefined
   }
 
@@ -426,15 +441,11 @@ export class TerminalStore {
   }
 }
 
-const DEFAULT_OPTIONS: TerminalOptions = {
-  shell: '',
-  fontSize: 'app',
+/** Settings → Terminal's defaults, until the view passes the real settings. */
+const defaultOptions = (): TerminalOptions => ({
+  ...TerminalSettingsSchema.parse({}),
   appFontSize: 14,
-  cursorStyle: 'block',
-  cursorBlink: true,
-  scrollback: 5000,
-  devdockPrompt: false,
-}
+})
 
 let store: TerminalStore | null = null
 

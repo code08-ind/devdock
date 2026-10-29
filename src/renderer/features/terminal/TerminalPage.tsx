@@ -91,7 +91,13 @@ function focusBeside(terminal: HTMLElement | null, back: boolean): void {
  * they are still there after visiting another view. Inside a terminal, Tab and Escape belong to
  * the shell; F6 / Shift+F6 or ⌘/Ctrl+1–9 and ⌘/Ctrl+K leave it.
  */
-export function TerminalPage({ request }: { request?: { n: number; repoId: string | null } }) {
+/** An "open a terminal" request (palette, repo card, panel); `n` makes each one new. */
+export interface TerminalRequest {
+  n: number
+  repoId: string | null
+}
+
+export function TerminalPage({ request }: { request?: TerminalRequest }) {
   const store = terminalStore()
   const { tabs, active } = useSyncExternalStore(store.subscribe, store.getSnapshot)
   const settings = useSettings().data

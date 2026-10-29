@@ -121,8 +121,23 @@ export interface CommandContext {
   openTerminal: (repoId: string | null) => unknown
 }
 
-/** The palette's name for DevDock's own terminal ("Open terminal" is the OS terminal app). */
+/**
+ * The palette's name for DevDock's own terminal ("Open terminal" is the OS terminal app). It
+ * lives here, not next to `OPEN_LABELS` in lib/repos, so this registry stays free of React and
+ * the bridge (its unit tests run in Node).
+ */
 export const DEVDOCK_TERMINAL_LABEL = 'Open in DevDock terminal'
+
+/** "New terminal" (home folder): in the full list and for a bare `terminal`. */
+function newTerminalCommand(ctx: Pick<CommandContext, 'openTerminal'>): Command {
+  return {
+    id: 'terminal:new',
+    title: 'New terminal',
+    group: 'Terminal',
+    keywords: ['shell', 'zsh', 'console', 'tab', 'home'],
+    run: () => ctx.openTerminal(null),
+  }
+}
 
 const UTILITY_COMMANDS: { tab: UtilityRequest['tab']; title: string; keywords: string[] }[] = [
   {
@@ -322,13 +337,7 @@ export function buildCommands(ctx: CommandContext, views: readonly View[]): Comm
       keywords: u.keywords,
       run: () => ctx.utility({ tab: u.tab }),
     })),
-    {
-      id: 'terminal:new',
-      title: 'New terminal',
-      group: 'Terminal',
-      keywords: ['shell', 'zsh', 'console', 'tab', 'home'],
-      run: () => ctx.openTerminal(null),
-    },
+    newTerminalCommand(ctx),
     ...ctx.quickLinks.map<Command>((l) => ({
       id: `link:${l.id}`,
       title: `Open ${l.name}`,
@@ -418,14 +427,7 @@ export function queryCommands(
   if (term) {
     const name = term[1]?.trim().toLowerCase()
     if (!name) {
-      return [
-        {
-          id: 'terminal:new',
-          title: 'New terminal',
-          group: 'Terminal',
-          run: () => ctx.openTerminal(null),
-        },
-      ]
+      return [newTerminalCommand(ctx)]
     }
     const matches = ctx.repos
       .filter((r) => r.name.toLowerCase().includes(name))

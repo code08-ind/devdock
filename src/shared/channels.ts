@@ -117,7 +117,6 @@ export const INVOKE_CHANNELS = [
   'terminal:write',
   'terminal:resize',
   'terminal:kill',
-  'terminal:list',
   /** Palette window / panel → main window: open a DevDock terminal (in a repo or home). */
   'terminal:request',
 ] as const

@@ -311,7 +311,6 @@ export const contract = {
   /** Closing a tab: the shell and what it started are stopped. */
   'terminal:kill': { req: TerminalRefSchema, res: none },
   /** This window's sessions. */
-  'terminal:list': { req: none, res: z.array(TerminalSessionSchema) },
   'terminal:request': { req: TerminalRequestSchema, res: none },
 } satisfies Record<InvokeChannel, { req: z.ZodType; res: z.ZodType }>
 

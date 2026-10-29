@@ -1,6 +1,6 @@
 /**
  * "Use DevDock prompt" (Settings → Terminal): a robbyrussell-style prompt for people without
- * oh-my-zsh. The user's own startup files are loaded first, exactly as a terminal would load
+ * oh-my-zsh (in zsh it steps aside when oh-my-zsh is loaded). The user's own startup files are loaded first, exactly as a terminal would load
  * them, and are never edited: zsh starts with ZDOTDIR pointing at a folder DevDock owns whose
  * files source the real ones; bash starts with `--rcfile` pointing at DevDock's file.
  *
@@ -27,6 +27,10 @@ ZDOTDIR=$DEVDOCK_ZDOTDIR
 /** robbyrussell, from oh-my-zsh, rebuilt with plain zsh (no downloads, no plugins). */
 export const ZSH_PROMPT = `
 # --- DevDock prompt ---------------------------------------------------------------------------
+# oh-my-zsh is loaded (its omz command, or ZSH_THEME set): its prompt and colours stay as they are.
+if (( \${+functions[omz]} || \${+ZSH_THEME} )); then
+  :
+else
 autoload -Uz add-zsh-hook
 setopt prompt_subst interactive_comments
 
@@ -46,12 +50,14 @@ add-zsh-hook precmd __devdock_git_info
 PROMPT='%(?:%B%F{green}%1{➜%}%f%b :%B%F{red}%1{➜%}%f%b ) %F{cyan}%c%f\${__devdock_git} '
 RPROMPT=''
 
-# Colours without plugins: ls, completion lists, selections, and the command word.
+# Colours without plugins: ls, completion lists and the command word. The user's own zsh
+# options, key bindings and completion styles are left alone (only an unset list-colors is filled).
 export CLICOLOR=1
 export LSCOLORS=\${LSCOLORS:-Gxfxcxdxbxegedabagacad}
-zle_highlight=(region:standout special:standout suffix:bold isearch:underline paste:none)
-zstyle ':completion:*' menu select
-[[ -n $LS_COLORS ]] && zstyle ':completion:*:default' list-colors \${(s.:.)LS_COLORS}
+if [[ -n $LS_COLORS ]] && ! zstyle -g __devdock_lc ':completion:*:default' list-colors; then
+  zstyle ':completion:*:default' list-colors \${(s.:.)LS_COLORS}
+fi
+unset __devdock_lc
 
 # The first word of the line: green when it is a command, red when zsh can't find it.
 # Skipped when zsh-syntax-highlighting is already loaded (it does this and more).
@@ -72,6 +78,7 @@ if (( ! \${+ZSH_HIGHLIGHT_VERSION} )) && autoload -Uz add-zle-hook-widget 2>/dev
     region_highlight=("\${#lead} $(( \${#lead} + \${#cmd} )) $style")
   }
   add-zle-hook-widget zle-line-pre-redraw __devdock_highlight
+fi
 fi
 `
 

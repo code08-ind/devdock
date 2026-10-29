@@ -7,8 +7,23 @@ import { z } from 'zod'
 
 /** Most terminals one window may hold at once (each is a real shell process). */
 export const MAX_SESSIONS = 20
-/** Largest single write (a paste is split into chunks of this size by the renderer). */
+/** Largest single write, in UTF-16 code units (the renderer splits a paste with `splitWrite`). */
 export const MAX_WRITE = 64 * 1024
+
+/** Splits input into writes of at most `max` code units, never between a surrogate pair. */
+export function splitWrite(data: string, max = MAX_WRITE): string[] {
+  const parts: string[] = []
+  let i = 0
+  while (i < data.length) {
+    let end = Math.min(i + max, data.length)
+    const last = data.charCodeAt(end - 1)
+    // A high surrogate at the cut: its low half goes with it into the next write.
+    if (end < data.length && end - i > 1 && last >= 0xd800 && last <= 0xdbff) end--
+    parts.push(data.slice(i, end))
+    i = end
+  }
+  return parts
+}
 
 export const TerminalIdSchema = z.string().regex(/^t[0-9]{1,6}$/, 'Not a terminal id')
 

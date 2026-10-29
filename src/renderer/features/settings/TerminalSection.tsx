@@ -98,7 +98,7 @@ export function TerminalSection({ settings }: { settings: Settings }) {
       </Field>
       <Toggle
         label="Use DevDock prompt"
-        description="zsh and bash only. A robbyrussell-style prompt (green arrow, folder, git branch, ✗ when there are changes) for people without oh-my-zsh. Your own startup files still load and are never changed; leave it off to keep your own prompt."
+        description="zsh and bash only. A robbyrussell-style prompt (green arrow, folder, git branch, ✗ when there are changes) for people without oh-my-zsh; when oh-my-zsh is loaded, zsh keeps its prompt. Your own startup files, options and key bindings still load and are never changed; leave it off to keep your own prompt."
         checked={t.devdockPrompt}
         onChecked={(devdockPrompt) => update.mutate({ terminal: { devdockPrompt } })}
       />

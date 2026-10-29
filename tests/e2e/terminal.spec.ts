@@ -143,6 +143,35 @@ test('Settings → Terminal saves the shell, font size and DevDock prompt', asyn
     .toMatchObject({ shell: 'bash', fontSize: 16, devdockPrompt: true })
 })
 
+test('quitting DevDock stops the terminals’ shells and what they started', async () => {
+  test.skip(process.platform === 'win32', 'process groups (macOS); ConPTY ends with the app')
+  test.setTimeout(60_000)
+  const profile = newProfile()
+  const { app, win } = await launch(profile)
+  try {
+    // The first visit opens one in the home folder; a second tab makes two shells.
+    await showView(win, 'Terminal')
+    await expect.poll(() => callHook(app, 'terminalPids'), { timeout: 15_000 }).toHaveLength(1)
+    await win.getByRole('button', { name: 'New terminal' }).click()
+    await expect.poll(() => callHook(app, 'terminalPids'), { timeout: 15_000 }).toHaveLength(2)
+    // Something the shell started that ignores the hang-up (in the shell's process group, as
+    // with job control off): the PTY closing alone would leave it running; DevDock's kill of the
+    // group on quit stops it.
+    await typeLine(win, "set +m; (trap '' HUP; exec sleep 300) & echo devdock-child=$!")
+    await expect
+      .poll(async () => /devdock-child=(\d+)/.exec(await screen(win))?.[1], { timeout: 15_000 })
+      .toBeTruthy()
+    const child = Number(/devdock-child=(\d+)/.exec(await screen(win))![1])
+    const pids = [...(await callHook(app, 'terminalPids')), child]
+    expect(pids.every(alive)).toBe(true)
+    await app.close()
+    await expect.poll(() => pids.filter(alive), { timeout: 5_000 }).toEqual([])
+  } finally {
+    await app.close().catch(() => undefined)
+    rmSync(profile, { recursive: true, force: true })
+  }
+})
+
 for (const shell of ['/bin/zsh', '/bin/bash']) {
   test(`DevDock prompt in ${shell}: arrow, folder and git:(branch), ✗ once the repo changes`, async () => {
     test.skip(process.platform === 'win32', 'zsh/bash prompt (macOS)')
