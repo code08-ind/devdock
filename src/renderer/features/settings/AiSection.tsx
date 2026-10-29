@@ -1,14 +1,13 @@
-import { useQuery } from '@tanstack/react-query'
-import { AI_MODELS, formatUsd, type AiModelId } from '@shared/ai'
+import { AI_MODELS, aiCost, formatUsd, TYPICAL_OUTPUT_TOKENS, type AiModelId } from '@shared/ai'
 import type { Settings } from '@shared/settings'
-import { bridge, keys, unwrap, useUpdateSettings } from '../../lib/devdock'
+import { useSecrets, useUpdateSettings } from '../../lib/devdock'
 import { ErrorNotice } from '../../ui/Feedback'
 import { Field, Select } from '../../ui/Field'
 import { SecretRow } from './CredentialsSection'
 import { Section } from './Section'
 
-/** A short note at the model's price: about 600 tokens in, 1,200 out (thinking included). */
-const noteCost = (input: number, output: number) => formatUsd((600 * input + 1200 * output) / 1e6)
+/** A typical request at the model's price: about 600 tokens in, a typical answer out. */
+const typicalCost = (model: AiModelId) => formatUsd(aiCost(model, 600, TYPICAL_OUTPUT_TOKENS))
 
 /**
  * Settings → AI (P7-C-B): the user's own Anthropic key and the model. DevDock ships no key and
@@ -16,17 +15,8 @@ const noteCost = (input: number, output: number) => formatUsd((600 * input + 120
  */
 export function AiSection({ settings }: { settings: Settings }) {
   const update = useUpdateSettings()
-  const status = useQuery({
-    queryKey: keys.secretsStatus,
-    queryFn: () => unwrap(bridge.secrets.status()),
-  })
-  const available = status.data?.available ?? false
-  const list = useQuery({
-    queryKey: keys.secrets,
-    queryFn: () => unwrap(bridge.secrets.list()),
-    enabled: available,
-  })
-  const saved = (list.data ?? []).includes('anthropic.key')
+  const { available, list, saved: secrets } = useSecrets()
+  const saved = secrets.has('anthropic.key')
   return (
     <Section
       id="ai"
@@ -48,7 +38,7 @@ export function AiSection({ settings }: { settings: Settings }) {
             aria-describedby={describedBy}
             options={AI_MODELS.map((m) => ({
               value: m.id as AiModelId,
-              label: `${m.name} — $${m.input} / $${m.output}, about ${noteCost(m.input, m.output)} a request`,
+              label: `${m.name} — $${m.input} / $${m.output}, about ${typicalCost(m.id)} a request`,
             }))}
             value={settings.ai.model}
             disabled={update.isPending}

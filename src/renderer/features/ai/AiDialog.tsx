@@ -122,9 +122,14 @@ function Preview({ preview }: { preview: AiPreview }) {
             'About',
             `${formatUsd(preview.estimatedCostUsd)} (at most ${formatUsd(preview.maxCostUsd)})`,
           ],
-          ['Size', `about ${preview.estimatedInputTokens.toLocaleString('en-GB')} tokens`],
+          ['Size', `about ${preview.estimatedInputTokens.toLocaleString('en')} tokens`],
         ]}
       />
+      {preview.fallback && !preview.demo ? (
+        <p className="muted">
+          If Claude declines, Anthropic may answer with another Claude model; the answer says which.
+        </p>
+      ) : null}
       <CodeBlock code={preview.prompt} label="The text that will be sent" />
       <details>
         <summary>Instructions sent with it</summary>
@@ -148,8 +153,8 @@ function Answer({ preview, result }: { preview: AiPreview; result: AiResult }) {
         </div>
       ) : null}
       <p className="muted">
-        {result.inputTokens.toLocaleString('en-GB')} tokens in,{' '}
-        {result.outputTokens.toLocaleString('en-GB')} out — {formatUsd(result.costUsd)}
+        {result.inputTokens.toLocaleString('en')} tokens in,{' '}
+        {result.outputTokens.toLocaleString('en')} out — {formatUsd(result.costUsd)}
         {preview.demo ? ' (demo: not charged)' : ''}.
         {other ? ` Answered by ${result.model} (Anthropic's fallback for declined requests).` : ''}
       </p>

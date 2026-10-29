@@ -78,6 +78,8 @@ export const AiPreviewSchema = z.object({
   estimatedCostUsd: z.number(),
   /** The answer can't cost more than this (its length is capped), USD. */
   maxCostUsd: z.number(),
+  /** If Claude declines, Anthropic may answer with another Claude model (Opus, Sonnet). */
+  fallback: z.boolean(),
   demo: z.boolean(),
 })
 export type AiPreview = z.infer<typeof AiPreviewSchema>
@@ -93,6 +95,9 @@ export const AiResultSchema = z.object({
   truncated: z.boolean(),
 })
 export type AiResult = z.infer<typeof AiResultSchema>
+
+/** A typical answer for estimates (thinking included), in tokens. */
+export const TYPICAL_OUTPUT_TOKENS = 1_200
 
 /** USD for a call, from the model's per-million prices. */
 export function aiCost(model: AiModelId, inputTokens: number, outputTokens: number): number {

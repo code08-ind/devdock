@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { KeyRound } from 'lucide-react'
 import { SECRET_KEYS, type SecretKey } from '@shared/ipc'
-import { bridge, keys, unwrap } from '../../lib/devdock'
+import { bridge, keys, unwrap, useSecrets } from '../../lib/devdock'
 import { useAction } from '../../lib/useAction'
 import { Button } from '../../ui/Button'
 import { ConfirmDialog } from '../../ui/Dialog'
@@ -103,17 +103,7 @@ export function SecretRow({
 
 /** Tokens go in, never come back out: the renderer only learns which keys are set. */
 export function CredentialsSection() {
-  const status = useQuery({
-    queryKey: keys.secretsStatus,
-    queryFn: () => unwrap(bridge.secrets.status()),
-  })
-  const available = status.data?.available ?? false
-  const list = useQuery({
-    queryKey: keys.secrets,
-    queryFn: () => unwrap(bridge.secrets.list()),
-    enabled: available,
-  })
-  const saved = new Set(list.data ?? [])
+  const { status, available, list, saved } = useSecrets()
 
   return (
     <Section

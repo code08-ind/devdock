@@ -9,20 +9,26 @@
  */
 import { randomUUID } from 'node:crypto'
 import Anthropic from '@anthropic-ai/sdk'
-import { aiCost, type AiFeature, type AiModelId, type AiPreview, type AiResult } from '@shared/ai'
+import {
+  AI_MODEL_IDS,
+  aiCost,
+  TYPICAL_OUTPUT_TOKENS,
+  type AiFeature,
+  type AiModelId,
+  type AiPreview,
+  type AiResult,
+} from '@shared/ai'
 import type { HttpClient } from '../http'
 import { ServiceError } from '../service-error'
 import { SYSTEM } from './prompts'
 
 /** The answer's length cap (thinking counts towards it). A short note never gets near it. */
 export const MAX_TOKENS = 16_000
-/** A typical answer for the estimate (thinking included), in tokens. */
-const TYPICAL_OUTPUT = 1_200
 /** How long a prepared call can wait for the user's confirmation. */
 const PREVIEW_TTL_MS = 10 * 60_000
 
 /** Short rewrites need little thought; the PR note weighs a few facts. */
-const EFFORT: Record<AiFeature, 'low' | 'medium'> = {
+const EFFORT: Record<AiFeature, NonNullable<Anthropic.Beta.BetaOutputConfig['effort']>> = {
   'pr-summary': 'medium',
   lesson: 'low',
   standup: 'low',
@@ -73,8 +79,9 @@ export class AiService {
       system,
       prompt,
       estimatedInputTokens,
-      estimatedCostUsd: aiCost(model, estimatedInputTokens, TYPICAL_OUTPUT),
+      estimatedCostUsd: aiCost(model, estimatedInputTokens, TYPICAL_OUTPUT_TOKENS),
       maxCostUsd: aiCost(model, estimatedInputTokens, MAX_TOKENS),
+      fallback: FALLBACK_MODELS.has(model),
       demo,
     }
     this.pending.set(preview.id, { preview, expires: this.now() + PREVIEW_TTL_MS })
@@ -93,15 +100,24 @@ export class AiService {
     }
     this.pending.delete(id)
     const { preview } = held
-    const key = held.preview.demo ? 'demo' : await this.deps.key()
-    if (!key) throw new ServiceError('not_configured', 'Your Anthropic API key was removed.')
     const http = this.deps.http
+    // The preview promised "demo: nothing is sent" (or a real send): demo mode must not have
+    // been switched in between, or a demo preview would go to the real API.
+    if (http.demo !== preview.demo) {
+      throw new ServiceError(
+        'conflict',
+        'Demo mode changed since this request was prepared. Prepare it again to see what will happen.',
+      )
+    }
+    const key = preview.demo ? 'demo' : await this.deps.key()
+    if (!key) throw new ServiceError('not_configured', 'Your Anthropic API key was removed.')
     const client = new Anthropic({
       // Pinned: ANTHROPIC_BASE_URL in the user's environment must never redirect their key.
       baseURL: 'https://api.anthropic.com',
       // Sent as `Authorization: Bearer`; passing it also stops the SDK reading credentials
       // from the environment or a CLI profile.
       apiKey: key,
+      // A failed attempt (429, 5xx, network) is retried twice; failed attempts aren't billed.
       maxRetries: 2,
       timeout: 120_000,
       fetch: (input, init) => http.fetch(new Request(input, init)),
@@ -134,15 +150,22 @@ export class AiService {
       .join('')
       .trim()
     if (!text) {
-      throw new ServiceError('bad_response', 'Claude sent back no text. Try again.')
+      throw new ServiceError(
+        'bad_response',
+        message.stop_reason === 'max_tokens'
+          ? 'Claude used up its length limit before writing an answer. Try again, or shorten the text.'
+          : 'Claude sent back no text. Try again.',
+      )
     }
     const { input_tokens: inputTokens, output_tokens: outputTokens } = message.usage
+    // A fallback model bills at its own price; an unknown one is priced as the chosen model.
+    const priced = AI_MODEL_IDS.find((m) => m === message.model) ?? preview.model
     return {
       text,
       model: message.model,
       inputTokens,
       outputTokens,
-      costUsd: aiCost(preview.model, inputTokens, outputTokens),
+      costUsd: aiCost(priced, inputTokens, outputTokens),
       truncated: message.stop_reason === 'max_tokens',
     }
   }
@@ -160,7 +183,7 @@ export function toServiceError(err: unknown): ServiceError {
     return new ServiceError(
       'auth',
       'Anthropic rejected the API key. Check it in Settings → AI (it may have been revoked).',
-      { status: 401 },
+      { status: 401, details: err.message },
     )
   }
   if (err instanceof Anthropic.PermissionDeniedError) {

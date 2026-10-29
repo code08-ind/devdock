@@ -122,6 +122,62 @@ describe('AI with your own key (P7-C-B)', () => {
     expect(await ai.run((await ai.prepare('lesson', 'x')).id)).toMatchObject({ truncated: true })
   })
 
+  it('a demo preview is never sent for real if demo mode was switched off before Send', async () => {
+    const { http: real, sent } = fakeHttp(() => message())
+    let demo = true
+    const http: HttpClient = {
+      get demo() {
+        return demo
+      },
+      fetch: (r) => real.fetch(r),
+    }
+    const ai = new AiService({ http, key: () => 'sk-ant-real', model: () => 'claude-opus-5-5' })
+    const preview = await ai.prepare('lesson', 'x')
+    expect(preview.demo).toBe(true)
+    demo = false
+    await expect(ai.run(preview.id)).rejects.toMatchObject({ kind: 'conflict' })
+    expect(sent).toEqual([])
+  })
+
+  it('a cut-off answer with no text says so; a fallback model is priced at its own rate', async () => {
+    let reply = () => message({ content: [], stop_reason: 'max_tokens' })
+    const { http } = fakeHttp(() => reply())
+    const ai = new AiService({ http, key: () => 'k', model: () => 'claude-opus-5-5' })
+    await expect(ai.run((await ai.prepare('lesson', 'x')).id)).rejects.toMatchObject({
+      message: /length limit before writing an answer/,
+    })
+    reply = () => message({ model: 'claude-sonnet-5-5' })
+    expect(await ai.run((await ai.prepare('lesson', 'x')).id)).toMatchObject({
+      model: 'claude-sonnet-5-5',
+      costUsd: (1000 * 2 + 200 * 10) / 1_000_000,
+    })
+  })
+
+  it('ANTHROPIC_BASE_URL in the environment never redirects the key; 429 says to wait', async () => {
+    vi.stubEnv('ANTHROPIC_BASE_URL', 'https://evil.example')
+    try {
+      const { http, sent } = fakeHttp(() =>
+        Response.json(
+          { type: 'error', error: { type: 'rate_limit_error', message: 'slow down' } },
+          { status: 429, headers: { 'retry-after': '0' } },
+        ),
+      )
+      const ai = new AiService({ http, key: () => 'k', model: () => 'claude-haiku-5-5' })
+      await expect(ai.run((await ai.prepare('lesson', 'x')).id)).rejects.toMatchObject({
+        kind: 'rate_limited',
+        retryAfterSec: 0,
+      })
+      // Two retries of the failed attempt, all to Anthropic.
+      expect(sent.map((r) => new URL(r.url).host)).toEqual([
+        'api.anthropic.com',
+        'api.anthropic.com',
+        'api.anthropic.com',
+      ])
+    } finally {
+      vi.unstubAllEnvs()
+    }
+  })
+
   it('IPC in demo mode: main builds the text, the demo Claude answers, no key needed', async () => {
     const { handlers } = await handlerSetup()
     const prepared = await dispatch(

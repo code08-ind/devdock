@@ -333,8 +333,10 @@ Place this file at `docs/SPEC.md` in the new repository. Every build phase refer
   comment worded as a lesson (Utilities → Lessons, "Use as the lesson" fills it in), and a
   polished standup (from the user's edited draft).
 - Every request is prepared in main and shown first — the exact text and instructions, the
-  model, an estimated and a maximum cost — and sent only when the user presses Send; a prepared
-  request is sent once and expires after ten minutes. The renderer can't change what is sent.
+  model, an estimated and a maximum cost, and that another Claude model may answer if Claude
+  declines — and sent only when the user presses Send. Each prepared request can be sent once
+  (a failed attempt is retried up to twice; failed attempts aren't billed) and expires after ten
+  minutes; it is refused if demo mode was switched since. The renderer can't change what is sent.
 - Refusals, a cut-off answer, a rejected key, rate limits and network failures each say so in
   plain words; the answer shows the tokens used and the cost.
 

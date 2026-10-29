@@ -23,6 +23,9 @@ interface Candidate {
 
 type Scope = 'repo' | 'all'
 
+/** Longest lesson line (the file holds one lesson per line). */
+const LESSON_MAX = 500
+
 /**
  * Agent lessons (P6-F): the repo's lessons file, review comments on my recent PRs to turn into
  * lessons, and my own. Nothing is written until I pick lessons and press Add; each lesson can be
@@ -115,7 +118,7 @@ export function LessonsPanel({ repoId, onView }: { repoId: string; onView: (v: V
           onClose={() => setWording(null)}
           onUse={{
             label: 'Use as the lesson',
-            use: (text) => change(wording, { text: text.slice(0, 500), picked: true }),
+            use: (text) => change(wording, { text: text.slice(0, LESSON_MAX), picked: true }),
           }}
         />
       ) : null}
@@ -198,7 +201,7 @@ export function LessonsPanel({ repoId, onView }: { repoId: string; onView: (v: V
               <Input
                 aria-label={`Lesson from ${c.source}`}
                 value={c.text}
-                maxLength={500}
+                maxLength={LESSON_MAX}
                 onChange={(e) => change(c, { text: e.target.value, picked: true })}
               />
               {aiAvailable && c.comment ? (
@@ -228,7 +231,7 @@ export function LessonsPanel({ repoId, onView }: { repoId: string; onView: (v: V
             <Input
               id={id}
               value={draft}
-              maxLength={500}
+              maxLength={LESSON_MAX}
               placeholder="Run the visual tests before pushing UI changes"
               onChange={(e) => setDraft(e.target.value)}
             />

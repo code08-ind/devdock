@@ -1,5 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
-import { bridge, keys, unwrap, useSettings } from './devdock'
+import { useSecrets, useSettings } from './devdock'
 
 /**
  * Whether the AI features can be offered (P7-C-B): the user saved an Anthropic key, or demo mode
@@ -7,10 +6,6 @@ import { bridge, keys, unwrap, useSettings } from './devdock'
  */
 export function useAiAvailable(): boolean {
   const demo = useSettings().data?.general.demoMode ?? false
-  const list = useQuery({
-    queryKey: keys.secrets,
-    queryFn: () => unwrap(bridge.secrets.list()),
-    enabled: !demo,
-  })
-  return demo || (list.data ?? []).includes('anthropic.key')
+  const { saved } = useSecrets()
+  return demo || saved.has('anthropic.key')
 }

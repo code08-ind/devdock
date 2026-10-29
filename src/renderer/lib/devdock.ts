@@ -89,6 +89,21 @@ export function useSettings() {
   return useQuery({ queryKey: keys.settings, queryFn: () => unwrap(bridge.settings.get()) })
 }
 
+/** Whether the keychain works, and which secrets are saved (never their values). */
+export function useSecrets() {
+  const status = useQuery({
+    queryKey: keys.secretsStatus,
+    queryFn: () => unwrap(bridge.secrets.status()),
+  })
+  const available = status.data?.available ?? false
+  const list = useQuery({
+    queryKey: keys.secrets,
+    queryFn: () => unwrap(bridge.secrets.list()),
+    enabled: available,
+  })
+  return { status, available, list, saved: new Set(list.data ?? []) }
+}
+
 export function useUpdateSettings() {
   const qc = useQueryClient()
   return useMutation({

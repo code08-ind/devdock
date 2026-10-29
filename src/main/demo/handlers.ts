@@ -1,5 +1,5 @@
-import { anthropicHandlers } from './anthropic'
 import { http, HttpResponse, type RequestHandler } from 'msw'
+import { anthropicHandlers } from './anthropic'
 import { bitbucketHandlers } from './bitbucket'
 import { githubHandlers } from './github'
 import { gitlabHandlers } from './gitlab'
