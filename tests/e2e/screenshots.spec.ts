@@ -110,7 +110,7 @@ test('screenshots: README terminal', async () => {
     await win.waitForTimeout(1000)
     await screen.click()
     for (const line of [
-      'git log --oneline -3',
+      'git --no-pager log --oneline -3',
       'echo "export const ok = true" > ok.ts',
       'git status -sb',
       'ls -G',
