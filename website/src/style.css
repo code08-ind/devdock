@@ -591,6 +591,16 @@ main:focus {
   margin-top: 32px;
 }
 
+@media (max-width: 480px) {
+  .hero-actions {
+    align-self: stretch;
+  }
+
+  .hero-actions .btn {
+    flex: 1 1 100%;
+  }
+}
+
 .hero-meta {
   margin-top: 16px;
   color: var(--muted-foreground);
