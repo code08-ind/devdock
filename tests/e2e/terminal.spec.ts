@@ -118,9 +118,13 @@ test('terminal: "Open in DevDock terminal" starts in the repo; exit marks the ta
   await expect.poll(() => callHook(app, 'terminalPids'), { timeout: 15_000 }).toHaveLength(1)
 
   await typeLine(win, 'pwd')
-  // The registered path, or its real path (macOS temp folders live under /private).
-  const paths = [repos.clone, realpathSync(repos.clone)]
-  const anyPath = new RegExp(paths.map((p) => p.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&')).join('|'))
+  // The registered path or its real path: macOS temp folders live under /private, and Windows
+  // may name the same folder by its 8.3 short form (RUNNER~1) or its long one (runneradmin).
+  const paths = [repos.clone, realpathSync(repos.clone), realpathSync.native(repos.clone)]
+  const anyPath = new RegExp(
+    paths.map((p) => p.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&')).join('|'),
+    process.platform === 'win32' ? 'i' : '',
+  )
   await expect.poll(() => screen(win), { timeout: 15_000 }).toMatch(anyPath)
 
   await typeLine(win, 'exit')
