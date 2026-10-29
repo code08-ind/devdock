@@ -124,6 +124,7 @@ export async function handlerSetup(
     myWork: async () => ({ branches: [], prs: [] }),
     demo: DEMO_JENKINS,
   })
+  const { AiService } = await import('../../src/main/services/ai/service')
   const { TerminalManager } = await import('../../src/main/services/terminal/manager')
   const pty = fakeSpawn()
   const terminalEvents: HandlerSetup['terminalEvents'] = []
@@ -177,6 +178,11 @@ export async function handlerSetup(
       { id: 'copilot' as const, name: 'GitHub Copilot CLI', path: null },
     ]),
     platform: 'darwin',
+    ai: new AiService({
+      http,
+      key: () => secrets.get('anthropic.key'),
+      model: () => settings.get().ai.model,
+    }),
     settings,
     secrets,
     notifications,

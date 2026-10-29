@@ -72,6 +72,7 @@ import { SettingsStore } from './services/settings'
 import { ShortcutService } from './services/shortcut'
 import { TerminalManager, type PtySpawn } from './services/terminal/manager'
 import { detectAgents } from './services/agents'
+import { AiService } from './services/ai/service'
 import { createTray, watchedForTray, type TrayHandle } from './tray'
 import {
   createMainWindow,
@@ -594,6 +595,11 @@ function start(): void {
       agents: () =>
         envReady.then(() => detectAgents({ platform: process.platform, env: process.env })),
       platform: process.platform,
+      ai: new AiService({
+        http,
+        key: () => secrets.get('anthropic.key'),
+        model: () => store.get().ai.model,
+      }),
       emitOutput: (event) => {
         // The window may close while git is still running.
         if (mainWindow && !mainWindow.isDestroyed())

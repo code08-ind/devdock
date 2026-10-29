@@ -325,6 +325,21 @@ Place this file at `docs/SPEC.md` in the new repository. Every build phase refer
   the message is on the clipboard.
 - DevDock holds no keys for these CLIs; each signs in its own way.
 
+### 6.10 AI with your own key (Phase 7, P7-C-B)
+- Optional: Settings → AI takes the user's own Anthropic API key (OS keychain, like other
+  tokens) and a model (Claude Opus 5.5 default; Sonnet 5.5, Haiku 5.5). DevDock ships no key;
+  without one the AI buttons are hidden (demo mode answers with local samples).
+- Features: a status note for a pull request (from the PR facts DevDock shows), a reviewer's
+  comment worded as a lesson (Utilities → Lessons, "Use as the lesson" fills it in), and a
+  polished standup (from the user's edited draft).
+- Every request is prepared in main and shown first — the exact text and instructions, the
+  model, an estimated and a maximum cost, and that another Claude model may answer if Claude
+  declines — and sent only when the user presses Send. Each prepared request can be sent once
+  (a failed attempt is retried up to twice; failed attempts aren't billed) and expires after ten
+  minutes; it is refused if demo mode was switched since. The renderer can't change what is sent.
+- Refusals, a cut-off answer, a rejected key, rate limits and network failures each say so in
+  plain words; the answer shows the tokens used and the cost.
+
 ## 7. Quality bar
 - Every action is reachable from the keyboard and from the command palette.
 - No remote-changing action happens without confirmation:

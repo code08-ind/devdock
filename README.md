@@ -103,7 +103,7 @@ ready message for your coding agent.
 **Agent lessons** (Utilities → Lessons) — DevDock gathers what reviewers keep asking for on
 your pull requests; you pick and edit the ones worth keeping, and they're added to
 `docs/ai/LESSONS.md` in the repo. Start work tells your agent to read that file first and to
-add what it learns. DevDock itself makes no AI calls: your agent does the work. Installed
+add what it learns. Your agent does the work (DevDock calls no AI service unless you add your own key — see **AI** below). Installed
 Claude Code, Codex, Gemini CLI or GitHub Copilot CLI? Start work then offers **Start <agent>
 now**, which opens it in a DevDock terminal tab in the repo with the message as its first prompt
 (Settings → Workflow → Agent picks which).
@@ -123,6 +123,13 @@ gives zsh and bash a robbyrussell-style prompt with the git branch — your `.zs
 changed. Closing a tab or quitting DevDock stops the shell and what it started.
 
 ![Terminal](docs/screenshots/readme-terminal.png)
+
+**AI with your own key** (optional, Settings → AI) — add your own Anthropic API key and DevDock
+can draft a status note for a pull request, word a reviewer's comment as a lesson, and tidy your
+standup. Each request is shown before it goes — the exact text, the model (Claude Opus 5.5 by
+default; Sonnet 5.5 and Haiku 5.5 in Settings) and about what it costs — and is sent only when
+you press Send. You pay Anthropic directly; DevDock ships no key. Demo mode answers with samples
+on your computer.
 
 **Command palette** — every action, searchable: `⌘K` in the app, or the global shortcut from
 any app. It takes arguments: `watch <PR link>`, `pipeline <PR link>`, `branch NM-1234`,
@@ -202,7 +209,8 @@ company needs a specific one, set it in **Settings → Diagnostics → Proxy**.
   commands are shown before they run, and protected branches and jobs are refused.
 - **Only your services.** DevDock talks to the Jira, Bitbucket, GitHub, GitLab and Jenkins addresses you enter,
   and opens links only on hosts you allow (Settings → Links). There's no telemetry, no account,
-  and no AI service: demo mode makes no network calls at all.
+  and no AI service unless you add your own Anthropic key (Settings → AI); then each request is
+  shown first and sent only when you press Send. Demo mode makes no network calls at all.
 - **The terminal is your shell.** It runs with your permissions, like Terminal.app; the screens
   only send keystrokes to it, and only to their own terminals. It starts in a repo you added or
   your home folder. An agent CLI started from Start work gets the message as one argument —

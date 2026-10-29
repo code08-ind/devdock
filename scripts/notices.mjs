@@ -21,6 +21,8 @@ const BUNDLED = [
   '@xterm/addon-web-links',
   '@xterm/addon-webgl',
   'node-pty',
+  // P7-C-B: the official Anthropic SDK, bundled into the main process (MIT).
+  '@anthropic-ai/sdk',
 ]
 
 const pkgDir = (name) => join(root, 'node_modules', name)

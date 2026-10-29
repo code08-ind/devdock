@@ -10,6 +10,7 @@ import { HolidaySchema } from './standup'
 import { CI_PROVIDERS, PROVIDERS, providerWeb, type Provider } from './providers'
 import { TerminalSettingsSchema } from './terminal'
 import { AgentPreferenceSchema } from './agents'
+import { AiSettingsSchema } from './ai'
 
 export const SETTINGS_VERSION = 1
 
@@ -301,6 +302,8 @@ export const SettingsSchema = z.object({
     .prefault({}),
   /** P7-A in-app terminal. */
   terminal: TerminalSettingsSchema,
+  /** P7-C-B: Claude with the user's own key (the key is in the keychain). */
+  ai: AiSettingsSchema,
   repos: z.array(RepoConfigSchema).default([]),
 })
 
@@ -351,6 +354,7 @@ export const SettingsPatchSchema = z.object({
   workflow: patchOf(SettingsSchema.shape.workflow),
   network: patchOf(SettingsSchema.shape.network),
   terminal: patchOf(SettingsSchema.shape.terminal),
+  ai: patchOf(SettingsSchema.shape.ai),
 })
 
 export type SettingsPatch = z.infer<typeof SettingsPatchSchema>
