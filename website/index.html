@@ -202,36 +202,25 @@
                   and open one from a repo’s row or the command palette.
                 </p>
               </div>
-              <figure
-                class="term"
-                aria-label="A DevDock terminal tab in the web-app repo: pulling the base branch and starting the dev server."
-              >
-                <div class="term-tabs" aria-hidden="true">
-                  <span class="term-tab is-on">web-app</span>
-                  <span class="term-tab">design-system</span>
-                  <span class="term-tab term-add">+</span>
-                </div>
-                <pre
-                  class="term-body"
-                ><span class="t-ok">➜</span>  <span class="t-dir">web-app</span> <span class="t-git">git:(</span><span class="t-br">feature/DD-102-checkout</span><span class="t-git">)</span> git pull --rebase origin develop
-Successfully rebased and updated refs/heads/feature/DD-102-checkout.
-<span class="t-ok">➜</span>  <span class="t-dir">web-app</span> <span class="t-git">git:(</span><span class="t-br">feature/DD-102-checkout</span><span class="t-git">)</span> <span class="t-warn">✗</span> npm run dev
-
-  <span class="t-ok">VITE v8.3.5</span>  <span class="t-dim">ready in</span> <b>412</b> <span class="t-dim">ms</span>
-
-  <span class="t-ok">➜</span>  <b>Local</b>:   <span class="t-dir">http://localhost:5173/</span>
-  <span class="t-dim">➜  press</span> <b>h + enter</b> <span class="t-dim">to show help</span>
-<span class="t-cursor" aria-hidden="true"> </span></pre>
-              </figure>
+              <div class="shot">
+                <img
+                  src="img/readme-terminal.webp"
+                  width="1600"
+                  height="1017"
+                  loading="lazy"
+                  alt="DevDock's Terminal screen with a tab in the clone repo: the green arrow prompt with the git branch, a git log, a new file, git status and ls in colour."
+                />
+              </div>
             </article>
 
             <article class="tour-panel" id="tp-prs" aria-labelledby="tab-prs">
               <div class="tour-text">
                 <h3>Pull requests</h3>
                 <p>
-                  Yours, the ones waiting for your review, recently merged, and any you watch by
-                  pasting a link. You get a notification when a build, review or comment changes.
-                  Approve, needs work and merge are there when you turn them on.
+                  From Bitbucket, GitHub and GitLab in one list: yours, the ones waiting for your
+                  review, recently merged, and any you watch by pasting a link. You get a
+                  notification when a build, review or comment changes. Approve, needs work and
+                  merge are there when you turn them on.
                 </p>
               </div>
               <div class="shot">
@@ -249,10 +238,10 @@ Successfully rebased and updated refs/heads/feature/DD-102-checkout.
               <div class="tour-text">
                 <h3>Builds</h3>
                 <p>
-                  Jenkins builds of your branches and your pull requests’ pipelines, with stages and
-                  the live console. Watch a build, a job or your branch’s deploy and hear when it
-                  finishes. Triggering builds is off by default and never offered for protected
-                  jobs.
+                  Jenkins builds, GitHub Actions runs and GitLab pipelines for your branches and
+                  pull requests, with stages, jobs and logs. Watch a build, a run or your branch’s
+                  deploy and hear when it finishes. Triggering, re-running and cancelling are off by
+                  default, always confirmed, and never offered for protected jobs.
                 </p>
               </div>
               <div class="shot">
@@ -360,9 +349,9 @@ Successfully rebased and updated refs/heads/feature/DD-102-checkout.
             <li class="card">
               <h3>Try it in demo mode</h3>
               <p>
-                Install and open DevDock. Jira, Bitbucket and Jenkins answer from sample data inside
-                the app, so nothing leaves your computer. Git on the repos you add and the Ports
-                tool are always real, and ask before they act.
+                Install and open DevDock. Jira, Bitbucket, Jenkins, GitHub and GitLab answer from
+                sample data inside the app, so nothing leaves your computer. Git on the repos you
+                add and the Ports tool are always real, and ask before they act.
               </p>
             </li>
             <li class="card">
@@ -398,8 +387,9 @@ Successfully rebased and updated refs/heads/feature/DD-102-checkout.
             <li class="card">
               <h3>Connect your services</h3>
               <p>
-                When you’re ready, turn off demo mode in Settings and add your Jira, Bitbucket and
-                Jenkins addresses and tokens. Test connection tells you what’s missing.
+                When you’re ready, turn off demo mode in Settings and add the services you use —
+                Jira, Bitbucket, Jenkins, GitHub or GitLab — with their addresses and tokens. Test
+                connection tells you what’s missing.
               </p>
             </li>
           </ol>
@@ -452,7 +442,7 @@ Successfully rebased and updated refs/heads/feature/DD-102-checkout.
             <li class="card">
               <h3>Only your services</h3>
               <p>
-                DevDock talks to the Jira, Bitbucket and Jenkins addresses you enter, and opens
+                DevDock talks only to the services you set up, at the addresses you enter, and opens
                 links only on hosts you allow. No telemetry, no account, no AI service. Demo mode
                 makes no network calls at all.
               </p>
@@ -538,7 +528,7 @@ Successfully rebased and updated refs/heads/feature/DD-102-checkout.
               </p>
             </details>
             <details>
-              <summary>Do I need Jira, Bitbucket or Jenkins to try it?</summary>
+              <summary>Do I need Jira, GitHub, Bitbucket or Jenkins to try it?</summary>
               <p>
                 No. Demo mode is on until you turn it off, and every screen works on sample data.
                 Git on your own repos and the Ports tool work for real, with or without the
@@ -564,8 +554,9 @@ Successfully rebased and updated refs/heads/feature/DD-102-checkout.
             <details>
               <summary>Does DevDock send my code or data anywhere?</summary>
               <p>
-                No. There’s no telemetry and no DevDock server. It talks only to the Jira, Bitbucket
-                and Jenkins addresses you enter, using tokens stored in your system’s keychain.
+                No. There’s no telemetry and no DevDock server. It talks only to the services you
+                set up (Jira, Bitbucket, Jenkins, GitHub, GitLab), at the addresses you enter, using
+                tokens stored in your system’s keychain.
               </p>
             </details>
             <details>

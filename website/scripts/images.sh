@@ -6,7 +6,7 @@ set -e
 out=website/public/img
 mkdir -p "$out"
 for f in readme-home readme-prs readme-builds readme-tickets readme-lessons readme-palette \
-  readme-diagnostics readme-repos today-light today-dark; do
+  readme-diagnostics readme-repos readme-terminal today-light today-dark; do
   cwebp -quiet -q 78 -resize 1600 0 "docs/screenshots/$f.png" -o "$out/$f.webp"
 done
 cwebp -quiet -q 82 docs/screenshots/readme-panel.png -o "$out/readme-panel.webp"

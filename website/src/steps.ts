@@ -14,13 +14,13 @@ export interface InstallGuide {
 }
 
 const WORK_MAC: Rich =
-  '**On a work Mac?** Managed Macs (MDM) often block unsigned apps outright, and the Open Anyway button never appears. Ask your IT team to approve DevDock and point them to the GitHub repository: the source is public, it needs no admin rights, and it only talks to the Jira, Bitbucket and Jenkins addresses you enter.'
+  '**On a work Mac?** Managed Macs (MDM) often block unsigned apps outright, and the Open Anyway button never appears. Ask your IT team to approve DevDock and point them to the GitHub repository: the source is public, it needs no admin rights, and it only talks to the services you set up, at the addresses you enter.'
 
 const WORK_WIN: Rich =
-  '**On a work PC?** Managed PCs (Intune, AppLocker) often block unsigned apps outright, and Run anyway never appears. Ask your IT team to approve DevDock and point them to the GitHub repository: the source is public, it needs no admin rights, and it only talks to the Jira, Bitbucket and Jenkins addresses you enter.'
+  '**On a work PC?** Managed PCs (Intune, AppLocker) often block unsigned apps outright, and Run anyway never appears. Ask your IT team to approve DevDock and point them to the GitHub repository: the source is public, it needs no admin rights, and it only talks to the services you set up, at the addresses you enter.'
 
 const AFTER: Rich =
-  'DevDock starts in **demo mode**: every screen works on sample data, with no accounts and no network calls. Turn it off in **Settings → Demo mode** when you want to connect Jira, Bitbucket and Jenkins.'
+  'DevDock starts in **demo mode**: every screen works on sample data, with no accounts and no network calls. Turn it off in **Settings → Demo mode** when you want to connect Jira, Bitbucket, Jenkins, GitHub or GitLab.'
 
 const GATEKEEPER: Rich[] = [
   'The first time, macOS says DevDock can’t be checked for malicious software (on macOS 15 and later: **“DevDock Not Opened”**). Choose **Done**.',

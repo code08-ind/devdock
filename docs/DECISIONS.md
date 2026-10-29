@@ -488,7 +488,7 @@ store with migrations).
 | **Light and Dark only**, one toggle (sun/moon, `aria-pressed`); follows the system until pressed. High contrast, Paper and Slate dropped from the site (still in the app); a saved hc/paper/slate choice falls back to the system. | Owner asked for Light & Dark. |
 | **Hero shows only the panel**, larger (440px) with a shadow and glow; the drawn menu bar/desktop is gone. | Owner: "remove the desktop background … show only the app, a bit bigger". |
 | **Two platform buttons** with Apple and Windows logos (hero) and Mac/Windows cards (Download); the visitor's system comes first. Before a release they link to `#download` and the line under them says downloads are coming soon. | Owner asked for SaaS-style Mac/Windows buttons with logos. |
-| **Terminal tab** in the feature tour, drawn in HTML (oh-my-zsh style, weight 500/700) until P7-A merges and a real screenshot exists. | Owner asked for a Terminal tab. |
+| **Terminal tab** in the feature tour: drawn in HTML until P7-A merged; since 2026-10-29 the real demo screenshot (`readme-terminal`, made by `screenshots.spec.ts`, converted by `website/scripts/images.sh`). | Owner asked for a Terminal tab. |
 
 ## P7-B — GitHub and GitLab (2026-10-26)
 
