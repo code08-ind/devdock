@@ -3,10 +3,13 @@ import {
   WatchItemSchema,
   isLive,
   prKey,
+  providerOf,
+  refLabel,
   type PrRef,
   type PullRequest,
   type WatchItem,
 } from '@shared/bitbucket'
+import { PROVIDER_NAMES, type Provider } from '@shared/providers'
 import { loadItems, saveItems } from '../json-file'
 import { WatchError, prRefFromLink } from '../watch'
 import type { NotifyInput } from '../notifications'
@@ -22,15 +25,19 @@ import type { ActionResult } from './client'
 
 export interface PrWatcherDeps {
   file: string
-  bitbucket: { pr(ref: PrRef): Promise<PullRequest>; site(): string | null }
+  /**
+   * Where PRs are read: the provider hub (P7.04) — Bitbucket, GitHub or GitLab by the ref's
+   * provider. `site(provider)` is where that provider's links must point.
+   */
+  bitbucket: { pr(ref: PrRef): Promise<PullRequest>; site(provider: Provider): string | null }
   notify: (n: NotifyInput) => void
   /** The list changed (added, removed, polled): tell the renderer. */
   onChange: () => void
   now?: () => number
 }
 
-const OTHER_SITE =
-  'Not checked: this PR is on a different Bitbucket site from the one in Settings → Bitbucket.'
+const otherSite = (p: Provider) =>
+  `Not checked: this PR is on a different ${PROVIDER_NAMES[p]} site from the one in Settings → ${PROVIDER_NAMES[p]}.`
 
 export class PrWatcher {
   private items: WatchItem[]
@@ -51,7 +58,7 @@ export class PrWatcher {
    * later changes are measured against, and a wrong link or missing access fails here.
    */
   async add(link: string): Promise<WatchItem> {
-    const { ref, site } = prRefFromLink(link, this.deps.bitbucket.site())
+    const { ref, site } = prRefFromLink(link, (p) => this.deps.bitbucket.site(p))
     const key = prKey(ref)
     const existing = this.find(key)
     if (existing) return existing
@@ -113,15 +120,15 @@ export class PrWatcher {
    * poll and is rethrown, so the scheduler backs off.
    */
   async poll(): Promise<void> {
-    const site = this.deps.bitbucket.site()
     const live = this.items.filter(isLive)
     if (live.length === 0) return
     const events: NotifyInput[] = []
     let fatal: unknown = null
     let changed = false
     for (const watch of live) {
-      if (watch.site !== site) {
-        changed = this.update(watch.key, { error: OTHER_SITE }) || changed
+      const provider = providerOf(watch.ref)
+      if (watch.site !== this.deps.bitbucket.site(provider)) {
+        changed = this.update(watch.key, { error: otherSite(provider) }) || changed
         continue
       }
       const acks = this.acks.get(watch.key)
@@ -177,7 +184,7 @@ export class PrWatcher {
   }
 }
 
-const label = (pr: PullRequest) => `${pr.ref.repo} #${pr.ref.id}`
+const label = (pr: PullRequest) => refLabel(pr.ref)
 const finished = (s: PullRequest['build']['state']) => s === 'success' || s === 'failed'
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
 
@@ -213,7 +220,10 @@ export function prChanges(prev: PullRequest, next: PullRequest): NotifyInput[] {
 
   const needsWorkBefore = namesWith(prev, 'needs_work')
   const needsWorkNow = [...namesWith(next, 'needs_work')].filter((n) => !needsWorkBefore.has(n))
-  if (needsWorkNow.length) add('pr-needs-work', `Needs work from ${needsWorkNow.join(', ')}`)
+  if (needsWorkNow.length) {
+    const asked = next.ref.provider === 'github' ? 'Changes requested by' : 'Needs work from'
+    add('pr-needs-work', `${asked} ${needsWorkNow.join(', ')}`)
+  }
 
   const newComments = next.comments - prev.comments
   if (newComments > 0) {

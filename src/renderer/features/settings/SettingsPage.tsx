@@ -9,6 +9,7 @@ import { DataSection } from './DataSection'
 import { DiagnosticsSection } from './DiagnosticsSection'
 import { GeneralSection } from './GeneralSection'
 import { GitSection } from './GitSection'
+import { ActionsSection, HostSection } from './HostSection'
 import { JenkinsSection } from './JenkinsSection'
 import { JiraSection } from './JiraSection'
 import { StandupSection } from './StandupSection'
@@ -118,6 +119,9 @@ export function SettingsPage() {
       <GeneralSection settings={settings} />
       <GitSection settings={settings} />
       <BitbucketSection settings={settings} />
+      <HostSection provider="github" settings={settings} />
+      <HostSection provider="gitlab" settings={settings} />
+      <ActionsSection settings={settings} />
       <JenkinsSection settings={settings} />
       <JiraSection settings={settings} />
       <StandupSection settings={settings} />

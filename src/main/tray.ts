@@ -12,7 +12,8 @@ import {
   type MenuItemConstructorOptions,
   type NativeImage,
 } from 'electron'
-import { prKey, type WatchItem } from '@shared/bitbucket'
+import { prKey, refLabel, type WatchItem } from '@shared/bitbucket'
+import { ciRunLabel, type CiState, type CiWatch } from '@shared/ci'
 import { jobLabel, type BuildWatch } from '@shared/jenkins'
 import { log } from './services/logger'
 
@@ -77,13 +78,25 @@ const PR_STATE: Partial<Record<WatchItem['pr']['build']['state'], WatchedState>>
   stopped: 'stopped',
 }
 
+const RUN_STATE: Record<CiState, WatchedState> = {
+  success: 'passed',
+  failed: 'failed',
+  cancelled: 'stopped',
+  skipped: 'stopped',
+  running: 'running',
+  queued: 'waiting',
+  manual: 'waiting',
+}
+
 /**
- * Build watches (all, until removed) and the build state of open PR watches, newest first.
- * PRs with no builds reported aren't listed, nor PRs whose pipeline is watched (one entry each).
+ * Build watches and watched GitHub Actions runs / GitLab pipelines (all, until removed), then
+ * the build state of open PR watches. PRs with no builds reported aren't listed, nor PRs whose
+ * pipeline is watched (one entry each).
  */
 export function watchedForTray(
   builds: readonly BuildWatch[],
   prs: readonly WatchItem[],
+  runs: readonly CiWatch[] = [],
 ): TrayWatched[] {
   const fromBuilds = builds.map((w): TrayWatched => {
     const name = w.label ?? jobLabel(w.job)
@@ -96,13 +109,18 @@ export function watchedForTray(
         : null,
     }
   })
+  const fromRuns = runs.map((w): TrayWatched => ({
+    label: ciRunLabel(w.run),
+    state: RUN_STATE[w.run.state],
+    finishedAt: w.done ? (w.run.startedAt ?? w.run.createdAt) + (w.run.durationMs ?? 0) : null,
+  }))
   const piped = new Set(builds.flatMap((w) => w.pr ?? []))
   const fromPrs = prs.flatMap((w): TrayWatched[] => {
     const state = w.pr.state === 'open' ? PR_STATE[w.pr.build.state] : undefined
     if (!state || piped.has(prKey(w.ref))) return []
-    return [{ label: `${w.pr.ref.repo} #${w.pr.ref.id}`, state, finishedAt: null }]
+    return [{ label: refLabel(w.pr.ref), state, finishedAt: null }]
   })
-  return [...fromBuilds, ...fromPrs]
+  return [...fromBuilds, ...fromRuns, ...fromPrs]
 }
 
 function timeOf(ms: number): string {

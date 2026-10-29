@@ -57,6 +57,14 @@ export async function handlerSetup(
   const { EnvProfiles } = await import('../../src/main/services/envprofiles')
   const { standupDraft } = await import('../../src/main/services/standup')
   const { demoCommits } = await import('../../src/main/demo/standup')
+  const { HostService } = await import('../../src/main/services/providers/service')
+  const { PrHub } = await import('../../src/main/services/providers/hub')
+  const { CiWatcher } = await import('../../src/main/services/ci/watcher')
+  const { GitHubClient } = await import('../../src/main/services/github/client')
+  const { GitLabClient } = await import('../../src/main/services/gitlab/client')
+  const { DEMO_GITHUB_CONFIG } = await import('../../src/main/demo/github')
+  const { DEMO_GITLAB_CONFIG } = await import('../../src/main/demo/gitlab')
+  const { detectHosts, configuredHosts } = await import('../../src/main/services/providers/detect')
 
   const dir = mkdtempSync(join(tmpdir(), 'devdock-handlers-'))
   const settings = new SettingsStore(join(dir, 'settings.json'))
@@ -108,6 +116,35 @@ export async function handlerSetup(
     token: () => secrets.get('jenkins.token'),
     myWork: async () => ({ branches: [], prs: [] }),
     demo: DEMO_JENKINS,
+  })
+  const github = new HostService({
+    provider: 'github',
+    http,
+    settings: () => settings.get(),
+    token: () => secrets.get('github.token'),
+    repoRemotes: async () => [],
+    demo: DEMO_GITHUB_CONFIG,
+    makeClient: (h, config, projects) => new GitHubClient(h, config, projects),
+  })
+  const gitlab = new HostService({
+    provider: 'gitlab',
+    http,
+    settings: () => settings.get(),
+    token: () => secrets.get('gitlab.token'),
+    repoRemotes: async () => [],
+    demo: DEMO_GITLAB_CONFIG,
+    makeClient: (h, config, projects) => new GitLabClient(h, config, projects),
+  })
+  const hosts = { github, gitlab }
+  const prs = new PrHub({ bitbucket, github, gitlab })
+  const ciWatcher = new CiWatcher({
+    file: join(dir, 'ci-watches.json'),
+    ci: {
+      runInfo: (ref) => hosts[ref.provider].runInfo(ref),
+      site: (p) => hosts[p].site(),
+    },
+    notify: (n) => notifications.notify(n),
+    onChange: vi.fn(),
   })
   const deps: TestDeps = {
     settings,
@@ -162,9 +199,17 @@ export async function handlerSetup(
     devServers: new DevServerManager({ onChange: vi.fn(), onOutput: vi.fn() }),
     jira,
     bitbucket,
+    prs,
+    hosts,
+    ciWatcher,
+    detectProviders: async () =>
+      detectHosts(
+        settings.get().repos.map((r) => ({ name: r.name, remotes: [] })),
+        configuredHosts(settings.get()),
+      ),
     prWatcher: new PrWatcher({
       file: join(dir, 'watches.json'),
-      bitbucket,
+      bitbucket: prs,
       notify: (n) => notifications.notify(n),
       onChange: vi.fn(),
     }),
@@ -190,7 +235,7 @@ export async function handlerSetup(
     buildWatcher: new BuildWatcher({
       file: join(dir, 'build-watches.json'),
       jenkins,
-      bitbucket,
+      bitbucket: prs,
       notify: (n) => notifications.notify(n),
       onChange: vi.fn(),
     }),

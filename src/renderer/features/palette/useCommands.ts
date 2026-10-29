@@ -1,4 +1,6 @@
-import type { PrAction, PullRequest } from '@shared/bitbucket'
+import { PROVIDER_ACTIONS, providerOf, type PrAction, type PullRequest } from '@shared/bitbucket'
+import { ciRunLabel } from '@shared/ci'
+import { enabledProviders } from '@shared/settings'
 import { VIEWS, type View } from '@shared/channels'
 import type { ActionRequest } from '@shared/repos'
 import type { UtilityRequest } from '@shared/utilities'
@@ -8,6 +10,7 @@ import { bridge, isSetUp, unwrap, usePauseState, useSettings } from '../../lib/d
 import { useDevServers } from '../../lib/devservers'
 import { useBuildWatches, useClearFinished, useRemoveBuildWatch } from '../../lib/jenkins'
 import { useJiraList } from '../../lib/jira'
+import { useCiWatches, useClearFinishedRuns, useRemoveCiWatch } from '../../lib/providers'
 import { modLabel } from '../../lib/keyboard'
 import { OPEN_LABELS, useOpenRepo, useRepos } from '../../lib/repos'
 import { useAction } from '../../lib/useAction'
@@ -18,6 +21,9 @@ import { prLabel } from '../prs/PrBits'
 import { buildCommands, queryCommands, type Command, type ConfirmRequest } from './commands'
 
 const isOpen = (pr: PullRequest) => pr.state === 'open'
+/** The actions a provider's API offers (GitLab has no request changes). */
+const actionsFor = (pr: PullRequest, wanted: readonly PrAction[]) =>
+  wanted.filter((a) => PROVIDER_ACTIONS[providerOf(pr.ref)].includes(a))
 
 /** What each window does with commands that show something (the rest run the same anywhere). */
 export interface CommandHandlers {
@@ -56,21 +62,32 @@ export function useCommands(h: CommandHandlers): {
     useJiraList(settings && isSetUp(settings, 'jira') ? { list: 'mine' } : null).data ?? []
 
   // PR actions once turned on in Settings: merge mine, approve / needs work on the ones I review.
-  const prActionsOn = Boolean(settings?.features.prActions && isSetUp(settings, 'bitbucket'))
+  const prsOn = settings ? enabledProviders(settings).length > 0 : false
+  const prActionsOn = Boolean(settings?.features.prActions && prsOn)
   const mine = usePrList('mine', prActionsOn).data ?? []
   const reviewing = usePrList('reviewing', prActionsOn).data ?? []
   const openPrs = [
-    ...mine.filter(isOpen).flatMap((pr) => MINE.map((action) => ({ pr, action }))),
-    ...reviewing.filter(isOpen).flatMap((pr) => OTHERS.map((action) => ({ pr, action }))),
+    ...mine.filter(isOpen).flatMap((pr) => actionsFor(pr, MINE).map((action) => ({ pr, action }))),
+    ...reviewing
+      .filter(isOpen)
+      .flatMap((pr) => actionsFor(pr, OTHERS).map((action) => ({ pr, action }))),
   ]
-  const builds = useBuildWatches().data ?? []
+  const jenkinsWatches = useBuildWatches().data ?? []
+  const runWatches = useCiWatches().data ?? []
+  // Jenkins builds and GitHub / GitLab runs are both "watched builds" here.
+  const builds = [
+    ...jenkinsWatches.map((w) => ({ key: w.key, label: watchLabel(w), done: w.done, ci: false })),
+    ...runWatches.map((w) => ({ key: w.key, label: ciRunLabel(w.run), done: w.done, ci: true })),
+  ]
+  const removeRun = useRemoveCiWatch()
+  const clearFinishedRuns = useClearFinishedRuns()
   const removeBuild = useRemoveBuildWatch()
   const clearFinished = useClearFinished()
 
   const quickLinks = settings?.quickLinks ?? []
   const openLink = (url: string) => run(unwrap(bridge.app.openExternal({ url })))
   const configured = {
-    bitbucket: settings ? isSetUp(settings, 'bitbucket') : false,
+    prs: prsOn,
     jenkins: settings ? isSetUp(settings, 'jenkins') : false,
     jira: settings ? isSetUp(settings, 'jira') : false,
   }
@@ -119,13 +136,18 @@ export function useCommands(h: CommandHandlers): {
             if (found) h.prAction?.(found.pr, action)
           }
         : undefined,
-      buildWatches: builds.map((w) => ({ key: w.key, label: watchLabel(w) })),
+      buildWatches: builds.map((w) => ({ key: w.key, label: w.label })),
       finishedBuilds: builds.some((w) => w.done),
       unwatchBuild: (key) => {
         const w = builds.find((b) => b.key === key)
-        return run(removeBuild.mutateAsync(key), `Stopped watching ${w ? watchLabel(w) : 'it'}`)
+        const remove = w?.ci ? removeRun : removeBuild
+        return run(remove.mutateAsync(key), `Stopped watching ${w ? w.label : 'it'}`)
       },
-      clearFinishedBuilds: () => run(clearFinished.mutateAsync(), 'Cleared finished build watches'),
+      clearFinishedBuilds: () =>
+        run(
+          Promise.all([clearFinished.mutateAsync(), clearFinishedRuns.mutateAsync()]),
+          'Cleared finished build watches',
+        ),
       watches: watches.map((w) => ({ key: w.key, label: prLabel(w.pr) })),
       unwatch: (key) => {
         const w = watches.find((x) => x.key === key)

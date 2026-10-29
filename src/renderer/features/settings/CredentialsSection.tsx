@@ -14,6 +14,8 @@ const SECRET_LABELS: Record<SecretKey, string> = {
   'bitbucket.token': 'Bitbucket API token, app password or HTTP access token',
   'jenkins.token': 'Jenkins API token',
   'jira.token': 'Jira API token or personal access token',
+  'github.token': 'GitHub personal access token (fine-grained or classic)',
+  'gitlab.token': 'GitLab personal access token',
 }
 
 function SecretRow({

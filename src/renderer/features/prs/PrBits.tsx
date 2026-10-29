@@ -1,5 +1,6 @@
-import type { BuildState, PullRequest } from '@shared/bitbucket'
-import { StatusPill, type Tone } from '../../ui/Feedback'
+import { refLabel, type BuildState, type PullRequest } from '@shared/bitbucket'
+import { PROVIDER_NAMES, type Provider } from '@shared/providers'
+import { ErrorNotice, StatusPill, type Tone } from '../../ui/Feedback'
 
 /** Small pieces of a PR row (SPEC 6.3 PR card), shared by the PRs view and Today. */
 
@@ -83,5 +84,19 @@ export function AgeOf({ pr }: { pr: PullRequest }) {
   ) : null
 }
 
-/** `web-app #412`: how notifications and dialogs name a PR too. */
-export const prLabel = (pr: PullRequest) => `${pr.ref.repo} #${pr.ref.id}`
+/** `web-app #412`, GitLab `checkout !12`: how notifications and dialogs name a PR too. */
+export const prLabel = (pr: PullRequest) => refLabel(pr.ref)
+
+/** Providers that failed while others loaded (P7.04): the rest of the list still shows. */
+export function ProviderFailures({
+  failures,
+}: {
+  failures: readonly { provider: Provider; error: unknown }[]
+}) {
+  return failures.map(({ provider, error }) => (
+    <div key={provider} className="provider-failure">
+      <p className="muted">{PROVIDER_NAMES[provider]}:</p>
+      <ErrorNotice error={error} />
+    </div>
+  ))
+}

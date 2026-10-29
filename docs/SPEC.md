@@ -187,6 +187,31 @@ Place this file at `docs/SPEC.md` in the new repository. Every build phase refer
 - Polling defaults to every 60s while the app is focused and every 3 min in the background, with
   exponential backoff on errors and `Retry-After` honoured.
 
+### 6.3a GitHub and GitLab (Phase 7, P7-B)
+- **Provider model:** a pull request (GitLab: merge request) belongs to Bitbucket, GitHub or
+  GitLab; the ref carries its provider (absent = Bitbucket, so stored watches keep working). The
+  lists, PR card, Watch field, watcher, notifications, Today, the menu-bar panel and the palette
+  show every provider that is turned on, in one list (a provider filter appears when more than
+  one is on). A repo's remote host decides its provider; Settings → Detect reads the remotes.
+- **GitHub:** github.com or GitHub Enterprise Server (REST v3 + one GraphQL query for unresolved
+  review threads), personal access token as Bearer. My PRs, reviewing (requested or reviewed by
+  me), merged in 7 days; checks and commit statuses as the build pill. **Actions:** my recent
+  workflow runs on the registered repos hosted there, jobs with steps, the end of a job's log
+  (the signed storage redirect is followed without the token), watch a run.
+- **GitLab:** gitlab.com or self-managed (relative URL root supported; subgroup namespaces),
+  REST v4, personal access token as Bearer. Merge requests (mine, reviewing, merged), approvals,
+  open threads, head pipeline. **CI/CD:** my recent pipelines, jobs by stage, job trace tail,
+  watch a pipeline. GitLab's API has no "request changes": only approve and merge are offered.
+- **Off by default**, each with a switch (Settings → GitHub / GitLab); Bitbucket can be turned
+  off too. Tokens live only in the OS keychain (`github.token`, `gitlab.token`).
+- **PR actions** use the same switch, confirmation and typed merge target as 6.3 (merge sends
+  the checked head SHA, so a push in between is refused by the server).
+- **CI actions** (re-run failed jobs / retry failed jobs / cancel): behind Settings → **CI
+  actions**, off by default, **and** a confirmation each time naming the run; checked again in
+  the IPC handler, and refused before any request when the run's state doesn't allow it.
+- **Rate limits:** GitHub `X-RateLimit-*` / secondary limits and GitLab 429 pause that provider
+  until the reset (no requests sent meanwhile); GitHub GETs use ETags (304s don't count).
+
 ### 6.4 Builds (Jenkins)
 - Auth: Jenkins username + API token (Basic). Crumb issuer support for POSTs.
 - **My branches:** for configured multibranch pipeline jobs, show the last build of each branch
@@ -257,11 +282,12 @@ Place this file at `docs/SPEC.md` in the new repository. Every build phase refer
     tickets. Copy as plain text or Markdown.
 
 ### 6.7 Settings
-- **Services:** base URL, auth type, and credentials for Bitbucket, Jenkins and Jira. Each has
+- **Services:** base URL, auth type, and credentials for Bitbucket, Jenkins and Jira (Phase 7:
+  GitHub and GitLab, each with a "Use" switch and Detect). Each has
   "Test connection" (shows the HTTP status, the user it authenticated as, and a hint for common
   failures: 401, 403, proxy, certificate).
 - **Repos:** list, base branch, name templates, protected branch patterns, dev command.
-- **Feature switches:** PR actions (off), job triggers (off; per-job allow list), Jira
+- **Feature switches:** PR actions (off), CI actions (off; Phase 7), job triggers (off; per-job allow list), Jira
   transition on Start work (off), and brief location.
 - **Appearance:** theme (5 + System), font size, density.
 - **Accessibility** (Phase 7, P7.13; all off by default): reduce motion (follow the system / always), larger click targets (44 × 44px), underline links, always show the focus ring, read out background events to screen readers.

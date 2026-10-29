@@ -8,6 +8,7 @@ import {
 import { useEffect } from 'react'
 import type { WatchItem } from '@shared/bitbucket'
 import type { BuildWatch } from '@shared/jenkins'
+import type { CiWatch } from '@shared/ci'
 import type { EventChannel } from '@shared/channels'
 import type { ErrorCode, EventPayload, IpcEnvelope } from '@shared/ipc'
 import type { Settings, SettingsPatch } from '@shared/settings'
@@ -73,6 +74,8 @@ export const keys = {
   watches: ['watches'],
   /** Build watches (lib/jenkins.ts), updated by main's `buildwatch:changed`. */
   buildWatches: ['buildwatches'],
+  /** Watched GitHub Actions runs / GitLab pipelines (lib/providers.ts), `ciwatch:changed`. */
+  ciWatches: ['ciwatches'],
 } as const
 
 export function useBridgeEvent<E extends EventChannel>(
@@ -114,16 +117,27 @@ const onRepoChanged = ({ id }: { id: string }) => {
 const onWatchesChanged = (items: WatchItem[]) => queryClient.setQueryData(keys.watches, items)
 const onBuildWatchesChanged = (items: BuildWatch[]) =>
   queryClient.setQueryData(keys.buildWatches, items)
+const onCiWatchesChanged = (items: CiWatch[]) => queryClient.setQueryData(keys.ciWatches, items)
 
 export function useMainEvents(): void {
   useBridgeEvent('watch:changed', onWatchesChanged)
   useBridgeEvent('buildwatch:changed', onBuildWatchesChanged)
+  useBridgeEvent('ciwatch:changed', onCiWatchesChanged)
   useBridgeEvent('settings:changed', onSettingsChanged)
   useBridgeEvent('notifications:changed', onNotificationsChanged)
   useBridgeEvent('repos:changed', onRepoChanged)
 }
 
-/** A service is set up (its URL is saved) or demo mode stands in for it. */
-export function isSetUp(settings: Settings, service: 'jira' | 'bitbucket' | 'jenkins'): boolean {
+/**
+ * A service is set up (its URL is saved) or demo mode stands in for it. GitHub and GitLab
+ * (P7) are on only once turned on in Settings (they default to the public sites); Bitbucket
+ * can be turned off too.
+ */
+export function isSetUp(
+  settings: Settings,
+  service: 'jira' | 'bitbucket' | 'jenkins' | 'github' | 'gitlab',
+): boolean {
+  if (service === 'github' || service === 'gitlab') return settings[service].enabled
+  if (service === 'bitbucket' && !settings.bitbucket.enabled) return false
   return settings.general.demoMode || settings[service].baseUrl !== ''
 }

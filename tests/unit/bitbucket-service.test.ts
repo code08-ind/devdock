@@ -206,7 +206,12 @@ describe('bitbucket:* IPC', () => {
 
 describe('bitbucket settings', () => {
   it('defaults: Cloud, no URL, no user name; patches keep the other fields', () => {
-    expect(defaultSettings().bitbucket).toEqual({ flavor: 'cloud', baseUrl: '', username: '' })
+    expect(defaultSettings().bitbucket).toEqual({
+      enabled: true,
+      flavor: 'cloud',
+      baseUrl: '',
+      username: '',
+    })
   })
 
   it('base URL: trims the trailing slash, rejects credentials and query', () => {

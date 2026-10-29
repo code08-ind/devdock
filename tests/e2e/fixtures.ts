@@ -101,6 +101,8 @@ interface TestHook {
     watched: { label: string; state: string; finishedAt: number | null }[]
   }
   pollBuilds(): Promise<void>
+  /** Polls the GitHub / GitLab run watcher now (P7). */
+  pollRuns(): Promise<void>
 }
 
 export function callHook<K extends keyof TestHook>(
