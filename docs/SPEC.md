@@ -32,8 +32,9 @@ Place this file at `docs/SPEC.md` in the new repository. Every build phase refer
 ## 2. Non-goals
 - Not a git GUI, CI dashboard, or Jira client replacement. DevDock does the 20 most frequent
   actions and deep-links to the real tool for everything else.
-- No AI API calls. The agent work stays in VS Code/Copilot. DevDock only prepares context and
-  copies prompts.
+- No AI API calls by default. The agent work stays in the user's own agent (VS Code/Copilot, or
+  an agent CLI DevDock starts in its terminal, 6.9). Since Phase 7 the user may add their own AI
+  keys for a few opt-in features (DECISIONS "Phase 7").
 - No phone/remote access, and no exposing local ports to a network. This is deliberately
   excluded for a client environment.
 - No production deployments. See the protected-job rules in 6.4.
@@ -256,6 +257,8 @@ Place this file at `docs/SPEC.md` in the new repository. Every build phase refer
      `Use the spec-writer agent. Ticket brief: docs/ai/specs/NM-1234/TICKET.md. Figma: <link>.`
   6. Optional, off by default: transition the issue to "In Progress" if that transition exists.
 - **Open in VS Code** on the branch afterwards.
+- **Start <agent> now** (Phase 7, 6.9): when an agent CLI is installed, the finished dialog offers
+  to start it in DevDock's terminal, in the repo, with the message from step 5.
 
 ### 6.6 Utilities
 - **Ports:** list listening TCP ports with PID, process name, and command.
@@ -309,6 +312,18 @@ Place this file at `docs/SPEC.md` in the new repository. Every build phase refer
   edits the user's dotfiles.
 - Shells (and what they started) stop when their tab closes, their window closes or reloads, or
   DevDock quits.
+
+### 6.9 Agent CLIs (Phase 7, P7-C)
+- DevDock finds the coding-agent CLIs the user installed on their shell's PATH: Claude Code
+  (`claude`), Codex (`codex`), Gemini CLI (`gemini`), GitHub Copilot CLI (`copilot`).
+- Start work offers "Start <agent> now": a terminal tab in the repo runs that CLI with the Start
+  work message as its first prompt. Settings → Workflow → Agent picks which one (default: the
+  first installed).
+- The CLI is the tab's process, started with an argument array — never through a shell, so text
+  from a ticket is never run as a command. On Windows, an npm `.cmd` script gets the message only
+  when cmd.exe would find nothing to interpret in it; otherwise it starts without it and says
+  the message is on the clipboard.
+- DevDock holds no keys for these CLIs; each signs in its own way.
 
 ## 7. Quality bar
 - Every action is reachable from the keyboard and from the command palette.

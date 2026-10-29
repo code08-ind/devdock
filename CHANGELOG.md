@@ -14,6 +14,9 @@ versions follow [Semantic Versioning](https://semver.org/).
   Settings → Terminal: shell, font size (follows the app by default), cursor, scrollback, and an
   optional robbyrussell-style DevDock prompt for zsh and bash (your dotfiles are never edited).
   Shells stop when their tab closes or DevDock quits. Adds `node-pty` (the one native module).
+- **Agent CLIs** (P7-C): Start work offers "Start Claude Code now" (or Codex, Gemini CLI, GitHub
+  Copilot CLI — whichever you installed): the agent opens in a DevDock terminal tab in the repo
+  with the Start work message as its first prompt. Settings → Workflow → Agent picks one.
 - **Accessibility** (P7-E): Settings → Accessibility and axe checks of every view.
 - **GitHub and GitLab** (off until turned on in Settings): pull requests / merge requests join
   the PR lists, Watch field, notifications, Today, the menu-bar panel and the palette, with a

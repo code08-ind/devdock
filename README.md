@@ -103,7 +103,10 @@ ready message for your coding agent.
 **Agent lessons** (Utilities → Lessons) — DevDock gathers what reviewers keep asking for on
 your pull requests; you pick and edit the ones worth keeping, and they're added to
 `docs/ai/LESSONS.md` in the repo. Start work tells your agent to read that file first and to
-add what it learns. DevDock itself makes no AI calls: your agent in VS Code does the work.
+add what it learns. DevDock itself makes no AI calls: your agent does the work. Installed
+Claude Code, Codex, Gemini CLI or GitHub Copilot CLI? Start work then offers **Start <agent>
+now**, which opens it in a DevDock terminal tab in the repo with the message as its first prompt
+(Settings → Workflow → Agent picks which).
 
 ![Agent lessons](docs/screenshots/readme-lessons.png)
 
@@ -202,7 +205,8 @@ company needs a specific one, set it in **Settings → Diagnostics → Proxy**.
   and no AI service: demo mode makes no network calls at all.
 - **The terminal is your shell.** It runs with your permissions, like Terminal.app; the screens
   only send keystrokes to it, and only to their own terminals. It starts in a repo you added or
-  your home folder.
+  your home folder. An agent CLI started from Start work gets the message as one argument —
+  never through a shell — and signs in on its own: DevDock holds no keys for it.
 - **Your files stay yours.** It writes only where you ask: ticket briefs and lessons in your
   repo (or briefs in DevDock's own folder — Settings), env profile backups, its settings and
   logs. Env profile values are encrypted at rest and masked until you reveal one.
