@@ -66,6 +66,18 @@ export interface TerminalManagerOptions {
   signal?: (pid: number, sig: NodeJS.Signals) => void
   /** Whether the window is still there (a shell started for a closed window is stopped). */
   ownerAlive?: (owner: number) => boolean
+  /** Whether a path is a program DevDock may start (injected for tests). */
+  isExecutable?: (path: string) => boolean
+}
+
+/** A program started instead of the shell (an agent CLI, P7-C): argument array, no shell. */
+export interface TerminalProgram {
+  file: string
+  args: string[]
+  /** For the tab: the program's name. */
+  name: string
+  /** Shown in the terminal before the program's own output. */
+  note: string | null
 }
 
 interface Session {
@@ -131,6 +143,8 @@ export class TerminalManager {
     rows: number
     /** `epoch(owner)` when the request arrived (the caller may await before calling). */
     epoch?: number
+    /** Start this instead of the user's shell. */
+    program?: TerminalProgram
   }): Promise<TerminalSession> {
     const epoch = req.epoch ?? this.epoch(req.owner)
     const starting = this.starting.get(req.owner) ?? 0
@@ -158,24 +172,33 @@ export class TerminalManager {
       repoId: string | null
       cols: number
       rows: number
+      program?: TerminalProgram
     },
     epoch: number,
   ): Promise<TerminalSession> {
     const s = this.opts.settings()
     const baseEnv = (this.opts.env ?? (() => process.env))()
     let spec: ShellSpec
-    try {
-      spec = resolveShell(s.shell, { platform: this.platform, env: baseEnv })
-    } catch (err) {
-      if (err instanceof ShellNotFoundError) throw new TerminalError('shell', err.message)
-      throw err
+    if (req.program) {
+      spec = { file: req.program.file, kind: 'other', args: req.program.args }
+    } else {
+      try {
+        spec = resolveShell(s.shell, {
+          platform: this.platform,
+          env: baseEnv,
+          isExecutable: this.opts.isExecutable,
+        })
+      } catch (err) {
+        if (err instanceof ShellNotFoundError) throw new TerminalError('shell', err.message)
+        throw err
+      }
     }
     const env = terminalEnv(baseEnv, this.platform, this.opts.appVersion ?? '')
     // DevDock's own folder isn't the shell's: without this, `pwd` would start from a stale $PWD.
     env.PWD = req.cwd
     delete env.OLDPWD
     let args = spec.args
-    if (s.devdockPrompt) {
+    if (s.devdockPrompt && !req.program) {
       const launch = await withDevdockPrompt(spec, this.opts.promptDir, baseEnv.ZDOTDIR)
       if (launch) {
         args = launch.args
@@ -203,9 +226,10 @@ export class TerminalManager {
       id,
       title: req.title,
       repoId: req.repoId,
-      shell: basename(spec.file.replace(/\\/g, '/')),
+      shell: req.program?.name ?? basename(spec.file.replace(/\\/g, '/')),
       status: 'running',
       exitCode: null,
+      note: req.program?.note ?? null,
     }
     const batcher = new OutputBatcher(
       (data) => this.opts.onOutput(req.owner, { id, data }),

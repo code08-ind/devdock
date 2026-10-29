@@ -21,6 +21,7 @@ import {
   type TerminalOutputEvent,
   type TerminalSettings,
 } from '@shared/terminal'
+import { agentCli, type AgentLaunch } from '@shared/agents'
 import { bridge, DevDockError, unwrap } from '../../lib/devdock'
 import { hasMod, isMac } from '../../lib/keyboard'
 import { installStyleShim } from './styleShim'
@@ -37,6 +38,8 @@ export interface TerminalTab {
   status: 'starting' | 'running' | 'exited' | 'failed'
   exitCode: number | null
   error: DevDockError | null
+  /** The agent CLI this tab runs instead of the shell (P7-C). */
+  agent: AgentLaunch | null
 }
 
 export interface TerminalHooks {
@@ -149,7 +152,14 @@ class TerminalTabView {
   private async start(): Promise<void> {
     const { cols, rows } = this.term
     try {
-      const session = await unwrap(bridge.terminal.create({ repoId: this.tab.repoId, cols, rows }))
+      const session = await unwrap(
+        bridge.terminal.create({
+          repoId: this.tab.repoId,
+          cols,
+          rows,
+          ...(this.tab.agent ? { agent: this.tab.agent } : {}),
+        }),
+      )
       if (this.disposed) {
         this.store.forget(session.id)
         void bridge.terminal.kill({ id: session.id })
@@ -161,6 +171,7 @@ class TerminalTabView {
         shell: session.shell,
         status: 'running',
       })
+      if (session.note) this.term.write(`\x1b[2m${session.note}\x1b[0m\r\n`)
       this.store.bind(session.id, this)
       // Keys typed while the shell was starting.
       const typed = this.pending.join('')
@@ -231,8 +242,9 @@ class TerminalTabView {
 
   exited(e: TerminalExitEvent): void {
     this.store.update(this.tab.key, { status: 'exited', exitCode: e.exitCode })
+    const what = this.tab.agent ? this.tab.shell || 'The agent' : 'Process'
     this.term.write(
-      `\r\n\x1b[2m[Process exited with code ${e.exitCode}. Close this tab or open a new one.]\x1b[0m\r\n`,
+      `\r\n\x1b[2m[${what} exited with code ${e.exitCode}. Close this tab or open a new one.]\x1b[0m\r\n`,
     )
   }
 
@@ -336,19 +348,21 @@ export class TerminalStore {
     this.hooks = hooks
   }
 
-  /** Opens a tab (in a registered repo, or the home folder) and shows it. */
-  open(repo: { id: string; name: string } | null): string {
+  /** Opens a tab (in a registered repo, or the home folder; the shell, or an agent CLI) and shows it. */
+  open(repo: { id: string; name: string } | null, agent?: AgentLaunch): string {
     installStyleShim()
     const key = `k${this.next++}`
+    const place = repo?.name ?? 'Home'
     const tab: TerminalTab = {
       key,
       id: null,
-      title: repo?.name ?? 'Home',
+      title: agent ? `${agentCli(agent.id).name} · ${place}` : place,
       repoId: repo?.id ?? null,
       shell: '',
       status: 'starting',
       exitCode: null,
       error: null,
+      agent: agent ?? null,
     }
     this.tabs.push(tab)
     const session = new TerminalTabView(tab, this, this.options ?? defaultOptions())

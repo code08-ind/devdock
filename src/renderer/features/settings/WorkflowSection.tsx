@@ -2,13 +2,15 @@ import { LessonsPathSchema } from '@shared/lessons'
 import type { Settings } from '@shared/settings'
 import { queryClient, useUpdateSettings } from '../../lib/devdock'
 import { ErrorNotice, useToast } from '../../ui/Feedback'
-import { Toggle } from '../../ui/Field'
+import { Field, Select, Toggle } from '../../ui/Field'
+import { useAgents } from '../../lib/agents'
+import { AGENT_CLIS, type AgentPreference } from '@shared/agents'
 import { Section } from './Section'
 import { TextSetting } from './ServiceBits'
 
 type Workflow = Settings['workflow']
 /** The on/off options (everything but the path). */
-type Option = Exclude<keyof Workflow, 'lessonsPath'>
+type Option = Exclude<keyof Workflow, 'lessonsPath' | 'agentCli'>
 
 /**
  * Workflow options (P6-F, owner request): the agent lessons file and what Start work does around
@@ -18,6 +20,15 @@ export function WorkflowSection({ settings }: { settings: Settings }) {
   const update = useUpdateSettings()
   const toast = useToast()
   const w = settings.workflow
+  const agents = useAgents().data
+  const installed = (id: string) => agents?.find((a) => a.id === id)?.path
+  const agentOptions: { value: AgentPreference; label: string }[] = [
+    { value: 'auto', label: 'The first one installed' },
+    ...AGENT_CLIS.map((a) => ({
+      value: a.id,
+      label: agents && !installed(a.id) ? `${a.name} (not found)` : a.name,
+    })),
+  ]
   const save = (patch: Partial<Workflow>, done?: string) =>
     update.mutate(
       { workflow: patch },
@@ -55,6 +66,21 @@ export function WorkflowSection({ settings }: { settings: Settings }) {
         }}
         onSave={(lessonsPath) => save({ lessonsPath: lessonsPath.trim() }, 'Lessons file saved')}
       />
+      <Field
+        label="Agent"
+        hint="Start work offers to start this agent CLI in DevDock's terminal, in the repo, with the Start work message. DevDock looks for it on your shell's PATH and holds no keys: the CLI signs in its own way."
+      >
+        {({ id, describedBy }) => (
+          <Select
+            id={id}
+            aria-describedby={describedBy}
+            options={agentOptions}
+            value={w.agentCli}
+            disabled={update.isPending}
+            onValue={(agentCli) => save({ agentCli })}
+          />
+        )}
+      </Field>
       {toggle(
         'pointAgentToLessons',
         'Tell the agent to read the lessons',

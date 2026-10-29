@@ -13,7 +13,9 @@ import {
   useUpdateSettings,
 } from '../../lib/devdock'
 import { BRIEF_LOCATION_OPTIONS, jiraKeys } from '../../lib/jira'
-import { forgetRuns, useRepos, useRunOutput } from '../../lib/repos'
+import { forgetRuns, useOpenDevdockTerminal, useRepos, useRunOutput } from '../../lib/repos'
+import { usePreferredAgent } from '../../lib/agents'
+import { MAX_AGENT_PROMPT } from '@shared/agents'
 import { Button } from '../../ui/Button'
 import { Dialog } from '../../ui/Dialog'
 import { ErrorNotice, StatusPill, useToast } from '../../ui/Feedback'
@@ -59,6 +61,8 @@ export function StartWorkDialog({
   const settings = useSettings().data
   const updateSettings = useUpdateSettings()
   const toast = useToast()
+  const agentCli = usePreferredAgent()
+  const openTerminal = useOpenDevdockTerminal()
   const qc = useQueryClient()
   const [pickedRepo, setRepoId] = useState(repos[0]?.id ?? '')
   // A repo removed while the dialog is open falls back to the first one.
@@ -155,6 +159,21 @@ export function StartWorkDialog({
               {plan.data.transitionEnabled && confirmTransition
                 ? 'Start work and move to In Progress'
                 : 'Start work'}
+            </Button>
+          ) : null}
+          {stage.kind === 'done' && agentCli ? (
+            <Button
+              variant="primary"
+              onClick={() => {
+                const prompt = stage.result.message
+                openTerminal(repoId, {
+                  id: agentCli.id,
+                  ...(prompt.length <= MAX_AGENT_PROMPT ? { prompt } : {}),
+                })
+                onClose()
+              }}
+            >
+              Start {agentCli.name} now
             </Button>
           ) : null}
           {changedSincePreview ? (
@@ -287,14 +306,16 @@ export function StartWorkDialog({
         </>
       ) : null}
 
-      {stage.kind === 'done' ? <Result result={stage.result} /> : null}
+      {stage.kind === 'done' ? (
+        <Result result={stage.result} agentFound={agentCli !== null} />
+      ) : null}
       {stage.kind === 'error' ? <ErrorNotice error={stage.error} /> : null}
       {stage.kind !== 'preview' ? <ActivityLog text={output} /> : null}
     </Dialog>
   )
 }
 
-function Result({ result }: { result: StartWorkResult }) {
+function Result({ result, agentFound }: { result: StartWorkResult; agentFound: boolean }) {
   const transition = TRANSITION_TEXT[result.transition.result]
   return (
     <div className="stack">
@@ -320,6 +341,12 @@ function Result({ result }: { result: StartWorkResult }) {
         ]}
       />
       <CodeBlock code={result.message} label="On the clipboard: paste it into your agent" />
+      {agentFound ? null : (
+        <p className="muted">
+          With Claude Code, Codex, Gemini CLI or GitHub Copilot CLI installed, DevDock can start it
+          here in the repo with this message.
+        </p>
+      )}
       {result.warnings.map((w) => (
         <div key={w} className="notice notice-warning">
           <TriangleAlert size={16} aria-hidden="true" />

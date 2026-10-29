@@ -1,3 +1,4 @@
+import { AgentInfoSchema } from './agents'
 import { z } from 'zod'
 import {
   DevServerStateSchema,
@@ -69,6 +70,7 @@ import {
   TerminalCreateSchema,
   TerminalRefSchema,
   TerminalRequestSchema,
+  type TerminalRequest,
   TerminalResizeSchema,
   TerminalSessionSchema,
   TerminalWriteSchema,
@@ -363,6 +365,7 @@ export const contract = {
   'terminal:kill': { req: TerminalRefSchema, res: none },
   /** This window's sessions. */
   'terminal:request': { req: TerminalRequestSchema, res: none },
+  'agents:detect': { req: none, res: z.array(AgentInfoSchema) },
 } satisfies Record<InvokeChannel, { req: z.ZodType; res: z.ZodType }>
 
 export type Contract = typeof contract
@@ -428,6 +431,6 @@ export interface EventPayloads {
   'tickets:requested': { key: string }
   'terminal:output': TerminalOutputEvent
   'terminal:exit': TerminalExitEvent
-  'terminal:requested': { repoId: string | null }
+  'terminal:requested': TerminalRequest
 }
 export type EventPayload<E extends EventChannel> = EventPayloads[E]

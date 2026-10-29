@@ -92,6 +92,53 @@ describe('terminal IPC (P7-A)', { timeout: 30_000 }, () => {
     expect(deps.terminal.list(1)).toEqual([])
   })
 
+  it('P7-C: starts an installed agent CLI with the prompt as one argument; a missing one is NOT_FOUND', async () => {
+    const { handlers, ptys, deps } = await handlerSetup()
+    expect(await dispatch('agents:detect', undefined, handlers)).toMatchObject({
+      ok: true,
+      data: [{ id: 'claude', path: '/usr/local/bin/claude' }, { id: 'codex', path: null }, {}, {}],
+    })
+    const prompt = 'Use the bug-fixer agent. Ticket brief: docs/ai/specs/DD-7/TICKET.md.'
+    const made = await dispatch(
+      'terminal:create',
+      { cols: 80, rows: 24, agent: { id: 'claude', prompt } },
+      handlers,
+      from(1),
+    )
+    expect(made).toMatchObject({
+      ok: true,
+      data: { title: 'Claude Code · Home', shell: 'Claude Code' },
+    })
+    expect([ptys[0]!.file, ptys[0]!.args, ptys[0]!.options.cwd]).toEqual([
+      '/usr/local/bin/claude',
+      [prompt],
+      deps.home,
+    ])
+    expect(
+      await dispatch(
+        'terminal:create',
+        { cols: 80, rows: 24, agent: { id: 'codex' } },
+        handlers,
+        from(1),
+      ),
+    ).toMatchObject({ ok: false, error: { code: 'NOT_FOUND', message: /Codex isn't installed/ } })
+    expect(
+      await dispatch(
+        'terminal:create',
+        { cols: 80, rows: 24, agent: { id: 'bash' } } as never,
+        handlers,
+        from(1),
+      ),
+    ).toMatchObject({ ok: false, error: { code: 'INVALID_PAYLOAD' } })
+    expect(ptys).toHaveLength(1)
+    // The palette window / panel hand the request (with its agent) to the main window.
+    await dispatch('terminal:request', { repoId: null, agent: { id: 'claude', prompt } }, handlers)
+    expect(deps.requestTerminal).toHaveBeenCalledWith({
+      repoId: null,
+      agent: { id: 'claude', prompt },
+    })
+  })
+
   it('rejects calls without a window and malformed payloads', async () => {
     const { handlers, ptys } = await handlerSetup()
     expect(await dispatch('terminal:create', { cols: 80, rows: 24 }, handlers, null)).toMatchObject(
@@ -129,7 +176,7 @@ describe('terminal IPC (P7-A)', { timeout: 30_000 }, () => {
       ok: true,
       data: undefined,
     })
-    expect(deps.requestTerminal).toHaveBeenCalledWith(null)
+    expect(deps.requestTerminal).toHaveBeenCalledWith({ repoId: null })
     expect(await dispatch('terminal:request', { repoId: 'nope' }, handlers)).toMatchObject({
       ok: false,
       error: { code: 'NOT_FOUND' },

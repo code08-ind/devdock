@@ -9,6 +9,7 @@ import { DEFAULT_LESSONS_PATH, LessonsPathSchema } from './lessons'
 import { HolidaySchema } from './standup'
 import { CI_PROVIDERS, PROVIDERS, providerWeb, type Provider } from './providers'
 import { TerminalSettingsSchema } from './terminal'
+import { AgentPreferenceSchema } from './agents'
 
 export const SETTINGS_VERSION = 1
 
@@ -294,6 +295,8 @@ export const SettingsSchema = z.object({
       openEditorAfterStart: z.boolean().default(true),
       /** Start the repo's dev server once Start work has made the branch. */
       startDevServerAfterStart: z.boolean().default(false),
+      /** The agent CLI Start work offers to start in DevDock's terminal (P7-C). */
+      agentCli: AgentPreferenceSchema.default('auto'),
     })
     .prefault({}),
   /** P7-A in-app terminal. */

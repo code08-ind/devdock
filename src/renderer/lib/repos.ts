@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { ActionName, ActionRequest, OpenTarget, RepoOutputEvent } from '@shared/repos'
+import type { AgentLaunch } from '@shared/agents'
 import { bridge, keys, unwrap, useSettings } from './devdock'
 import { isMac } from './keyboard'
 import { useAction } from './useAction'
@@ -52,7 +53,8 @@ export function useOpenRepo() {
  */
 export function useOpenDevdockTerminal() {
   const { run } = useAction()
-  return (repoId: string | null) => run(unwrap(bridge.terminal.request({ repoId })))
+  return (repoId: string | null, agent?: AgentLaunch) =>
+    run(unwrap(bridge.terminal.request({ repoId, agent })))
 }
 
 // ---- Streamed output, per run --------------------------------------------------------------

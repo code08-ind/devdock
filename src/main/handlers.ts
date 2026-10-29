@@ -43,6 +43,9 @@ import { ServiceError, type ServiceErrorKind } from './services/service-error'
 import type { SettingsStore } from './services/settings'
 import type { ShortcutService } from './services/shortcut'
 import { TerminalError, type TerminalManager } from './services/terminal/manager'
+import { AgentNotFoundError, agentSpawn } from './services/agents'
+import type { AgentInfo } from '@shared/agents'
+import type { TerminalRequest } from '@shared/terminal'
 
 /** Everything the handlers touch, injected so they can be tested without Electron. */
 export interface HandlerDeps {
@@ -105,7 +108,10 @@ export interface HandlerDeps {
   /** Where a terminal starts when it isn't opened for a repo. */
   home: string
   /** Shows the main window's Terminal view with a new tab (from the palette window / panel). */
-  requestTerminal: (repoId: string | null) => void
+  requestTerminal: (request: TerminalRequest) => void
+  /** P7-C: the agent CLIs on PATH (looked up on each call: a few file checks). */
+  agents: () => AgentInfo[] | Promise<AgentInfo[]>
+  platform: NodeJS.Platform
 }
 
 const GIT_CODES: Record<GitErrorKind, ErrorCode> = {
@@ -291,6 +297,7 @@ async function withTerminal<T>(fn: () => Promise<T> | T): Promise<T> {
     if (err instanceof TerminalError) {
       throw new IpcError(TERMINAL_CODES[err.kind], err.message, err.details)
     }
+    if (err instanceof AgentNotFoundError) throw new IpcError('NOT_FOUND', err.message)
     throw err
   }
 }
@@ -568,7 +575,7 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
       }),
     // P7-A. The renderer never sends a path: a terminal starts in a registered repo (looked
     // up here) or in the home folder.
-    'terminal:create': ({ repoId, cols, rows }, event) =>
+    'terminal:create': ({ repoId, cols, rows, agent }, event) =>
       withTerminal(async () => {
         const owner = terminalOwner(event)
         // Taken before the folder check: a window that reloads meanwhile gets no shell.
@@ -587,14 +594,18 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
               : 'Your home folder could not be opened.',
           )
         }
+        // P7-C: the agent CLI is the PTY's process, started with an argument array.
+        const program = agent ? agentSpawn(agent, await deps.agents(), deps.platform) : undefined
+        const place = repo ? repo.name : 'Home'
         return deps.terminal.create({
           owner,
           cwd,
-          title: repo ? repo.name : 'Home',
+          title: program ? `${program.name} · ${place}` : place,
           repoId: repo ? repo.id : null,
           cols,
           rows,
           epoch,
+          program,
         })
       }),
     'terminal:write': ({ id, data }, event) =>
@@ -603,10 +614,11 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
       withTerminal(() => deps.terminal.resize(terminalOwner(event), id, cols, rows)),
     'terminal:kill': ({ id }, event) =>
       withTerminal(() => deps.terminal.kill(terminalOwner(event), id)),
-    'terminal:request': ({ repoId }) =>
+    'terminal:request': (request) =>
       withGit(() => {
-        if (repoId) deps.repos.get(repoId)
-        deps.requestTerminal(repoId)
+        if (request.repoId) deps.repos.get(request.repoId)
+        deps.requestTerminal(request)
       }),
+    'agents:detect': () => deps.agents(),
   }
 }

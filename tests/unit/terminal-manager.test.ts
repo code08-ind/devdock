@@ -75,6 +75,7 @@ function manager(
     batchMs: 5,
     killGraceMs: 20,
     signal: (pid, sig) => signals.push([pid, sig]),
+    isExecutable: (p) => EXEC.has(p),
     ...rest,
   })
   return { m, pty, events, signals }
@@ -100,6 +101,7 @@ describe('TerminalManager', () => {
       shell: 'zsh',
       status: 'running',
       exitCode: null,
+      note: null,
     })
     const p = pty.ptys[0]!
     expect(p.file).toBe('/bin/zsh')
@@ -192,6 +194,26 @@ describe('TerminalManager', () => {
     for (let i = 0; i < MAX_SESSIONS; i++) await m.create(req())
     await expect(m.create(req())).rejects.toMatchObject({ kind: 'limit' })
     await expect(m.create(req(2))).resolves.toMatchObject({ status: 'running' })
+  })
+
+  it('an agent CLI is started instead of the shell: its own argv, no prompt files', async () => {
+    const promptDir = tmp()
+    const { m, pty } = manager({ promptDir, settings: { devdockPrompt: true } })
+    const s = await m.create(
+      req(1, {
+        program: {
+          file: '/b/claude',
+          args: ['Use the bug-fixer agent.'],
+          name: 'Claude Code',
+          note: 'hi',
+        },
+      }),
+    )
+    expect(s).toMatchObject({ shell: 'Claude Code', note: 'hi', status: 'running' })
+    const p = pty.ptys[0]!
+    expect([p.file, p.args]).toEqual(['/b/claude', ['Use the bug-fixer agent.']])
+    expect(p.options.env.ZDOTDIR).toBeUndefined()
+    expect(existsSync(join(promptDir, 'zsh'))).toBe(false)
   })
 
   it('creates still starting count towards the limit', async () => {

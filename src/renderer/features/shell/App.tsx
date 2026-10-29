@@ -1,3 +1,4 @@
+import type { AgentLaunch } from '@shared/agents'
 import { ciRunLabel, parseRunLink } from '@shared/ci'
 import { useAddCiWatch } from '../../lib/providers'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -135,12 +136,13 @@ export function App() {
   }, [])
   useBridgeEvent('utilities:requested', openUtility)
   const [terminal, setTerminal] = useState<TerminalRequest | null>(null)
-  const openTerminal = useCallback((repoId: string | null) => {
-    setTerminal((t) => ({ n: (t?.n ?? 0) + 1, repoId }))
+  const openTerminal = useCallback((repoId: string | null, agent?: AgentLaunch) => {
+    setTerminal((t) => ({ n: (t?.n ?? 0) + 1, repoId, agent }))
     setView('terminal')
   }, [])
   const onTerminalRequested = useCallback(
-    ({ repoId }: { repoId: string | null }) => openTerminal(repoId),
+    ({ repoId, agent }: { repoId: string | null; agent?: AgentLaunch }) =>
+      openTerminal(repoId, agent),
     [openTerminal],
   )
   useBridgeEvent('terminal:requested', onTerminalRequested)

@@ -17,7 +17,8 @@ export type TestDeps = HandlerDeps & {
   openRepo: Mock<HandlerDeps['openRepo']>
   emitOutput: Mock<(e: RepoOutputEvent) => void>
   writeClipboard: Mock<(text: string) => void>
-  requestTerminal: Mock<(repoId: string | null) => void>
+  requestTerminal: Mock<HandlerDeps['requestTerminal']>
+  agents: Mock<HandlerDeps['agents']>
 }
 
 export interface HandlerSetup {
@@ -169,6 +170,13 @@ export async function handlerSetup(
     terminal,
     home: dir,
     requestTerminal: vi.fn(),
+    agents: vi.fn(() => [
+      { id: 'claude' as const, name: 'Claude Code', path: '/usr/local/bin/claude' },
+      { id: 'codex' as const, name: 'Codex', path: null },
+      { id: 'gemini' as const, name: 'Gemini CLI', path: null },
+      { id: 'copilot' as const, name: 'GitHub Copilot CLI', path: null },
+    ]),
+    platform: 'darwin',
     settings,
     secrets,
     notifications,

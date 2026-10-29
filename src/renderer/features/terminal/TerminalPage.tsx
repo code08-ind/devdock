@@ -1,3 +1,4 @@
+import type { AgentLaunch } from '@shared/agents'
 import { ArrowDown, ArrowUp, Copy, Eraser, Plus, Search, SquareTerminal, X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { useSettings } from '../../lib/devdock'
@@ -95,6 +96,8 @@ function focusBeside(terminal: HTMLElement | null, back: boolean): void {
 export interface TerminalRequest {
   n: number
   repoId: string | null
+  /** Start this agent CLI in the new tab instead of the shell (P7-C). */
+  agent?: AgentLaunch
 }
 
 export function TerminalPage({ request }: { request?: TerminalRequest }) {
@@ -109,9 +112,9 @@ export function TerminalPage({ request }: { request?: TerminalRequest }) {
   const tabList = useRef<HTMLDivElement>(null)
 
   const openIn = useCallback(
-    (repoId: string | null) => {
+    (repoId: string | null, agent?: AgentLaunch) => {
       const repo = repoId ? repos.find((r) => r.id === repoId) : undefined
-      store.open(repo ? { id: repo.id, name: repo.name } : null)
+      store.open(repo ? { id: repo.id, name: repo.name } : null, agent)
       requestAnimationFrame(() => store.focusActive())
     },
     [repos, store],
@@ -170,7 +173,7 @@ export function TerminalPage({ request }: { request?: TerminalRequest }) {
     if (request && request.n !== handled.current) {
       handled.current = request.n
       firstVisit = false
-      openIn(request.repoId)
+      openIn(request.repoId, request.agent)
     } else if (firstVisit && store.getSnapshot().tabs.length === 0) {
       firstVisit = false
       openIn(null)

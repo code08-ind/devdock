@@ -71,6 +71,7 @@ import { SecretStore } from './services/secrets'
 import { SettingsStore } from './services/settings'
 import { ShortcutService } from './services/shortcut'
 import { TerminalManager, type PtySpawn } from './services/terminal/manager'
+import { detectAgents } from './services/agents'
 import { createTray, watchedForTray, type TrayHandle } from './tray'
 import {
   createMainWindow,
@@ -581,10 +582,18 @@ function start(): void {
       },
       terminal,
       home: homedir(),
-      requestTerminal: (repoId) => {
-        showView('terminal')
-        mainWindow?.webContents.send('terminal:requested', { repoId })
+      requestTerminal: (request) => {
+        // No separate `nav:goto`: the window switches view and opens the tab in one step, so its
+        // first visit doesn't open a Home tab as well (that raced on CI).
+        paletteWindow?.hide()
+        panelWindow?.hide()
+        showMain()
+        mainWindow?.webContents.send('terminal:requested', request)
       },
+      // After the login shell's PATH is merged in (where these CLIs usually live).
+      agents: () =>
+        envReady.then(() => detectAgents({ platform: process.platform, env: process.env })),
+      platform: process.platform,
       emitOutput: (event) => {
         // The window may close while git is still running.
         if (mainWindow && !mainWindow.isDestroyed())

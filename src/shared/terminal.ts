@@ -4,6 +4,7 @@
  * tests share it.
  */
 import { z } from 'zod'
+import { AgentLaunchSchema } from './agents'
 
 /** Most terminals one window may hold at once (each is a real shell process). */
 export const MAX_SESSIONS = 20
@@ -36,6 +37,8 @@ export const TerminalCreateSchema = z.object({
   repoId: z.string().min(1).max(100).nullable().optional(),
   cols: Cols,
   rows: Rows,
+  /** Start an agent CLI there instead of the shell (P7-C); main finds it on PATH. */
+  agent: AgentLaunchSchema.optional(),
 })
 export type TerminalCreate = z.infer<typeof TerminalCreateSchema>
 
@@ -55,6 +58,8 @@ export const TerminalSessionSchema = z.object({
   shell: z.string(),
   status: z.enum(['running', 'exited']),
   exitCode: z.number().int().nullable(),
+  /** Something to say in the terminal first (an agent started without its prompt…). */
+  note: z.string().nullable(),
 })
 export type TerminalSession = z.infer<typeof TerminalSessionSchema>
 
@@ -69,7 +74,12 @@ export interface TerminalExitEvent {
 }
 
 /** Palette window / panel → main window: open a DevDock terminal there. */
-export const TerminalRequestSchema = z.object({ repoId: z.string().min(1).max(100).nullable() })
+export const TerminalRequestSchema = z.object({
+  repoId: z.string().min(1).max(100).nullable(),
+  /** Start an agent CLI in the new tab (P7-C: Start work's "Start <agent> now"). */
+  agent: AgentLaunchSchema.optional(),
+})
+export type TerminalRequest = z.infer<typeof TerminalRequestSchema>
 
 // --- Settings → Terminal ----------------------------------------------------------------------
 
