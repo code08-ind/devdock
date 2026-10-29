@@ -155,3 +155,50 @@ test.describe('page basics', () => {
     expect(errors.filter((e) => !/404|releases\.json/.test(e))).toEqual([])
   })
 })
+
+test.describe('hero buttons follow the visitor’s system', () => {
+  for (const [os, ua, first, second] of [
+    ['Mac', UA.mac, /Download for Mac/, /Download for Windows/],
+    ['Windows', UA.windows, /Download for Windows/, /Download for Mac/],
+  ] as const) {
+    test(`${os}: its own system is the primary button, with its logo`, async ({ browser }) => {
+      const page = await browser.newPage({ userAgent: ua })
+      await setup(page, { manifest: true })
+      await page.goto('/')
+      const buttons = page.locator('#hero-download a')
+      await expect(buttons.nth(0)).toHaveAttribute('data-asset', /.+/)
+      await expect(buttons).toHaveCount(2)
+      await expect(buttons.nth(0)).toHaveAccessibleName(first)
+      await expect(buttons.nth(0)).toHaveClass(/btn-primary/)
+      await expect(buttons.nth(1)).toHaveAccessibleName(second)
+      await expect(buttons.nth(1)).toHaveClass(/btn-outline/)
+      for (const b of await buttons.all()) await expect(b.locator('svg use')).toHaveCount(1)
+      await page.close()
+    })
+  }
+})
+
+test.describe('family and layout', () => {
+  test.use({ userAgent: UA.mac })
+
+  test('links back to aryangarg.com in the header and footer', async ({ page }) => {
+    await setup(page)
+    await page.goto('/')
+    await expect(page.locator('header a[href="https://www.aryangarg.com/"]')).toHaveText(
+      'by Aryan Garg',
+    )
+    await expect(page.locator('footer a[href="https://www.aryangarg.com/"]')).toHaveCount(1)
+  })
+
+  test('no horizontal scrolling at phone width', async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 780 })
+    await setup(page, { manifest: true })
+    await page.goto('/')
+    await page.locator('#download-root .platform').first().waitFor()
+    const [scroll, client] = await page.evaluate(() => [
+      document.documentElement.scrollWidth,
+      document.documentElement.clientWidth,
+    ])
+    expect(scroll).toBe(client)
+  })
+})

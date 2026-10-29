@@ -1,0 +1,6 @@
+Fonts served with the DevDock website (latin subsets, WOFF2, from Google Fonts):
+
+- Geist and Geist Mono — Copyright 2024 The Geist Project Authors (https://github.com/vercel/geist-font)
+- Doto — Copyright 2024 The Doto Project Authors (https://github.com/oliverlalan/Doto)
+
+Both are licensed under the SIL Open Font License, Version 1.1: https://openfontlicense.org

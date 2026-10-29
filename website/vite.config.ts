@@ -12,7 +12,7 @@ function csp(): Plugin {
     "style-src 'self'",
     "img-src 'self'",
     "connect-src 'self'",
-    "font-src 'none'",
+    "font-src 'self'",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'none'",

@@ -1,9 +1,12 @@
 # DevDock website
 
 DevDock's landing and download page: one static page (Vite + plain TypeScript, no framework),
-system fonts, no cookies, analytics or third-party scripts. It's independent of the app: its own
-`package.json`, built and tested on its own. The look follows `../docs/UI-THEMES.md` (same tokens
-and the Light and Dark themes as the app, with a toggle).
+no cookies, analytics or third-party scripts. It's independent of the app: its own
+`package.json`, built and tested on its own. The look is the family of
+[www.aryangarg.com](https://www.aryangarg.com/) so it can live on a subdomain of it
+(`devdock.aryangarg.com`): the same zinc palette, Geist / Geist Mono type and Doto dot-matrix
+section titles (self-hosted in `public/fonts/`, SIL OFL), the railed centre column with hatched
+dividers, and Light/Dark that follow the system until the toggle is pressed.
 
 ## Preview locally
 
@@ -18,7 +21,7 @@ npm run preview    # serves website/dist at http://localhost:4173 (what gets pub
 ## Test
 
 ```sh
-npm test                                   # Vitest: OS/CPU detection, file names and links, manifest, install steps
+npm test                                   # Vitest: OS/CPU detection, file names and links, manifest, install steps, palette + contrast
 npm run build && PW_CHANNEL=chrome npx playwright test site axe   # in a browser: downloads, dialog, tabs, theme; axe WCAG 2.2 AA in Light and Dark
 SHOTS_DIR=/tmp/devdock-shots PW_CHANNEL=chrome npx playwright test screens   # light/dark × desktop/phone screenshots
 ```
@@ -70,23 +73,63 @@ Nothing here runs by itself.
    `npm run build:site`, output `dist`, no framework preset, and security headers
    (`frame-ancestors 'none'`, `nosniff`, `no-referrer`; the page's own CSP is a `<meta>` added
    by `vite.config.ts`). Pushes to `main` then deploy production; other branches get preview
-   URLs. No custom domain yet: add one later under the project's Domains (the build uses
-   relative URLs, so nothing else changes).
+   URLs. To serve it on the subdomain, see **Custom domain** below (the build uses relative
+   URLs, so nothing in the code changes).
 3. **After each new release**, redeploy the latest production deployment in Vercel (or push any
    commit) so the page shows the new version and sizes. The download links already point at the
    new files.
 
+## Custom domain: `devdock.aryangarg.com`
+
+The owner does this once, after the Vercel project exists. Nothing in the repo changes.
+
+1. In Vercel, open the DevDock project → **Settings → Domains** → **Add Domain**, type
+   `devdock.aryangarg.com` and add it to **Production**. Vercel then shows the DNS record it
+   expects (and "Invalid Configuration" until it sees it).
+2. At the DNS provider of `aryangarg.com` add one record:
+
+   | Type  | Name / Host | Value / Target         | TTL            |
+   | ----- | ----------- | ---------------------- | -------------- |
+   | CNAME | `devdock`   | `cname.vercel-dns.com` | Auto (or 3600) |
+
+   Use exactly the target Vercel shows in step 1 if it differs (Vercel sometimes gives a
+   project-specific `…vercel-dns-0xx.com` name). Don't add an A record for the subdomain and
+   don't touch the records of `www`/the apex, so www.aryangarg.com is unaffected.
+
+   - If `aryangarg.com` itself is already on Vercel **with Vercel's nameservers**, there's
+     nothing to add at a registrar: adding the domain in step 1 creates the record.
+   - If it's behind **Cloudflare**, set the record to **DNS only** (grey cloud) so Vercel can
+     issue the certificate.
+
+3. Wait until Vercel shows **Valid Configuration** (minutes, sometimes up to an hour). It issues
+   the HTTPS certificate itself.
+4. Optional: link to it from www.aryangarg.com's Work section, and add
+   `devdock.aryangarg.com` as the "Open Live" link.
+
+`vercel.json`'s headers and the page's CSP are all same-origin, so they work unchanged on the
+subdomain.
+
 ## Files
 
-| Path                        | What                                                               |
-| --------------------------- | ------------------------------------------------------------------ |
-| `index.html`                | All content (works without JavaScript; JS adds detection and tabs) |
-| `src/style.css`             | Tokens and themes from UI-THEMES, layout                           |
-| `src/config.ts`             | Where installers live; the "coming soon" switch                    |
-| `src/detect.ts`             | OS and CPU detection → installer                                   |
-| `src/downloads.ts`          | File names, links, `releases.json`                                 |
-| `vercel.json`               | Vercel build settings and response headers                         |
-| `src/steps.ts`              | Install steps per installer, for the dialog                        |
-| `public/theme.js`           | Applies the saved theme before first paint                         |
-| `public/img/`               | WebP copies of `docs/screenshots` (`sh website/scripts/images.sh`) |
-| `scripts/releases-json.mjs` | Latest GitHub release → `releases.json` (run by `build:site`)      |
+| Path                                                   | What                                                               |
+| ------------------------------------------------------ | ------------------------------------------------------------------ |
+| `index.html`                                           | All content (works without JavaScript; JS adds detection and tabs) |
+| `src/style.css`                                        | aryangarg.com palette (Light/Dark), fonts, layout                  |
+| `public/fonts/`                                        | Geist, Geist Mono, Doto (latin WOFF2, OFL; `LICENSE.txt`)          |
+| `src/config.ts`                                        | Where installers live; the "coming soon" switch                    |
+| `src/detect.ts`                                        | OS and CPU detection → installer                                   |
+| `src/downloads.ts`                                     | File names, links, `releases.json`                                 |
+| `vercel.json`                                          | Vercel build settings and response headers                         |
+| `src/steps.ts`                                         | Install steps per installer, for the dialog                        |
+| `public/theme.js`                                      | Applies the saved theme before first paint                         |
+| `public/img/`                                          | WebP copies of `docs/screenshots` (`sh website/scripts/images.sh`) |
+| `scripts/releases-json.mjs`                            | Latest GitHub release → `releases.json` (run by `build:site`)      |
+| `scripts/og-image.mjs`                                 | Renders `scripts/og-card.html` → `public/og.png` (link previews)   |
+| `public/404.html`                                      | Page for unknown paths (Vercel serves it), styled by `404.css`     |
+| `public/robots.txt`, `sitemap.xml`, `site.webmanifest` | Search engines and "add to home screen"                            |
+| `public/favicon.*`, `apple-touch-icon.png`             | Icons, made from `build/icon.png` / `icon.ico`                     |
+
+The site's URL (`https://devdock.aryangarg.com/`) is written in `index.html` (canonical, Open
+Graph, JSON-LD), `public/robots.txt` and `public/sitemap.xml`; `tests/unit/seo.test.ts` checks
+they agree. If the domain changes, change all of them and re-run `node scripts/og-image.mjs`
+(the card shows the domain).
