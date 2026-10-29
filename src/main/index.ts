@@ -582,7 +582,11 @@ function start(): void {
       terminal,
       home: homedir(),
       requestTerminal: (repoId) => {
-        showView('terminal')
+        // No separate `nav:goto`: the window switches view and opens the tab in one step, so its
+        // first visit doesn't open a Home tab as well (that raced on CI).
+        paletteWindow?.hide()
+        panelWindow?.hide()
+        showMain()
         mainWindow?.webContents.send('terminal:requested', { repoId })
       },
       emitOutput: (event) => {

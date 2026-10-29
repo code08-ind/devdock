@@ -1,5 +1,5 @@
 import { accessSync, constants, statSync } from 'node:fs'
-import { basename, delimiter, join } from 'node:path'
+import { basename, posix } from 'node:path'
 
 export type ShellKind = 'zsh' | 'bash' | 'fish' | 'sh' | 'pwsh' | 'powershell' | 'cmd' | 'other'
 
@@ -47,10 +47,11 @@ export function shellKind(file: string): ShellKind {
 export function findOnPath(name: string, e: ShellEnv): string | null {
   const isExec = e.isExecutable ?? ((p: string) => defaultIsExecutable(p, e.platform))
   const pathVar = e.env.PATH ?? e.env.Path ?? ''
-  const sep = e.platform === 'win32' ? ';' : delimiter
+  // The target platform's rules, not the host's (tests run every platform's cases everywhere).
+  const sep = e.platform === 'win32' ? ';' : posix.delimiter
   const names = e.platform === 'win32' && !/\.exe$/i.test(name) ? [`${name}.exe`, name] : [name]
   const joinPath = (dir: string, n: string) =>
-    e.platform === 'win32' ? `${dir.replace(/[\\/]+$/, '')}\\${n}` : join(dir, n)
+    e.platform === 'win32' ? `${dir.replace(/[\\/]+$/, '')}\\${n}` : posix.join(dir, n)
   for (const dir of pathVar.split(sep).filter(Boolean)) {
     for (const n of names) {
       const candidate = joinPath(dir, n)

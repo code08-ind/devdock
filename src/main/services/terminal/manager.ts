@@ -66,6 +66,8 @@ export interface TerminalManagerOptions {
   signal?: (pid: number, sig: NodeJS.Signals) => void
   /** Whether the window is still there (a shell started for a closed window is stopped). */
   ownerAlive?: (owner: number) => boolean
+  /** Whether a path is a program DevDock may start (injected for tests). */
+  isExecutable?: (path: string) => boolean
 }
 
 interface Session {
@@ -165,7 +167,11 @@ export class TerminalManager {
     const baseEnv = (this.opts.env ?? (() => process.env))()
     let spec: ShellSpec
     try {
-      spec = resolveShell(s.shell, { platform: this.platform, env: baseEnv })
+      spec = resolveShell(s.shell, {
+        platform: this.platform,
+        env: baseEnv,
+        isExecutable: this.opts.isExecutable,
+      })
     } catch (err) {
       if (err instanceof ShellNotFoundError) throw new TerminalError('shell', err.message)
       throw err

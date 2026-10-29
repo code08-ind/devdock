@@ -75,6 +75,7 @@ function manager(
     batchMs: 5,
     killGraceMs: 20,
     signal: (pid, sig) => signals.push([pid, sig]),
+    isExecutable: (p) => EXEC.has(p),
     ...rest,
   })
   return { m, pty, events, signals }

@@ -21,6 +21,9 @@ const hasLine = async (win: Page, text: string) =>
   (await screen(win)).split('\n').some((l) => l.trim() === text)
 
 async function typeLine(win: Page, line: string): Promise<void> {
+  // Keys typed while zsh is still starting can reach its line editor out of order (as in any
+  // terminal): wait for the shell to draw its prompt first.
+  await expect.poll(() => screen(win), { timeout: 15_000 }).not.toBe('')
   await win.locator('.terminal-screen:not([hidden]) .xterm').click()
   await win.keyboard.type(line)
   await win.keyboard.press('Enter')
