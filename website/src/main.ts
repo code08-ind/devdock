@@ -209,7 +209,7 @@ function platformCard(
       { class: 'platform-sys' },
       platform === 'mac' ? 'macOS 12 or later, Apple silicon or Intel' : 'Windows 10 or 11, 64-bit',
     ),
-    downloadLink(inst, inst.label, recommended ? 'btn btn-ink btn-lg' : 'btn btn-outline'),
+    downloadLink(inst, inst.label, recommended ? 'btn btn-primary btn-lg' : 'btn btn-outline'),
     h(
       'p',
       { class: 'download-meta' },
@@ -285,7 +285,7 @@ function renderSoon(release: Release): HTMLElement[] {
 /** Hero: one button per platform with its logo; the visitor's own system comes first. */
 function heroButton(platform: Platform, inst: Installer | undefined, solid: boolean): HTMLElement {
   const text = platform === 'mac' ? 'Download for Mac' : 'Download for Windows'
-  const className = `btn btn-platform ${solid ? 'btn-ink' : 'btn-outline'}`
+  const className = `btn btn-platform ${solid ? 'btn-primary' : 'btn-outline'}`
   if (!inst)
     return h(
       'a',
@@ -319,7 +319,7 @@ function renderHero(release: Release, d: Detected): void {
   const win = heroButton('windows', find('win-setup'), d.os === 'windows')
   actions.replaceChildren(...(d.os === 'windows' ? [win, mac] : [mac, win]))
   meta.textContent = release.available
-    ? `Version ${release.version} · Free · No account, no telemetry`
+    ? `Version ${release.version}, free for macOS and Windows. No account, no telemetry.`
     : 'Downloads coming soon for macOS and Windows. No account, no telemetry.'
 }
 
