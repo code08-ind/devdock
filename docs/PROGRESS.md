@@ -75,6 +75,33 @@ listening pass (P7.12), publishing the release, and later the website deploy.
 **Deferred by the owner (not for tomorrow):** website deploy; OpenAI + Gemini providers (P7.09
 rest); a true PR summary (needs PR description/diff for three providers).
 
+## Weekend goal (by 2026-11-01) — owner: "anyone can use our software by downloading it on Windows or Mac … a full-fledged SaaS product"
+
+After the Finish line above, the items deferred so far are back in scope and must be done by the
+end of this weekend:
+
+1. [ ] **Website live**: Vercel project (Root Directory `website`) + domain `devdock.aryangarg.com`
+   (CNAME `devdock` → `cname.vercel-dns.com`); download buttons pointing at the published release;
+   check the live site (Lighthouse, axe, links, OG preview). Owner does the Vercel/DNS clicks.
+2. [ ] **Published release** `v0.1.0` (then patch releases as needed): installers for macOS arm64 +
+   x64 and Windows Setup + Portable attached; the website's `releases.json` shows real sizes.
+3. [ ] **OpenAI and Google Gemini** for "AI with your own key" (rest of P7.09): same two-step
+   preview → Send design, keys in the keychain, provider + model picker in Settings → AI, demo
+   fixtures, tests. Use each provider's official SDK or plain HTTP through the app's HttpClient
+   (decide and record in DECISIONS).
+4. [ ] **True PR summary**: load PR description (and a bounded diff stat) from Bitbucket, GitHub
+   and GitLab; the AI "status note" becomes a summary when they're available.
+5. [ ] **Decide code signing (owner)** — needed for "anyone can download it" without scary warnings:
+   - macOS: Apple Developer Program (USD 99/year) → Developer ID certificate + notarization in the
+     release workflow; without it, macOS 15 needs System Settings → Open Anyway (the site explains
+     it today).
+   - Windows: a code-signing certificate (OV/EV, or Azure Trusted Signing) → signed NSIS/Portable;
+     without it, SmartScreen shows "Windows protected your PC".
+   - Today the builds are unsigned (DECISIONS: "Unsigned in v1"). If the owner buys certificates,
+     add them as CI secrets and enable signing; otherwise keep the install-help copy prominent.
+6. [ ] **Auto-update (optional, decide)**: electron-updater against GitHub Releases so installed
+   copies get fixes; needs signing on macOS to work smoothly.
+
 ## Decisions already made (user, 2026-10-22)
 
 - Code lives directly in this folder (`B-desktop-app`); git initialised; specs moved into `docs/`.
@@ -685,3 +712,4 @@ Next step: owner review → merge `p7-providers` into `main`.
 | 2026-10-30 | P7-C-B built | Owner: Claude first, Opus 5.5 default with a picker, official SDK via the app's fetch. `@anthropic-ai/sdk` 1.3.0 bundled; AiService (prepare → shown → Send → run once; 10-min expiry; base URL pinned after finding ANTHROPIC_BASE_URL would redirect the key; fallbacks for Opus/Sonnet; refusal/max_tokens/auth/429 handling); Settings → AI; AiDialog; PR status note, lesson wording, standup polish; demo Claude. lint 0; vitest 910 / 1 skipped; e2e 65 / 5 skipped; website vitest 31, Playwright 20. | Review fixes → merge |
 | 2026-10-30 | P7-C-B done, merged | code-review: Standards (no hard violations; dup secrets query, cost formula, SDK effort type…) and Spec (demo switched before Send would have sent a demo preview to the real API — now refused; fallback pricing; empty cut-off; fallback disclosed in the preview). Tests added and mutation-checked. lint 0; vitest 913 / 1 skipped; e2e 65 / 5 skipped; dist 0. Merged `p7-ai` into `main`. | Owner hand checks |
 | 2026-10-30 | Wrap-up plan | Owner: finish tomorrow with everything finalized and tested. Wrote "Finish line (2026-10-31)" (8 steps + owner-only checks). Stopped the local website preview. CI 40938496008 still running at the end of the session. | Finish line step 1 |
+| 2026-10-30 | Weekend goal | Owner: deferred items (website deploy, OpenAI/Gemini, true PR summary) to be finished by this weekend so anyone can download DevDock on Windows or Mac. Added "Weekend goal" after the Finish line, incl. the code-signing and auto-update decisions the owner needs to make. | Finish line step 1 |
