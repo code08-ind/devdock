@@ -192,6 +192,35 @@ describe('TerminalManager', () => {
     await expect(m.create(req(2))).resolves.toMatchObject({ status: 'running' })
   })
 
+  it('creates still starting count towards the limit', async () => {
+    // The DevDock prompt makes each create wait before it spawns, so they all overlap.
+    const { m, pty } = manager({ settings: { devdockPrompt: true } })
+    const tries = MAX_SESSIONS + 5
+    const results = await Promise.allSettled(Array.from({ length: tries }, () => m.create(req())))
+    expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(MAX_SESSIONS)
+    expect(results.filter((r) => r.status === 'rejected')).toHaveLength(tries - MAX_SESSIONS)
+    expect(pty.ptys).toHaveLength(MAX_SESSIONS)
+    expect(m.count()).toBe(MAX_SESSIONS)
+  })
+
+  it('a window that closes or reloads while a shell starts gets no orphaned shell', async () => {
+    const { m, pty } = manager({ settings: { devdockPrompt: true } })
+    const pending = m.create(req())
+    await m.killOwner(1)
+    await expect(pending).rejects.toMatchObject({ kind: 'not-found' })
+    expect(pty.ptys).toHaveLength(1)
+    expect(pty.ptys[0]!.kills).toHaveLength(1)
+    expect(m.count()).toBe(0)
+
+    let alive = true
+    const gone = manager({ settings: { devdockPrompt: true }, ownerAlive: () => alive })
+    const late = gone.m.create(req())
+    alive = false
+    await expect(late).rejects.toMatchObject({ kind: 'not-found' })
+    expect(gone.pty.ptys[0]!.kills).toHaveLength(1)
+    expect(gone.m.count()).toBe(0)
+  })
+
   it('a shell that cannot start is a typed failure', async () => {
     const { m } = manager({
       spawn: () => {
