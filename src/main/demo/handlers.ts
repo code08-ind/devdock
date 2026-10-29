@@ -1,3 +1,4 @@
+import { anthropicHandlers } from './anthropic'
 import { http, HttpResponse, type RequestHandler } from 'msw'
 import { bitbucketHandlers } from './bitbucket'
 import { githubHandlers } from './github'
@@ -26,5 +27,6 @@ export function demoHandlers({
     ...jenkinsHandlers({ speed: jenkinsSpeed }),
     ...githubHandlers({ speed: jenkinsSpeed }),
     ...gitlabHandlers({ speed: jenkinsSpeed }),
+    ...anthropicHandlers,
   ]
 }

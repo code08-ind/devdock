@@ -45,6 +45,8 @@ import type { ShortcutService } from './services/shortcut'
 import { TerminalError, type TerminalManager } from './services/terminal/manager'
 import { AgentNotFoundError, agentSpawn, agentStatus, type AgentInfo } from './services/agents'
 import { tabTitle } from '@shared/agents'
+import type { AiService } from './services/ai/service'
+import { lessonPrompt, prPrompt, standupPrompt } from './services/ai/prompts'
 import type { TerminalRequest } from '@shared/terminal'
 
 /** Everything the handlers touch, injected so they can be tested without Electron. */
@@ -112,6 +114,8 @@ export interface HandlerDeps {
   /** P7-C: the agent CLIs on PATH (looked up on each call: a few file checks). */
   agents: () => AgentInfo[] | Promise<AgentInfo[]>
   platform: NodeJS.Platform
+  /** P7-C-B: Claude with the user's own key. */
+  ai: AiService
 }
 
 const GIT_CODES: Record<GitErrorKind, ErrorCode> = {
@@ -619,5 +623,18 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
         deps.requestTerminal(request)
       }),
     'agents:detect': async () => agentStatus(await deps.agents()),
+    // P7-C-B: main builds the text from data it loads itself (only a comment's text comes from
+    // the screen), holds it, and sends it on `ai:run` once the user has seen it.
+    'ai:prepare': (req) =>
+      withService(async () => {
+        if (req.feature === 'pr-summary') {
+          return deps.ai.prepare('pr-summary', prPrompt(await deps.prs.pr(req.ref)))
+        }
+        if (req.feature === 'standup') {
+          return deps.ai.prepare('standup', standupPrompt(await deps.standupDraft()))
+        }
+        return deps.ai.prepare('lesson', lessonPrompt(req.comment, req.where))
+      }),
+    'ai:run': ({ id }) => withService(() => deps.ai.run(id)),
   }
 }

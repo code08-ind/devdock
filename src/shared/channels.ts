@@ -143,6 +143,9 @@ export const INVOKE_CHANNELS = [
   'terminal:request',
   /** P7-C: which agent CLIs are installed (on PATH). */
   'agents:detect',
+  /** P7-C-B: Claude with the user's own key — prepared, shown, then sent on confirmation. */
+  'ai:prepare',
+  'ai:run',
 ] as const
 
 /** Events pushed from main to renderer. */
