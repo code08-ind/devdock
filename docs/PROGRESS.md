@@ -116,7 +116,7 @@ deferred components Table / Splitter / Tabs (nothing needs them).
 
 ## Decisions already made (user, 2026-10-22)
 
-- Code lives directly in this folder (`B-desktop-app`); git initialised; specs moved into `docs/`.
+- Code lives directly in this folder (`DevDock Desktop App`, renamed from `B-desktop-app` on 2026-10-31); git initialised; specs moved into `docs/`.
 - One phase per session. Currently **Phase 0 only**, then stop for user review.
 - Icons: `lucide-react`.
 - CI: GitHub Actions, matrix macOS + Windows.
@@ -726,3 +726,4 @@ Next step: owner review → merge `p7-providers` into `main`.
 | 2026-10-30 | Wrap-up plan | Owner: finish tomorrow with everything finalized and tested. Wrote "Finish line (2026-10-31)" (8 steps + owner-only checks). Stopped the local website preview. CI 40938496008 still running at the end of the session. | Finish line step 1 |
 | 2026-10-30 | Weekend goal | Owner: deferred items (website deploy, OpenAI/Gemini, true PR summary) to be finished by this weekend so anyone can download DevDock on Windows or Mac. Added "Weekend goal" after the Finish line, incl. the code-signing and auto-update decisions the owner needs to make. | Finish line step 1 |
 | 2026-10-30 | Master list | Owner: combine all pending tasks so nothing is missed. Replaced "Finish line" + "Weekend goal" with one numbered list T1–T20 (incl. items found in DECISIONS/PROGRESS: palette gaps, P6.13 follow-ups, VoiceOver/NVDA). Ticked P7.04–P7.07 (merged 2026-10-29, evidence in the P7-B section). | T1 |
+| 2026-10-31 | Folder rename | Owner: renamed project folder `B-desktop-app` → `DevDock Desktop App`. `git worktree repair` (4 agent worktrees relinked); Claude memory copied to the new project path; stale vitest cache cleared. lint 0; vitest 913 / 1 skipped; e2e 65 / 5 skipped. | T1 |
