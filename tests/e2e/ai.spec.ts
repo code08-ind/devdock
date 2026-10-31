@@ -100,3 +100,35 @@ test('Settings → AI: the key field and the model, saved; no AI buttons without
   await nav(win, 'Pull requests')
   await expect(win.getByRole('button', { name: /status note/ })).toHaveCount(0)
 })
+
+test('from the palette (SPEC 7): polish the standup and a PR status note open the same preview', async ({
+  launched,
+}) => {
+  const { win, errors } = launched
+  const palette = async () => {
+    await win.keyboard.press(process.platform === 'darwin' ? 'Meta+K' : 'Control+K')
+    const p = win.getByTestId('command-palette')
+    await expect(p).toBeVisible()
+    return p
+  }
+  let p = await palette()
+  await win.keyboard.type('polish the standup')
+  await expect(p.getByRole('option').first()).toContainText('Polish the standup with Claude…')
+  await win.keyboard.press('Enter')
+  const polish = win.getByRole('dialog', { name: 'Polish the standup' })
+  await expect(polish.locator('.code').first()).toContainText('Yesterday (')
+  await polish.getByRole('button', { name: 'Cancel' }).click()
+  await expect(polish).toBeHidden()
+
+  p = await palette()
+  await win.keyboard.type('status note web-app #415')
+  await expect(p.getByRole('option').first()).toContainText(
+    'Draft a status note for web-app #415 with Claude…',
+  )
+  await win.keyboard.press('Enter')
+  const note = win.getByRole('dialog', { name: 'Draft a status note' })
+  await expect(note.locator('.code').first()).toContainText('Pull request: ')
+  await note.getByRole('button', { name: 'Send to Claude' }).click()
+  await expect(note.getByRole('status')).toContainText('Demo answer: this PR adds')
+  expect(errors).toEqual([])
+})

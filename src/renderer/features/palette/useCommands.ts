@@ -1,5 +1,6 @@
 import type { AgentLaunch } from '@shared/agents'
 import { usePreferredAgent } from '../../lib/agents'
+import { useAiAvailable } from '../../lib/ai'
 import { PROVIDER_ACTIONS, providerOf, type PrAction, type PullRequest } from '@shared/bitbucket'
 import { ciRunLabel } from '@shared/ci'
 import { enabledProviders } from '@shared/settings'
@@ -20,6 +21,7 @@ import { THEME_LABELS } from '../../ui/appearance'
 import { watchLabel } from '../builds/BuildBits'
 import { MINE, OTHERS } from '../prs/actions'
 import { prLabel } from '../prs/PrBits'
+import type { AiCommandRequest } from './CommandDialogs'
 import { buildCommands, queryCommands, type Command, type ConfirmRequest } from './commands'
 
 const isOpen = (pr: PullRequest) => pr.state === 'open'
@@ -41,6 +43,8 @@ export interface CommandHandlers {
   /** Windows that can show dialogs (main, panel): stopping a process and PR actions ask first. */
   confirm?: (request: ConfirmRequest) => void
   prAction?: (pr: PullRequest, action: PrAction) => void
+  /** The AI preview dialog (P7-C-B), in the same windows. */
+  ai?: (request: AiCommandRequest) => void
 }
 
 /**
@@ -69,14 +73,26 @@ export function useCommands(h: CommandHandlers): {
   // PR actions once turned on in Settings: merge mine, approve / needs work on the ones I review.
   const prsOn = settings ? enabledProviders(settings).length > 0 : false
   const prActionsOn = Boolean(settings?.features.prActions && prsOn)
-  const mine = usePrList('mine', prActionsOn).data ?? []
-  const reviewing = usePrList('reviewing', prActionsOn).data ?? []
-  const openPrs = [
-    ...mine.filter(isOpen).flatMap((pr) => actionsFor(pr, MINE).map((action) => ({ pr, action }))),
-    ...reviewing
-      .filter(isOpen)
-      .flatMap((pr) => actionsFor(pr, OTHERS).map((action) => ({ pr, action }))),
-  ]
+  // AI status notes need the same lists (only where the AI dialog can show).
+  const aiOn = useAiAvailable() && Boolean(h.ai)
+  const listsOn = prActionsOn || (aiOn && prsOn)
+  const mine = usePrList('mine', listsOn).data ?? []
+  const reviewing = usePrList('reviewing', listsOn).data ?? []
+  const aiPrs = aiOn
+    ? [...mine, ...reviewing]
+        .filter(isOpen)
+        .filter((pr, i, all) => all.findIndex((p) => p.key === pr.key) === i)
+    : []
+  const openPrs = !prActionsOn
+    ? []
+    : [
+        ...mine
+          .filter(isOpen)
+          .flatMap((pr) => actionsFor(pr, MINE).map((action) => ({ pr, action }))),
+        ...reviewing
+          .filter(isOpen)
+          .flatMap((pr) => actionsFor(pr, OTHERS).map((action) => ({ pr, action }))),
+      ]
   const jenkinsWatches = useBuildWatches().data ?? []
   const runWatches = useCiWatches().data ?? []
   // Jenkins builds and GitHub / GitLab runs are both "watched builds" here.
@@ -154,6 +170,15 @@ export function useCommands(h: CommandHandlers): {
           Promise.all([clearFinished.mutateAsync(), clearFinishedRuns.mutateAsync()]),
           'Cleared finished build watches',
         ),
+      aiPrs: aiPrs.map((pr) => ({ key: pr.key, label: prLabel(pr) })),
+      ai:
+        aiOn && h.ai
+          ? (request) => {
+              if (request.feature === 'standup') return h.ai?.(request)
+              const pr = aiPrs.find((p) => p.key === request.key)
+              if (pr) h.ai?.({ feature: 'pr-summary', pr })
+            }
+          : undefined,
       watches: watches.map((w) => ({ key: w.key, label: prLabel(w.pr) })),
       unwatch: (key) => {
         const w = watches.find((x) => x.key === key)

@@ -82,6 +82,7 @@ export function PanelWindow() {
   const { commands, forQuery } = useCommands({
     confirm: commandDialogs.confirm,
     prAction: commandDialogs.prAction,
+    ai: (request) => void commandDialogs.ai(request),
     goto,
     requestAction,
     watch,

@@ -15,9 +15,9 @@ Contract docs: `docs/SPEC.md`, `docs/UI-THEMES.md`, `docs/BUILD-PROMPTS.md` (pha
 | Field        | Value                                                         |
 | ------------ | ------------------------------------------------------------- |
 | Phase        | **Phase 7 — final wrap-up day is 2026-10-31.** Everything planned is merged on `main` (29328bd, pushed): P7-A terminal, P7-B GitHub/GitLab, P7-C-A agent CLIs, P7-C-B AI with your own key (Claude), P7-D website v2, P7-E accessibility (automated part). |
-| Next step    | **"Pending tasks — master list" below: start at T1.** |
+| Next step    | **T1 (confirm CI run green), then T3.** |
 | Blockers     | None                                                          |
-| Last updated | 2026-10-30 (evening)                                          |
+| Last updated | 2026-11-01                                                    |
 
 ---
 
@@ -41,11 +41,19 @@ Windows; only "Upload packages" failed (artifact quota full — 37 old artifacts
 docs-only pushes.
 
 ### A. Get to green
-- [ ] **T1** CI green end to end on `main`, incl. "Upload packages" (re-run once the quota frees).
+- [~] **T1** CI green end to end on `main`, incl. "Upload packages" (re-run once the quota frees).
+  2026-11-01: run 40939672750's macOS/Windows jobs never started ("recent account payments have
+  failed or your spending limit needs to be increased" — private-repo Actions minutes). History
+  scanned for secrets (none; two fake test tokens), owner made `code08-ind/devdock` **public**
+  (free Actions minutes; website download links to Releases now work). Run 41236243941 started
+  on both runners.
 
 ### B. Close the gaps in what's built
-- [ ] **T2** Palette entries for the AI actions (at least "Polish the standup with Claude"; the PR
+- [x] **T2** Palette entries for the AI actions (at least "Polish the standup with Claude"; the PR
   status note from the PR commands) — SPEC 7 "every action from the palette"; DECISIONS P7-C-B.
+  Done 2026-11-01: `ai:standup` + `ai:pr-summary:<key>` (main window + panel); unit "AI actions:
+  only where the dialog can show…", e2e `ai.spec.ts` "from the palette (SPEC 7)…". lint 0; vitest
+  914 / 1 skipped; e2e 66 passed / 5 skipped.
 - [ ] **T3** Settings → AI **Test connection** (`GET /v1/models`, free) and the key in
   Diagnostics → Test all.
 - [ ] **T4** Remaining palette gaps (DECISIONS P6-B "Not palette commands yet"): trigger a build /
@@ -727,3 +735,4 @@ Next step: owner review → merge `p7-providers` into `main`.
 | 2026-10-30 | Weekend goal | Owner: deferred items (website deploy, OpenAI/Gemini, true PR summary) to be finished by this weekend so anyone can download DevDock on Windows or Mac. Added "Weekend goal" after the Finish line, incl. the code-signing and auto-update decisions the owner needs to make. | Finish line step 1 |
 | 2026-10-30 | Master list | Owner: combine all pending tasks so nothing is missed. Replaced "Finish line" + "Weekend goal" with one numbered list T1–T20 (incl. items found in DECISIONS/PROGRESS: palette gaps, P6.13 follow-ups, VoiceOver/NVDA). Ticked P7.04–P7.07 (merged 2026-10-29, evidence in the P7-B section). | T1 |
 | 2026-10-31 | Folder rename | Owner: renamed project folder `B-desktop-app` → `DevDock Desktop App`. `git worktree repair` (4 agent worktrees relinked); Claude memory copied to the new project path; stale vitest cache cleared. lint 0; vitest 913 / 1 skipped; e2e 65 / 5 skipped. | T1 |
+| 2026-11-01 | T1 + T2 | CI blocked by Actions billing on the private repo → secrets scan → owner made the repo public; CI re-run started. T2: AI actions in the palette (standup polish, PR status notes). lint 0; vitest 914 / 1 skipped; e2e 66 / 5 skipped. |

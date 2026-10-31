@@ -125,6 +125,13 @@ export interface CommandContext {
   openTerminal: (repoId: string | null, agent?: AgentLaunch) => unknown
   /** The agent CLI to offer per repo (P7-C: Settings → Workflow → Agent, if installed). */
   agent: { id: AgentCliId; name: string } | null
+  /** Open PRs (mine and the ones I review) that a status note can be drafted for (P7-C-B). */
+  aiPrs: readonly { key: string; label: string }[]
+  /**
+   * Opens the AI dialog (preview, then Send) for the standup or a PR's status note. Left out
+   * where the dialog can't show, or when there is no Anthropic key and demo mode is off.
+   */
+  ai?: (request: { feature: 'standup' } | { feature: 'pr-summary'; key: string }) => unknown
 }
 
 /**
@@ -214,6 +221,28 @@ function repoCommands(ctx: CommandContext): Command[] {
     },
     ...(ctx.agent ? [agentCommand(ctx.agent, r, ctx)] : []),
   ])
+}
+
+/** P7-C-B: the AI actions with your own key (SPEC 7: every action from the palette). */
+function aiCommands(ctx: Pick<CommandContext, 'ai' | 'aiPrs'>): Command[] {
+  const ai = ctx.ai
+  if (!ai) return []
+  return [
+    {
+      id: 'ai:standup',
+      title: 'Polish the standup with Claude…',
+      group: 'Utilities',
+      keywords: ['ai', 'claude', 'standup', 'polish', 'daily'],
+      run: () => ai({ feature: 'standup' }),
+    },
+    ...ctx.aiPrs.map<Command>((p) => ({
+      id: `ai:pr-summary:${p.key}`,
+      title: `Draft a status note for ${p.label} with Claude…`,
+      group: 'Pull requests',
+      keywords: ['ai', 'claude', 'status', 'note', 'summary', 'pr'],
+      run: () => ai({ feature: 'pr-summary', key: p.key }),
+    })),
+  ]
 }
 
 /** P7-C: the agent CLI in a terminal tab in the repo (no first message: Start work gives that). */
@@ -327,6 +356,7 @@ export function buildCommands(ctx: CommandContext, views: readonly View[]): Comm
       keywords: ['unwatch', 'watch', 'bitbucket', 'github', 'gitlab'],
       run: () => ctx.unwatch(w.key),
     })),
+    ...aiCommands(ctx),
     ...(ctx.prAction
       ? ctx.prActions.map<Command>((p) => ({
           id: `pr:${p.action}:${p.key}`,

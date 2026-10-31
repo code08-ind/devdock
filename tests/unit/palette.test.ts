@@ -44,6 +44,7 @@ const ctx = (over: Partial<CommandContext> = {}): CommandContext => ({
   unwatch: vi.fn(),
   openTerminal: vi.fn(),
   agent: null,
+  aiPrs: [],
   ...over,
 })
 
@@ -296,6 +297,22 @@ describe('palette completeness (P6.01)', () => {
     )
     void (confirm.mock.calls[0]![0] as { run: () => void }).run()
     expect(c.devServer).toHaveBeenCalledWith('r1', false)
+  })
+
+  it('AI actions: only where the dialog can show (and AI is available), per open PR', () => {
+    const aiPrs = [{ key: 'k1', label: 'web-app #412' }]
+    expect(buildCommands(ctx({ aiPrs }), VIEWS).some((x) => x.id.startsWith('ai:'))).toBe(false)
+    const ai = vi.fn()
+    const all = buildCommands(ctx({ aiPrs, ai }), VIEWS)
+    const standup = all.find((x) => x.id === 'ai:standup')!
+    expect(standup.title).toBe('Polish the standup with Claude…')
+    void standup.run()
+    expect(ai).toHaveBeenCalledWith({ feature: 'standup' })
+    const note = all.find((x) => x.id === 'ai:pr-summary:k1')!
+    expect(note.title).toBe('Draft a status note for web-app #412 with Claude…')
+    void note.run()
+    expect(ai).toHaveBeenCalledWith({ feature: 'pr-summary', key: 'k1' })
+    expect(filterCommands(all, 'claude standup').map((c) => c.id)).toContain('ai:standup')
   })
 
   it('PR actions (when turned on and a dialog can show) and build watches', () => {

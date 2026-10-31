@@ -70,12 +70,15 @@ export function useEnvAction<A>(id: string, fn: (args: A) => Promise<unknown>) {
   })
 }
 
+/** The collected standup draft (kept until "Collect again"); shared with the palette's AI command. */
+export const standupQuery = {
+  queryKey: utilityKeys.standup,
+  queryFn: () => unwrap(bridge.standup.draft()),
+  staleTime: Infinity,
+} as const
+
 export function useStandupDraft() {
-  return useQuery({
-    queryKey: utilityKeys.standup,
-    queryFn: () => unwrap(bridge.standup.draft()),
-    staleTime: Infinity,
-  })
+  return useQuery(standupQuery)
 }
 
 /** The repo's agent lessons file (P6-F). */
