@@ -634,5 +634,6 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
         return deps.ai.prepare('lesson', lessonPrompt(req.comment, req.where))
       }),
     'ai:run': ({ id }) => withService(() => deps.ai.run(id)),
+    'ai:testConnection': () => recorded('Anthropic', () => deps.ai.testConnection()),
   }
 }

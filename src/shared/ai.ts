@@ -63,6 +63,14 @@ export const AiPrepareSchema = z.discriminatedUnion('feature', [
 ])
 export type AiPrepare = z.infer<typeof AiPrepareSchema>
 
+/** Settings → AI Test connection: `GET /v1/models` (free) answered for the saved key. */
+export const AiConnectionSchema = z.object({
+  status: z.number().int(),
+  /** The models the key can use, as Anthropic lists them (newest first). */
+  models: z.array(z.string()),
+})
+export type AiConnection = z.infer<typeof AiConnectionSchema>
+
 /** A prepared call, shown to the user before anything is sent. */
 export const AiPreviewSchema = z.object({
   /** Pass to `ai:run` to send exactly this. Expires after a few minutes. */

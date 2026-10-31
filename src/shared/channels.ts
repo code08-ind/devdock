@@ -146,6 +146,7 @@ export const INVOKE_CHANNELS = [
   /** P7-C-B: Claude with the user's own key — prepared, shown, then sent on confirmation. */
   'ai:prepare',
   'ai:run',
+  'ai:testConnection',
 ] as const
 
 /** Events pushed from main to renderer. */

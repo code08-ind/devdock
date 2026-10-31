@@ -95,6 +95,9 @@ test('Settings → AI: the key field and the model, saved; no AI buttons without
       }),
     )
     .toBe('claude-haiku-5-5')
+  // Test connection (GET /v1/models, free): the demo key lists the offered models.
+  await ai.getByRole('button', { name: 'Test connection' }).click()
+  await expect(ai.getByRole('status')).toContainText('Key works (HTTP 200): 3 models available')
   // Demo mode off and no key: the features stay hidden.
   await win.evaluate(() => window.devdock.settings.update({ general: { demoMode: false } }))
   await nav(win, 'Pull requests')

@@ -13,7 +13,9 @@ test('diagnostics: versions and proxy, every connection tested (demo), a report 
 
   await section.getByRole('button', { name: 'Test all connections' }).click()
   const tests = section.getByRole('list', { name: 'Connection tests' })
-  await expect(tests.getByText(/^Connected as /)).toHaveCount(3)
+  // Jira, Bitbucket, Jenkins and (P7-C-B, demo key) Anthropic.
+  await expect(tests.getByText(/^Connected as /)).toHaveCount(4)
+  await expect(tests.getByText('Connected as your API key')).toBeVisible()
 
   // A manual proxy (SPEC 5) is what Chromium then uses for the services.
   await win.evaluate(() =>
@@ -22,7 +24,8 @@ test('diagnostics: versions and proxy, every connection tested (demo), a report 
   await section.getByText('Use this proxy', { exact: true }).click()
   await section.getByLabel('Proxy server').fill('127.0.0.1:3128')
   await section.getByRole('button', { name: 'Save', exact: true }).click()
-  await expect(section.getByText('PROXY 127.0.0.1:3128')).toBeVisible()
+  // Jira (set above) and the fixed AI endpoint (P7-C-B) both go through it.
+  await expect(section.getByText('PROXY 127.0.0.1:3128')).toHaveCount(2)
   await section.getByText('Use the system proxy', { exact: true }).click()
   await expect(section.getByText('PROXY 127.0.0.1:3128')).toHaveCount(0)
 

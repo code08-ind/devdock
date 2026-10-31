@@ -9,11 +9,17 @@ export const SERVICES = [
   ['Jenkins', 'jenkins'],
   ['GitHub', 'github'],
   ['GitLab', 'gitlab'],
+  ['Anthropic', 'anthropic'],
 ] as const
 export type ServiceName = (typeof SERVICES)[number][0]
+export type ServiceKey = (typeof SERVICES)[number][1]
+
+/** The keychain entry each service's credential is saved under. */
+export const credentialOf = (key: ServiceKey) =>
+  key === 'anthropic' ? 'anthropic.key' : `${key}.token`
 
 export const ProxyRouteSchema = z.object({
-  service: z.enum(['Jira', 'Bitbucket', 'Jenkins', 'GitHub', 'GitLab']),
+  service: z.enum(SERVICES.map(([name]) => name) as [ServiceName, ...ServiceName[]]),
   /** The service's origin, or null when it isn't set up. */
   origin: z.string().nullable(),
   /** Chromium's answer for that origin ("DIRECT", "PROXY host:port; DIRECT"), credentials removed. */

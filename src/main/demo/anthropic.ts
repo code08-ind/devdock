@@ -1,4 +1,5 @@
 import { http, HttpResponse, type RequestHandler } from 'msw'
+import { AI_MODELS } from '@shared/ai'
 import { SYSTEM } from '../services/ai/prompts'
 
 /**
@@ -25,6 +26,20 @@ const REPLIES: [system: string, text: string][] = [
 ]
 
 export const anthropicHandlers: RequestHandler[] = [
+  // Test connection: the models the demo key "can use".
+  http.get('https://api.anthropic.com/v1/models', () =>
+    HttpResponse.json({
+      data: AI_MODELS.map((m) => ({
+        type: 'model',
+        id: m.id,
+        display_name: m.name,
+        created_at: '2026-09-01T00:00:00Z',
+      })),
+      has_more: false,
+      first_id: AI_MODELS[0].id,
+      last_id: AI_MODELS[AI_MODELS.length - 1]!.id,
+    }),
+  ),
   http.post('https://api.anthropic.com/v1/messages', async ({ request }) => {
     const body = (await request.json()) as { model: string; system?: string }
     const text =

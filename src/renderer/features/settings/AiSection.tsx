@@ -1,7 +1,17 @@
-import { AI_MODELS, aiCost, formatUsd, TYPICAL_OUTPUT_TOKENS, type AiModelId } from '@shared/ai'
+import { useMutation } from '@tanstack/react-query'
+import { PlugZap } from 'lucide-react'
+import {
+  AI_MODELS,
+  aiCost,
+  aiModel,
+  formatUsd,
+  TYPICAL_OUTPUT_TOKENS,
+  type AiModelId,
+} from '@shared/ai'
 import type { Settings } from '@shared/settings'
-import { useSecrets, useUpdateSettings } from '../../lib/devdock'
-import { ErrorNotice } from '../../ui/Feedback'
+import { bridge, unwrap, useSecrets, useUpdateSettings } from '../../lib/devdock'
+import { Button } from '../../ui/Button'
+import { ErrorNotice, StatusPill } from '../../ui/Feedback'
 import { Field, Select } from '../../ui/Field'
 import { SecretRow } from './CredentialsSection'
 import { Section } from './Section'
@@ -17,6 +27,7 @@ export function AiSection({ settings }: { settings: Settings }) {
   const update = useUpdateSettings()
   const { available, list, saved: secrets } = useSecrets()
   const saved = secrets.has('anthropic.key')
+  const demo = settings.general.demoMode
   return (
     <Section
       id="ai"
@@ -46,8 +57,54 @@ export function AiSection({ settings }: { settings: Settings }) {
           />
         )}
       </Field>
+      {saved || demo ? <AiTest demo={demo} model={settings.ai.model} /> : null}
       {list.error ? <ErrorNotice error={list.error} /> : null}
       {update.error ? <ErrorNotice error={update.error} /> : null}
     </Section>
+  )
+}
+
+/**
+ * Test connection for the key: `GET /v1/models`, which is free (no tokens). Says whether the key
+ * works and whether the chosen model is one it can use.
+ */
+function AiTest({ demo, model }: { demo: boolean; model: AiModelId }) {
+  const test = useMutation({ mutationFn: () => unwrap(bridge.ai.testConnection()) })
+  const name = aiModel(model).name
+  return (
+    <div className="stack">
+      <div className="button-row">
+        <Button
+          icon={<PlugZap size={16} aria-hidden="true" />}
+          disabled={test.isPending}
+          onClick={() => test.mutate()}
+        >
+          Test connection
+        </Button>
+        <span className="muted">
+          {demo
+            ? 'Demo mode is on: this tests the demo key.'
+            : 'Free: lists your models, uses no tokens.'}
+        </span>
+      </div>
+      {test.isPending ? (
+        <p className="muted" role="status">
+          Connecting…
+        </p>
+      ) : null}
+      {test.data ? (
+        <div role="status" className="stack">
+          <StatusPill tone="success">
+            Key works (HTTP {test.data.status}): {test.data.models.length} models available
+          </StatusPill>
+          {test.data.models.includes(model) ? null : (
+            <StatusPill tone="warning">
+              {name} isn&apos;t one of them: pick another model above.
+            </StatusPill>
+          )}
+        </div>
+      ) : null}
+      {test.error ? <ErrorNotice error={test.error} /> : null}
+    </div>
   )
 }

@@ -5,10 +5,12 @@ import {
   ProxyServerSchema,
   SERVICES,
   type Diagnostics,
+  type ServiceKey,
   type ServiceName,
 } from '@shared/diagnostics'
 import type { Settings } from '@shared/settings'
 import { bridge, isSetUp, queryClient, unwrap, useUpdateSettings } from '../../lib/devdock'
+import { useAiAvailable } from '../../lib/ai'
 import { useAction } from '../../lib/useAction'
 import { Button } from '../../ui/Button'
 import { Dialog } from '../../ui/Dialog'
@@ -27,6 +29,11 @@ const TEST: Record<ServiceName, () => Promise<string>> = {
   Jenkins: async () => (await unwrap(bridge.jenkins.testConnection())).user.fullName,
   GitHub: async () => (await unwrap(bridge.github.testConnection())).user.displayName,
   GitLab: async () => (await unwrap(bridge.gitlab.testConnection())).user.displayName,
+  // GET /v1/models (free): the key has no user name, so the pill says whose it is.
+  Anthropic: async () => {
+    await unwrap(bridge.ai.testConnection())
+    return 'your API key'
+  },
 }
 
 /**
@@ -43,10 +50,12 @@ export function DiagnosticsSection({ settings }: { settings: Settings }) {
   const [report, setReport] = useState<string | null>(null)
   const { run, pending } = useAction()
   const toast = useToast()
+  const aiAvailable = useAiAvailable()
+  const setUp = (key: ServiceKey) => (key === 'anthropic' ? aiAvailable : isSetUp(settings, key))
 
   const testAll = () => {
     for (const [name, key] of SERVICES) {
-      if (!isSetUp(settings, key)) {
+      if (!setUp(key)) {
         setResults((r) => ({ ...r, [name]: 'skipped' }))
         continue
       }

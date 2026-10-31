@@ -13,6 +13,7 @@ import {
   AI_MODEL_IDS,
   aiCost,
   TYPICAL_OUTPUT_TOKENS,
+  type AiConnection,
   type AiFeature,
   type AiModelId,
   type AiPreview,
@@ -88,6 +89,41 @@ export class AiService {
     return preview
   }
 
+  /**
+   * Settings → AI and Diagnostics: checks the saved key with `GET /v1/models`, which is free
+   * (no tokens), and lists the models it can use.
+   */
+  async testConnection(): Promise<AiConnection> {
+    const demo = this.deps.http.demo
+    const key = demo ? 'demo' : await this.deps.key()
+    if (!key) {
+      throw new ServiceError('not_configured', 'Add your Anthropic API key in Settings → AI first.')
+    }
+    try {
+      const { data: page, response } = await this.client(key)
+        .models.list({ limit: 100 })
+        .withResponse()
+      return { status: response.status, models: page.data.map((m) => m.id) }
+    } catch (err) {
+      throw toServiceError(err)
+    }
+  }
+
+  private client(key: string): Anthropic {
+    const http = this.deps.http
+    return new Anthropic({
+      // Pinned: ANTHROPIC_BASE_URL in the user's environment must never redirect their key.
+      baseURL: 'https://api.anthropic.com',
+      // Sent as `Authorization: Bearer`; passing it also stops the SDK reading credentials
+      // from the environment or a CLI profile.
+      apiKey: key,
+      // A failed attempt (429, 5xx, network) is retried twice; failed attempts aren't billed.
+      maxRetries: 2,
+      timeout: 120_000,
+      fetch: (input, init) => http.fetch(new Request(input, init)),
+    })
+  }
+
   /** Sends a prepared request exactly as it was shown. Each preview can be sent once. */
   async run(id: string): Promise<AiResult> {
     this.sweep()
@@ -111,17 +147,7 @@ export class AiService {
     }
     const key = preview.demo ? 'demo' : await this.deps.key()
     if (!key) throw new ServiceError('not_configured', 'Your Anthropic API key was removed.')
-    const client = new Anthropic({
-      // Pinned: ANTHROPIC_BASE_URL in the user's environment must never redirect their key.
-      baseURL: 'https://api.anthropic.com',
-      // Sent as `Authorization: Bearer`; passing it also stops the SDK reading credentials
-      // from the environment or a CLI profile.
-      apiKey: key,
-      // A failed attempt (429, 5xx, network) is retried twice; failed attempts aren't billed.
-      maxRetries: 2,
-      timeout: 120_000,
-      fetch: (input, init) => http.fetch(new Request(input, init)),
-    })
+    const client = this.client(key)
     const fallback = FALLBACK_MODELS.has(preview.model)
     let message: Anthropic.Beta.BetaMessage
     try {

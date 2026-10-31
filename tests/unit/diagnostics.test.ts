@@ -60,7 +60,14 @@ const input = (over: Partial<ReportInput> = {}): ReportInput => ({
   settings: settings(),
   log: '',
   tests: {},
-  credentials: { Jira: true, Bitbucket: false, Jenkins: false, GitHub: false, GitLab: false },
+  credentials: {
+    Jira: true,
+    Bitbucket: false,
+    Jenkins: false,
+    GitHub: false,
+    GitLab: false,
+    Anthropic: false,
+  },
   identity: { home: '/Users/aryan', user: 'aryan' },
   now: new Date('2026-10-25T12:00:00Z'),
   ...over,
@@ -92,6 +99,7 @@ describe('diagnostics (P6.04)', () => {
       Jenkins: false,
       GitHub: false,
       GitLab: false,
+      Anthropic: false,
     })
     expect(report.log).toHaveLength(3)
     for (const leaked of ['abc123', 'priya', 'aryan']) {
@@ -154,7 +162,7 @@ describe('diagnostics (P6.04)', () => {
       },
       resolveProxy: async (url) => (url.includes('atlassian') ? 'PROXY u:p@proxy:3128' : 'DIRECT'),
       settings: () => settings(),
-      credentials: async () => ['jira.token'],
+      credentials: async () => ['jira.token', 'anthropic.key'],
       logFile: '/nonexistent/devdock.log',
       home: '/Users/aryan',
       user: 'aryan',
@@ -173,6 +181,8 @@ describe('diagnostics (P6.04)', () => {
       // P7: GitHub / GitLab are routed only while turned on.
       { service: 'GitHub', origin: null, route: null },
       { service: 'GitLab', origin: null, route: null },
+      // P7-C-B: the AI endpoint is fixed, so its route always shows.
+      { service: 'Anthropic', origin: 'https://api.anthropic.com', route: 'DIRECT' },
     ])
     svc.recordTest('Jira', false, 'SERVICE_AUTH')
     svc.recordTest('Bitbucket', true, null)
@@ -187,6 +197,8 @@ describe('diagnostics (P6.04)', () => {
       Jenkins: false,
       GitHub: false,
       GitLab: false,
+      // The AI key is saved as `anthropic.key`, not `.token`.
+      Anthropic: true,
     })
     // A missing log file still exports.
     expect(report.log).toEqual([])

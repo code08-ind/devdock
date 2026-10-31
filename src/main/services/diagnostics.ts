@@ -1,6 +1,12 @@
 /** Diagnostics screen data and the redacted export (P6.04). */
 import { readFile } from 'node:fs/promises'
-import { SERVICES, type Diagnostics, type ProxyRoute, type ServiceName } from '@shared/diagnostics'
+import {
+  credentialOf,
+  SERVICES,
+  type Diagnostics,
+  type ProxyRoute,
+  type ServiceName,
+} from '@shared/diagnostics'
 import { providerWeb, type Settings } from '@shared/settings'
 import { REDACTED, redact } from './logger'
 import type { CommandRunner } from './process/ports'
@@ -66,7 +72,7 @@ export class DiagnosticsService {
       this.deps.credentials().catch((): string[] => []),
     ])
     const credentials = {} as Record<ServiceName, boolean>
-    for (const [name, key] of SERVICES) credentials[name] = saved.includes(`${key}.token`)
+    for (const [name, key] of SERVICES) credentials[name] = saved.includes(credentialOf(key))
     return diagnosticsReport({
       info,
       settings: this.deps.settings(),
@@ -210,6 +216,8 @@ export function diagnosticsReport(r: ReportInput): string {
 
 /** The address a service is reached at; GitHub / GitLab default to the public site when on. */
 function siteOf(settings: Settings, key: (typeof SERVICES)[number][1]): string {
+  // Fixed endpoint (the key decides whether it's used; the route is worth knowing either way).
+  if (key === 'anthropic') return 'https://api.anthropic.com'
   if (key === 'github' || key === 'gitlab') {
     return settings[key].enabled ? providerWeb(settings, key) : ''
   }

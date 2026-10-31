@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { AgentStatusSchema } from './agents'
-import { AiPrepareSchema, AiPreviewSchema, AiResultSchema } from './ai'
+import { AiConnectionSchema, AiPrepareSchema, AiPreviewSchema, AiResultSchema } from './ai'
 import {
   DevServerStateSchema,
   ServerRefSchema,
@@ -371,6 +371,7 @@ export const contract = {
   'agents:detect': { req: none, res: z.array(AgentStatusSchema) },
   'ai:prepare': { req: AiPrepareSchema, res: AiPreviewSchema },
   'ai:run': { req: z.object({ id: z.string().uuid() }), res: AiResultSchema },
+  'ai:testConnection': { req: none, res: AiConnectionSchema },
 } satisfies Record<InvokeChannel, { req: z.ZodType; res: z.ZodType }>
 
 export type Contract = typeof contract

@@ -222,4 +222,65 @@ describe('AI with your own key (P7-C-B)', () => {
     const facts = (p: string) => p.split('\n').filter((l) => !l.startsWith('Opened:'))
     expect(facts(prepared.data.prompt)).toEqual(facts(prPrompt(current.data)))
   })
+
+  it('Test connection: GET /v1/models with the key (no tokens); no key or a rejected key says so', async () => {
+    const seen: { method: string; url: string; auth: string | null }[] = []
+    let status = 200
+    const http: HttpClient = {
+      demo: false,
+      fetch(request) {
+        seen.push({
+          method: request.method,
+          url: request.url,
+          auth: request.headers.get('authorization'),
+        })
+        return Promise.resolve(
+          status === 200
+            ? Response.json({
+                data: [
+                  {
+                    type: 'model',
+                    id: 'claude-opus-5-5',
+                    display_name: 'Claude Opus 5.5',
+                    created_at: '2026-09-01T00:00:00Z',
+                  },
+                ],
+                has_more: false,
+                first_id: 'claude-opus-5-5',
+                last_id: 'claude-opus-5-5',
+              })
+            : Response.json(
+                {
+                  type: 'error',
+                  error: { type: 'authentication_error', message: 'invalid x-api-key' },
+                },
+                { status },
+              ),
+        )
+      },
+    }
+    const none = new AiService({ http, key: () => undefined, model: () => 'claude-opus-5-5' })
+    await expect(none.testConnection()).rejects.toMatchObject({ kind: 'not_configured' })
+    expect(seen).toEqual([])
+
+    const ai = new AiService({ http, key: () => 'sk-ant-test', model: () => 'claude-opus-5-5' })
+    expect(await ai.testConnection()).toEqual({ status: 200, models: ['claude-opus-5-5'] })
+    expect(seen[0]).toMatchObject({ method: 'GET', auth: 'Bearer sk-ant-test' })
+    expect(seen[0]!.url).toMatch(/^https:\/\/api\.anthropic\.com\/v1\/models\?limit=100$/)
+
+    status = 401
+    await expect(ai.testConnection()).rejects.toMatchObject({ kind: 'auth' })
+  })
+
+  it('IPC Test connection in demo mode lists the offered models and is recorded for Diagnostics', async () => {
+    const { handlers } = await handlerSetup()
+    const r = await dispatch('ai:testConnection', undefined, handlers)
+    expect(r).toMatchObject({
+      ok: true,
+      data: { status: 200, models: ['claude-opus-5-5', 'claude-sonnet-5-5', 'claude-haiku-5-5'] },
+    })
+    const report = await dispatch('diagnostics:export', undefined, handlers)
+    if (!report.ok) throw new Error(report.error.message)
+    expect(JSON.parse(report.data).lastConnectionTests.Anthropic).toMatchObject({ ok: true })
+  })
 })
