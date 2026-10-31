@@ -121,8 +121,8 @@ docs-only pushes.
   p7-providers, p7-website, p7-website-v2) and merged local branches (p7-agents, p7-ai,
   worktree-agent-*); nothing unmerged is on them.
 
-Suggested order: T1 → T2–T5 → T6–T7 (T8/T9 decisions in parallel) → T10–T12 → T13–T15 → T16–T17 →
-T18 → T19 → T20.
+Order (owner, 2026-11-01: **T6 and T7 move to after v0.1.0**, as a follow-up release): T4–T5 →
+T10–T12 → T13–T15 → T16–T17 → T18 → T19 → T20 → then T6, T7 (v0.2.0). T8/T9 decisions in parallel.
 
 Not tasks (accepted as is, recorded in DECISIONS): the "Known limits" rows of each sub-phase, and the
 deferred components Table / Splitter / Tabs (nothing needs them).
@@ -742,3 +742,4 @@ Next step: owner review → merge `p7-providers` into `main`.
 | 2026-10-31 | Folder rename | Owner: renamed project folder `B-desktop-app` → `DevDock Desktop App`. `git worktree repair` (4 agent worktrees relinked); Claude memory copied to the new project path; stale vitest cache cleared. lint 0; vitest 913 / 1 skipped; e2e 65 / 5 skipped. | T1 |
 | 2026-11-01 | T1 + T2 | CI blocked by Actions billing on the private repo → secrets scan → owner made the repo public; CI re-run started. T2: AI actions in the palette (standup polish, PR status notes). lint 0; vitest 914 / 1 skipped; e2e 66 / 5 skipped. |
 | 2026-11-01 | T1 + T3, pause | T1 green (run 41236243941, incl. Upload packages). T3: AI Test connection + Diagnostics Anthropic row. lint 0; vitest 916 / 1; e2e 66 / 5; dist exit 0 (arm64 108.8 MB, x64 111.9 MB). Owner paused; next T4. |
+| 2026-11-01 | Scope | Owner agreed: ship v0.1.0 without T6 (OpenAI/Gemini) and T7 (true PR summary); both follow after the release. |
