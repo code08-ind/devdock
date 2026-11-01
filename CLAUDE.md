@@ -9,7 +9,7 @@
    did not run.
    e2e runs are quiet (invisible windows, no focus, no Dock icon, no system notifications) so
    they don't disturb the owner: run long suites in the background. `DEVDOCK_E2E_VISIBLE=1`
-   shows the windows (to watch a run, or for the screenshot specs).
+   shows the windows to watch a run; screenshots render fine without it.
 4. Project skills in `.claude/skills/` (pinned in `skills-lock.json`), approved by the user:
    - `frontend-design` + `vercel-react-best-practices` for renderer work. `docs/UI-THEMES.md`
      wins over any aesthetic advice, and the Next.js/server rules don't apply.

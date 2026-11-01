@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
+import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { makeRepos } from '../fixtures/git-repos'
@@ -125,5 +125,72 @@ test('screenshots: README terminal', async () => {
     await app.close().catch(() => undefined)
     rmSync(userData, { recursive: true, force: true })
     rmSync(home, { recursive: true, force: true })
+  }
+})
+
+/** T13: AI with your own key (Settings → AI, the preview before Send) and the agent CLI offer. */
+test('screenshots: README AI and agent', async () => {
+  // A stand-in `claude` on PATH, so Start work offers "Start Claude Code now" (never run here).
+  const bin = mkdtempSync(join(tmpdir(), 'devdock-shots-bin-'))
+  writeFileSync(join(bin, 'claude'), '#!/bin/sh\nexit 0\n')
+  chmodSync(join(bin, 'claude'), 0o755)
+  const { app, win, userData } = await launch(undefined, { PATH: `${bin}:${process.env.PATH}` })
+  const clipboard = await app.evaluate(({ clipboard }) => clipboard.readText())
+  try {
+    mkdirSync(out, { recursive: true })
+    await win.evaluate(() => window.devdock.settings.update({ appearance: { theme: 'light' } }))
+    const nav = (label: string) =>
+      win
+        .getByRole('navigation', { name: 'Main' })
+        .getByRole('button', { name: label, exact: true })
+        .click()
+    const shot = (name: string) =>
+      win.screenshot({ path: join(out, `readme-${name}.png`), animations: 'disabled' })
+
+    await nav('Settings')
+    // The AI section at the top of the pane.
+    await win.locator('#ai-title').evaluate((h) => h.closest('section')?.scrollIntoView())
+    await shot('settings-ai')
+
+    await nav('Pull requests')
+    await win
+      .getByRole('button', { name: /^Draft a status note for web-app #412 with Claude$/ })
+      .click()
+    const ai = win.getByRole('dialog', { name: 'Draft a status note' })
+    await expect(ai.getByRole('button', { name: 'Send to Claude' })).toBeVisible()
+    await shot('ai')
+    await ai.getByRole('button', { name: 'Cancel' }).click()
+
+    // A short, neutral folder: the done step shows the brief's path and git's output.
+    const shortTmp = '/tmp/devdock-demo'
+    mkdirSync(shortTmp, { recursive: true })
+    const savedTmp = process.env.TMPDIR
+    process.env.TMPDIR = shortTmp
+    try {
+      repos = makeRepos()
+    } finally {
+      process.env.TMPDIR = savedTmp
+    }
+    await win.evaluate((p) => window.devdock.repos.add({ path: p }), repos.clone)
+    await nav('Tickets')
+    await win.getByRole('button', { name: /^DD-101\b/ }).click()
+    await win
+      .getByRole('complementary', { name: 'DD-101 details' })
+      .getByRole('button', { name: 'Start work…' })
+      .click()
+    const start = win.getByRole('dialog', { name: 'Start work on DD-101' })
+    // Start work runs in the temp repo; it copies the agent message, so keep the clipboard.
+    await start.getByRole('checkbox', { name: 'Open the repo in VS Code afterwards' }).uncheck()
+    await start.getByRole('button', { name: 'Start work', exact: true }).click()
+    await expect(start.getByRole('status')).toContainText('Started work on')
+    const agent = start.getByRole('button', { name: 'Start Claude Code now' })
+    await expect(agent).toBeVisible()
+    await shot('agent')
+    await start.getByRole('button', { name: 'Close' }).click()
+  } finally {
+    await app.evaluate(({ clipboard }, text) => clipboard.writeText(text), clipboard)
+    await app.close().catch(() => undefined)
+    rmSync(userData, { recursive: true, force: true })
+    rmSync(bin, { recursive: true, force: true })
   }
 })

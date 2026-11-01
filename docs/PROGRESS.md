@@ -145,8 +145,11 @@ docs-only pushes.
   the agent fixes what it finds.
 
 ### E. Final touch
-- [ ] **T13** Fresh README screenshots in demo mode (`DEVDOCK_SCREENSHOTS=1 npx playwright test
+- [x] **T13** Fresh README screenshots in demo mode (`DEVDOCK_SCREENSHOTS=1 npx playwright test
   screenshots`), new ones for Settings → AI, the AI dialog and an agent tab; look at every image.
+  Done 2026-11-01 (quiet mode: screenshots render without visible windows): 12 refreshed + 3 new
+  (`readme-settings-ai`, `readme-ai`, `readme-agent`), all looked at. The agent shot is Start work
+  offering "Start Claude Code now" (real DevDock UI) rather than a fake CLI's output in a tab.
 - [ ] **T14** Website refresh: `sh website/scripts/images.sh` after T13, `node
   website/scripts/og-image.mjs` if the card changes; final copy read (features from T6/T7, signing
   status from T8); Lighthouse + axe on the built site.
@@ -802,3 +805,4 @@ Next step: owner review → merge `p7-providers` into `main`.
 | 2026-11-01 | Quiet e2e | Owner: test windows disturbed other work. e2e runs now invisible (opacity 0, never focused, no Dock icon, no system notifications); `DEVDOCK_E2E_VISIBLE=1` to watch. Full e2e in quiet mode, run in the background: 70 / 5 skipped (same as visible). | T10 |
 | 2026-11-01 | T10 | Whole-product QA in demo mode: audit extended (GitHub/GitLab, terminal, dialogs, 16 Settings sections, both palettes; 263 screenshots reviewed), new axe + keyboard tests for the T4/T5 UI. Fixed: Home Builds copy, Builds watch field at 18 px, "Paste key" for the API key, quiet e2e windows let clicks through, branch-switch follower ordering, crash logging, two test races. lint 0; vitest 938 / 1 skipped; e2e 72 / 5 skipped; audit passed. | T11 |
 | 2026-11-01 | T11 | Code review (Standards + Spec, parallel) of 2b8cfff...HEAD: T11a cleanups, T11b CI actions in the palette, T11c terminal tab close confirmation (owner chose "ask only if something runs"). lint 0; vitest 940 / 1 skipped; e2e 74 / 5 skipped (full run), then terminal + a11y + agents 12/12 after a React Compiler lint fix. | T12 |
+| 2026-11-01 | T13 | README screenshots refreshed in quiet mode + 3 new (Settings → AI, AI preview, Start work offering an agent); README terminal copy updated for the T11c close prompt. | T14 |

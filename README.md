@@ -110,6 +110,8 @@ now**, which opens it in a DevDock terminal tab in the repo with the message as 
 
 ![Agent lessons](docs/screenshots/readme-lessons.png)
 
+![Start work offering Claude Code](docs/screenshots/readme-agent.png)
+
 **Utilities** — ports (who's listening, stop it safely), clean build caches, env profiles
 (switch `.env.local` safely; values stay encrypted and masked), quick links, and a standup draft
 from your own commits, PRs and ticket moves.
@@ -120,7 +122,8 @@ in Terminal.app, in colours matched to each DevDock theme. Open one in a repo fr
 menu-bar panel or the palette (`terminal <repo>`). Find (`⌘F`), copy, paste, clear; `F6` leaves
 the terminal for the rest of the app. No oh-my-zsh? Settings → Terminal → **Use DevDock prompt**
 gives zsh and bash a robbyrussell-style prompt with the git branch — your `.zshrc` is never
-changed. Closing a tab or quitting DevDock stops the shell and what it started.
+changed. Closing a tab stops the shell and what it started — if something is still running in
+it (a dev server, an agent), DevDock asks first; quitting DevDock stops them all.
 
 ![Terminal](docs/screenshots/readme-terminal.png)
 
@@ -130,6 +133,10 @@ standup. Each request is shown before it goes — the exact text, the model (Cla
 default; Sonnet 5.5 and Haiku 5.5 in Settings) and about what it costs — and is sent only when
 you press Send. You pay Anthropic directly; DevDock ships no key. Demo mode answers with samples
 on your computer.
+
+![Settings → AI](docs/screenshots/readme-settings-ai.png)
+
+![A status note, shown before it is sent](docs/screenshots/readme-ai.png)
 
 **Command palette** — every action, searchable: `⌘K` in the app, or the global shortcut from
 any app. It takes arguments: `watch <PR link>`, `pipeline <PR link>`, `branch NM-1234`,
