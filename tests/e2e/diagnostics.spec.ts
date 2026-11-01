@@ -22,8 +22,8 @@ test('diagnostics: versions and proxy, every connection tested (demo), a report 
     window.devdock.settings.update({ jira: { baseUrl: 'https://team.atlassian.net' } }),
   )
   await section.getByText('Use this proxy', { exact: true }).click()
-  await section.getByLabel('Proxy server').fill('127.0.0.1:3128')
-  await section.getByRole('button', { name: 'Save', exact: true }).click()
+  await section.getByLabel('Proxy server', { exact: true }).fill('127.0.0.1:3128')
+  await section.getByRole('button', { name: 'Save Proxy server' }).click()
   // Jira (set above) and the fixed AI endpoints (Anthropic, OpenAI, Google — T6) go through it.
   await expect(section.getByText('PROXY 127.0.0.1:3128')).toHaveCount(4)
   await section.getByText('Use the system proxy', { exact: true }).click()

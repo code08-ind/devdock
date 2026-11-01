@@ -158,6 +158,14 @@ docs-only pushes.
   in the palette (T11b), terminal tab close asks when something runs (T11c, owner's choice).
 - [ ] **T12** 🧑 VoiceOver (macOS) and NVDA (Windows) listening pass — the manual half of P7.12;
   the agent fixes what it finds.
+  2026-11-01, owner asked for a non-audio pass: new opt-in `tests/e2e/sr.spec.ts`
+  (`DEVDOCK_SR_DIR=…`) captures the accessibility tree (what VoiceOver/NVDA read) of every view,
+  dialog, the palette and the panel, plus where focus lands, and it was read through. Fixed: Push
+  branch opened with focus on nothing (a planning-only log took it, then vanished) — plus a guard
+  in every dialog; buttons with the same name many times now say what they act on ("Move DD-104
+  to In Review…", "Start work on DD-104…", "Save Proxy server", "Test the Jira connection",
+  "Detect …"); the AI answer is announced once as "Claude's answer: …" (not the buttons around it).
+  A real VoiceOver / NVDA listening check is still worth doing by the owner when convenient.
 
 ### E. Final touch
 - [x] **T13** Fresh README screenshots in demo mode (`DEVDOCK_SCREENSHOTS=1 npx playwright test
@@ -851,3 +859,4 @@ Next step: owner review → merge `p7-providers` into `main`.
 | 2026-11-01 | T18 | CI green on main (b1eb013: macOS, Windows, website). Tag v0.1.0 pushed; release workflow passed (check, macOS + Windows builds) and made the DRAFT release "DevDock 0.1.0": DevDock-arm64.dmg 108.8 MB, DevDock-x64.dmg 112.0 MB, DevDock-Setup.exe 105.7 MB, DevDock-Portable.exe 105.5 MB, SHA256SUMS.txt. Owner reviews and publishes; then T19 (Vercel redeploy) and merge T6 + T7 for v0.2.0. | owner: publish |
 | 2026-11-01 | v0.2.0 prep | Owner: publish v0.1.0 later; meanwhile T6 + T7 merged into main (branch t7-pr-summary, which carries t6-openai-gemini). The v0.1.0 tag stays on b1eb013. | checks, then T20 |
 | 2026-11-01 | T6+T7 merged, T20 | Merged main: lint 0; vitest 961 / 1 skipped; e2e 75 / 7 skipped; website Vitest 31. T20: 4 worktrees removed (branches kept, owner). | owner: publish v0.1.0, T19, T17, T12, T8/T9 |
+| 2026-11-01 | T12 (automated) | Accessibility-tree review (sr.spec) + fixes: dialog focus, distinct button names, AI answer announcement. lint 0; vitest 961 / 1 skipped; e2e 75 / 8 skipped. Live listening still open for the owner. | owner steps |

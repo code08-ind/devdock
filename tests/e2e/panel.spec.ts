@@ -26,7 +26,9 @@ test('panel: Today, one-click watch, repo action dialog, Start work, tools; Open
   await expect(prs.getByRole('button', { name: 'Stop watching web-app #412' })).toBeVisible()
   // Tickets in progress are on Today too, with Start work.
   const started = panel.getByRole('list', { name: 'Tickets in progress' })
-  await expect(started.getByRole('button', { name: 'Start work…' }).first()).toBeVisible()
+  await expect(
+    started.getByRole('button', { name: /^Start work on DD-\d+…$/ }).first(),
+  ).toBeVisible()
 
   // Repos: an action opens the same dialog as the Repos view, commands first.
   await panel.getByText('Repos', { exact: true }).click()
@@ -43,7 +45,7 @@ test('panel: Today, one-click watch, repo action dialog, Start work, tools; Open
   // Tickets: Start work opens its dialog with the preview.
   await panel.getByText('Tickets', { exact: true }).click()
   const ticket = panel.getByRole('list', { name: 'My open tickets' }).getByRole('listitem').first()
-  await ticket.getByRole('button', { name: 'Start work…' }).click()
+  await ticket.getByRole('button', { name: /^Start work on DD-\d+…$/ }).click()
   const start = panel.getByRole('dialog', { name: /^Start work on DD-/ })
   await expect(start).toBeVisible()
   await panel.keyboard.press('Escape')

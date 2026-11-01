@@ -151,9 +151,9 @@ test('Settings → Bitbucket: Test connection, Detect; Settings → Actions: PR 
   const { win } = launched
   await openSettings(win)
   const section = win.getByRole('region', { name: 'Bitbucket' })
-  await section.getByRole('button', { name: 'Test connection' }).click()
+  await section.getByRole('button', { name: /^Test the / }).click()
   await expect(section.getByText('Connected (HTTP 200) as Demo Developer (dev)')).toBeVisible()
-  await section.getByRole('button', { name: 'Detect' }).click()
+  await section.getByRole('button', { name: /^Detect / }).click()
   await expect(win.getByText('Demo site is Bitbucket Data Center 8.19.1')).toBeVisible()
 
   // Turning PR actions on asks first; Cancel leaves them off.

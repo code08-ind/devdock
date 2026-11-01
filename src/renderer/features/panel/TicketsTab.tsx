@@ -33,7 +33,12 @@ export function TicketList({ issues, label }: { issues: readonly JiraIssue[]; la
             </div>
             <p className="panel-ticket-summary">{issue.summary}</p>
             <div className="button-row">
-              <Button size="sm" variant="primary" onClick={() => setStarting(issue.key)}>
+              <Button
+                size="sm"
+                variant="primary"
+                aria-label={`Start work on ${issue.key}…`}
+                onClick={() => setStarting(issue.key)}
+              >
                 Start work…
               </Button>
             </div>

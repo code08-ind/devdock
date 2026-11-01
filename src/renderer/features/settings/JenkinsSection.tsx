@@ -63,6 +63,7 @@ export function JenkinsSection({ settings }: { settings: Settings }) {
       />
       <TestConnection
         key={`${jk.baseUrl}|${jk.username}`}
+        service="Jenkins"
         demo={demo}
         test={async () => {
           const c = await unwrap(bridge.jenkins.testConnection())

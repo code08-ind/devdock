@@ -12,6 +12,29 @@ export function useModal(ref: RefObject<HTMLDialogElement | null>, open: boolean
 }
 
 /**
+ * T12: if the focused element inside an open dialog is removed (a step's content replaced),
+ * focus would fall to the page behind it and a screen reader would go silent. Put it on the
+ * dialog's first enabled button instead.
+ */
+function useKeepFocusInside(ref: RefObject<HTMLDialogElement | null>): void {
+  useEffect(() => {
+    const d = ref.current
+    if (!d) return
+    const onFocusOut = (e: FocusEvent) => {
+      // Moving to another element (or out of the window) is fine; only a vanished one isn't.
+      if (e.relatedTarget) return
+      const lost = e.target as Node
+      queueMicrotask(() => {
+        if (!d.open || d.contains(lost) || document.activeElement !== document.body) return
+        d.querySelector<HTMLElement>('button:not([disabled])')?.focus()
+      })
+    }
+    d.addEventListener('focusout', onFocusOut)
+    return () => d.removeEventListener('focusout', onFocusOut)
+  }, [ref])
+}
+
+/**
  * Modal built on <dialog>: showModal() makes the rest of the page inert (focus trap) and
  * Escape closes it.
  */
@@ -37,6 +60,7 @@ export function Dialog({
   const ref = useRef<HTMLDialogElement>(null)
   const titleId = useId()
   useModal(ref, open)
+  useKeepFocusInside(ref)
 
   return (
     <dialog

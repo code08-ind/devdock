@@ -161,7 +161,6 @@ export function ActionDialog({
       (err: unknown) => toast(err instanceof Error ? err.message : String(err), 'danger'),
     )
 
-  const running = phase.kind === 'running' || phase.kind === 'planning'
   const label = ACTION_LABELS[request.action]
   const title = request.action === 'pushBase' ? `Push ${base} to origin` : `${label} — ${repo.name}`
 
@@ -265,7 +264,8 @@ export function ActionDialog({
       ) : null}
       {phase.kind === 'error' ? <ErrorNotice error={phase.error} /> : null}
 
-      {runIds.length > 0 || running ? <ActivityLog text={output} /> : null}
+      {/* Not while only planning: the log could take focus and then vanish with it (T12). */}
+      {runIds.length > 0 || phase.kind === 'running' ? <ActivityLog text={output} /> : null}
     </Dialog>
   )
 }

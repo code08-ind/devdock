@@ -32,7 +32,8 @@ export function CodeBlock({ code, label }: { code: string; label: string }) {
     timer.current = setTimeout(() => setCopied(false), 1500)
   }
   return (
-    <figure className="code">
+    // Named by its label only: the caption also holds the Wrap and Copy buttons.
+    <figure className="code" aria-label={label}>
       <figcaption className="code-bar">
         <span className="muted">{label}</span>
         <span className="code-actions">

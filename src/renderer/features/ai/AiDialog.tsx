@@ -101,6 +101,13 @@ export function AiDialog({
       }
     >
       {stage.kind === 'preparing' ? <p role="status">Preparing the request…</p> : null}
+      {/* T12: one live region, there from the start (a region added with its text is often
+          not read): the answer itself, not the buttons around it. */}
+      <p className="visually-hidden" role="status">
+        {stage.kind === 'done'
+          ? `${AI_PROVIDER_INFO[stage.preview.provider].assistant}'s answer: ${stage.result.text}`
+          : ''}
+      </p>
       {stage.kind === 'preview' || stage.kind === 'sending' ? (
         <Preview preview={stage.preview} />
       ) : null}
@@ -150,9 +157,7 @@ function Answer({ preview, result }: { preview: AiPreview; result: AiResult }) {
   const assistant = AI_PROVIDER_INFO[preview.provider].assistant
   return (
     <div className="stack">
-      <div role="status">
-        <CodeBlock code={result.text} label={`${assistant}'s answer`} />
-      </div>
+      <CodeBlock code={result.text} label={`${assistant}'s answer`} />
       {result.truncated ? (
         <div className="notice notice-warning">
           <TriangleAlert size={16} aria-hidden="true" />

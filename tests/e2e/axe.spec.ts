@@ -195,7 +195,7 @@ test('axe: T4/T5 — Today ticket offers and the move confirmation, the push opt
       await win.getByRole('list', { name: 'Tickets to move' }).waitFor()
       found.push(...(await violations(win, `${theme} Today offers`)))
       await win
-        .getByRole('button', { name: /^Move to In Review…$/ })
+        .getByRole('button', { name: /^Move DD-\d+ to In Review…$/ })
         .first()
         .click()
       await win.getByRole('dialog', { name: /^Move DD-\d+ to In Review\?$/ }).waitFor()

@@ -145,7 +145,7 @@ test('Settings → Terminal saves the shell, font size and DevDock prompt', asyn
   const section = win.getByRole('region', { name: 'Terminal' })
   await section.getByLabel('Font size').selectOption('16')
   await section.getByRole('switch', { name: 'Use DevDock prompt' }).click()
-  const shell = section.getByLabel('Shell')
+  const shell = section.getByLabel('Shell', { exact: true })
   await shell.fill('not a shell; rm -rf')
   await expect(section.getByText(/Use a shell name/)).toBeVisible()
   await shell.fill('bash')

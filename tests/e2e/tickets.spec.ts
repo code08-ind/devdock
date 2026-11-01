@@ -167,7 +167,7 @@ test('lists, issue detail links, and Settings → Jira Test connection (demo)', 
 
   await openSettings(win)
   const jira = win.getByRole('region', { name: 'Jira' })
-  await jira.getByRole('button', { name: 'Test connection' }).click()
+  await jira.getByRole('button', { name: /^Test the / }).click()
   await expect(jira.getByRole('status')).toContainText('Connected (HTTP 200) as Demo Developer')
 
   // A saved query becomes a list in Tickets.
@@ -225,7 +225,7 @@ test('T5: a PR of mine opened for a ticket → Today offers to move it; moving a
   const offers = win.getByRole('list', { name: 'Tickets to move' })
   const dd101 = offers.getByRole('listitem').filter({ hasText: 'DD-101' })
   await expect(dd101).toContainText('opened: move DD-101 to In Review?')
-  await dd101.getByRole('button', { name: 'Move to In Review…' }).click()
+  await dd101.getByRole('button', { name: /^Move DD-\d+ to In Review…$/ }).click()
   const dialog = win.getByRole('dialog', { name: 'Move DD-101 to In Review?' })
   await expect(dialog).toContainText('This changes the issue in Jira.')
   await dialog.getByRole('button', { name: 'Move to In Review' }).click()

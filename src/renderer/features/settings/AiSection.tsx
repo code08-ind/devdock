@@ -108,6 +108,7 @@ function AiTest({ demo, model }: { demo: boolean; model: AiModelId }) {
       <div className="button-row">
         <Button
           icon={<PlugZap size={16} aria-hidden="true" />}
+          aria-label="Test the AI provider's key"
           disabled={test.isPending}
           onClick={() => test.mutate()}
         >

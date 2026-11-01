@@ -70,6 +70,7 @@ export function JiraSection({ settings }: { settings: Settings }) {
       <TestConnection
         // A new site/flavour/email makes an old result meaningless: start over.
         key={`${jira.flavor}|${jira.baseUrl}|${jira.email}`}
+        service="Jira"
         demo={settings.general.demoMode}
         test={() => unwrap(bridge.jira.testConnection())}
       />

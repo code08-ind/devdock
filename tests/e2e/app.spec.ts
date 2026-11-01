@@ -182,7 +182,7 @@ test('a secret saved in Settings is encrypted on disk', async ({ launched }) => 
   await input.fill(secret)
   await win
     .locator('.secret-row', { has: input })
-    .getByRole('button', { name: 'Save', exact: true })
+    .getByRole('button', { name: /^Save / })
     .click()
   await expect(win.getByText('Jira API token or personal access token saved')).toBeVisible()
 

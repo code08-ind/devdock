@@ -85,6 +85,7 @@ export function HostSection({ provider, settings }: { provider: CiProvider; sett
             extra={() => (
               <Button
                 icon={<ScanSearch size={16} aria-hidden="true" />}
+                aria-label={`Detect the ${name} address from your repos`}
                 disabled={detect.isPending}
                 onClick={() => detect.mutate()}
               >
@@ -95,6 +96,7 @@ export function HostSection({ provider, settings }: { provider: CiProvider; sett
           {detect.error ? <ErrorNotice error={detect.error} /> : null}
           <TestConnection
             key={s.baseUrl}
+            service={name}
             demo={demo}
             test={() =>
               unwrap(

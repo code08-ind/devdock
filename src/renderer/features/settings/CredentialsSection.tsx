@@ -72,7 +72,11 @@ export function SecretRow({
               disabled={disabled}
               onChange={(e) => setValue(e.target.value)}
             />
-            <Button type="submit" disabled={disabled || pending || !value}>
+            <Button
+              type="submit"
+              aria-label={`Save ${label}`}
+              disabled={disabled || pending || !value}
+            >
               Save
             </Button>
             {saved ? (

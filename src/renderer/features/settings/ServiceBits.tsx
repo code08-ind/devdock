@@ -68,7 +68,11 @@ export function TextSetting({
               onChange={(e) => setDraft(e.target.value)}
             />
           )}
-          <Button type="submit" disabled={draft.trim() === value || error !== null}>
+          <Button
+            type="submit"
+            aria-label={`Save ${label}`}
+            disabled={draft.trim() === value || error !== null}
+          >
             Save
           </Button>
           {extra?.(draft.trim())}
@@ -86,9 +90,12 @@ export interface Connection {
 
 /** SPEC 6.7 "Test connection (shows the HTTP status, the user it authenticated as, and a hint)". */
 export function TestConnection({
+  service,
   demo,
   test: run,
 }: {
+  /** "Jira", "GitHub"…: names the button for screen readers (several sit on one page). */
+  service: string
   demo: boolean
   test: () => Promise<Connection>
 }) {
@@ -98,6 +105,7 @@ export function TestConnection({
       <div className="button-row">
         <Button
           icon={<PlugZap size={16} aria-hidden="true" />}
+          aria-label={`Test the ${service} connection`}
           disabled={test.isPending}
           onClick={() => test.mutate()}
         >

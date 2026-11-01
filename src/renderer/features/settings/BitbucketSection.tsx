@@ -82,6 +82,7 @@ export function BitbucketSection({ settings }: { settings: Settings }) {
         extra={(draft) => (
           <Button
             icon={<ScanSearch size={16} aria-hidden="true" />}
+            aria-label="Detect the Bitbucket site type"
             disabled={detect.isPending}
             onClick={() => detect.mutate(draft || bb.baseUrl || CLOUD_WEB)}
           >
@@ -102,6 +103,7 @@ export function BitbucketSection({ settings }: { settings: Settings }) {
       <TestConnection
         // A new site/flavour/user makes an old result meaningless: start over.
         key={`${bb.flavor}|${bb.baseUrl}|${bb.username}`}
+        service="Bitbucket"
         demo={demo}
         test={() => unwrap(bridge.bitbucket.testConnection())}
       />

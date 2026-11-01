@@ -40,7 +40,7 @@ test('GitHub and GitLab: off by default, then PRs/MRs join the lists with Test c
 
   for (const provider of ['GitHub', 'GitLab'] as const) {
     const s = await turnOn(win, provider)
-    await s.getByRole('button', { name: 'Test connection' }).click()
+    await s.getByRole('button', { name: /^Test the / }).click()
     await expect(s.getByText(/Connected \(HTTP 200\) as Demo Developer \(demo-dev\)/)).toBeVisible()
   }
 

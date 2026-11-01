@@ -98,7 +98,7 @@ test('Settings → AI: the key field and the model, saved; no AI buttons without
     )
     .toBe('claude-haiku-5-5')
   // Test connection (GET /v1/models, free): the demo key lists the offered models.
-  await ai.getByRole('button', { name: 'Test connection' }).click()
+  await ai.getByRole('button', { name: /^Test the / }).click()
   await expect(ai.getByRole('status')).toContainText('Key works (HTTP 200): 3 models available')
   // Demo mode off and no key: the features stay hidden.
   await win.evaluate(() => window.devdock.settings.update({ general: { demoMode: false } }))
@@ -155,7 +155,7 @@ test('T6: switching to OpenAI or Google — their key, models and test; the butt
     /^GPT-6.1 Sol — \$2 \/ \$10/,
     /^GPT-6 Luna — \$0.1 \/ \$0.5/,
   ])
-  await ai.getByRole('button', { name: 'Test connection' }).click()
+  await ai.getByRole('button', { name: /^Test the / }).click()
   await expect(ai.getByRole('status')).toContainText('Key works (HTTP 200): 3 models available')
 
   // The PR summary now goes to GPT (demo: answered locally).

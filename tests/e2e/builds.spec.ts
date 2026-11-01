@@ -160,9 +160,9 @@ test('Settings → Jenkins: Test connection, jobs as paths or links', async ({ l
   const { win } = launched
   await openSettings(win)
   const section = win.getByRole('region', { name: 'Jenkins' })
-  await section.getByRole('button', { name: 'Test connection' }).click()
+  await section.getByRole('button', { name: /^Test the / }).click()
   await expect(section.getByText('Connected (HTTP 200) as Demo Developer (dev)')).toBeVisible()
-  const jobs = section.getByLabel('Multibranch jobs for My branches')
+  const jobs = section.getByLabel('Multibranch jobs for My branches', { exact: true })
   await jobs.fill('apps/../x')
   await expect(section.getByText("apps/../x isn't a job path.", { exact: false })).toBeVisible()
   await jobs.fill('web-app\ndesign-system')

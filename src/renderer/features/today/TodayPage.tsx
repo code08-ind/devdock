@@ -63,7 +63,11 @@ function TicketMoves() {
               {o.prLabel} opened: move {o.key} to {o.status}?
             </span>
             <span className="row-actions">
-              <Button size="sm" onClick={() => setConfirming(o)}>
+              <Button
+                size="sm"
+                aria-label={`Move ${o.key} to ${o.status}…`}
+                onClick={() => setConfirming(o)}
+              >
                 Move to {o.status}…
               </Button>
               <Button

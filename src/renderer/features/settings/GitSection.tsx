@@ -49,6 +49,7 @@ export function GitSection({ settings }: { settings: Settings }) {
             />
             <Button
               type="submit"
+              aria-label="Save the VS Code path"
               disabled={editor.trim() === settings.git.editorPath || update.isPending}
             >
               Save
