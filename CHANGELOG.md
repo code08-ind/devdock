@@ -5,6 +5,13 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.0] — 2026-11-01
+
+The first release: everything in [`docs/SPEC.md`](docs/SPEC.md), plus the owner's additions
+recorded in [`docs/DECISIONS.md`](docs/DECISIONS.md). Phase 7 (terminal, GitHub and GitLab, agent
+CLIs, AI with your own key, accessibility) and the wrap-up items (OpenAI and Gemini, PR
+summaries, the update notice) joined it before it was published, so it is all listed here.
+
 ### Added
 
 - **Update notice** (T9): once a day DevDock checks GitHub for a newer release and tells you
@@ -17,16 +24,6 @@ versions follow [Semantic Versioning](https://semver.org/).
 - **PR summary** (T7): the AI "status note" is now a summary of the pull request — its
   description and changed files (with line counts where the provider gives them) from Bitbucket,
   GitHub and GitLab, plus where it stands — shown in the preview before anything is sent.
-
-## [0.1.0] — 2026-11-01
-
-The first release: everything in [`docs/SPEC.md`](docs/SPEC.md), plus the owner's additions
-recorded in [`docs/DECISIONS.md`](docs/DECISIONS.md). Phase 7 (terminal, GitHub and GitLab, agent
-CLIs, AI with your own key, accessibility) joined it before the first tag, so it is all listed
-here.
-
-### Added
-
 - **Terminal** (Phase 7, P7-A): a real terminal in DevDock — your login shell in tabs (zsh, bash,
   fish; PowerShell on Windows) with your own setup (oh-my-zsh as is), ANSI colours per theme,
   slightly bold text like a native terminal, find, copy/paste, links through the allowlist.

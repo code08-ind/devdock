@@ -4,7 +4,7 @@ import { setup, UA } from './helpers'
 test.describe('no releases.json (shipped config)', () => {
   test.use({ userAgent: UA.mac })
 
-  test('offers v0.2.0 from the config: latest-release links, no "coming soon"', async ({
+  test('offers v0.1.0 from the config: latest-release links, no "coming soon"', async ({
     page,
   }) => {
     await setup(page)

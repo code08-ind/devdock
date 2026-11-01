@@ -27,10 +27,10 @@ export interface ReleaseConfig {
 const MB = 1_000_000
 
 export const RELEASE_CONFIG: ReleaseConfig = {
-  // v0.2.0 is the first public release (owner, 2026-11-01). The site goes live after it is
+  // v0.1.0 is the first public release (owner, 2026-11-01). The site goes live after it is
   // published, so /releases/latest/download/ links resolve.
   available: true,
-  version: '0.2.0',
+  version: '0.1.0',
   // Measured on the 2026-11-01 release build (draft); releases.json gives the exact sizes of the
   // published release at build time.
   sizes: {

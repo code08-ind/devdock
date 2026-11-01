@@ -36,8 +36,8 @@ describe('installer names and links', () => {
     expect(expand(name('portable'), 'x64')).toBe('DevDock-Portable.')
   })
 
-  it('the shipped config offers v0.2.0 (the first public release) with all four installers', () => {
-    expect(RELEASE_CONFIG).toMatchObject({ available: true, version: '0.2.0' })
+  it('the shipped config offers v0.1.0 (the first public release) with all four installers', () => {
+    expect(RELEASE_CONFIG).toMatchObject({ available: true, version: '0.1.0' })
     const r = releaseFromConfig()
     expect(r.available).toBe(true)
     // "Coming soon" stays possible for a config without a release.
@@ -57,7 +57,7 @@ describe('installer names and links', () => {
 })
 
 const manifest = {
-  version: '0.2.0',
+  version: '0.1.0',
   assets: {
     'mac-arm64': { name: 'DevDock-arm64.dmg', size: 100 },
     'mac-x64': { name: 'DevDock-x64.dmg', size: 101 },
@@ -70,7 +70,7 @@ describe('releases.json manifest', () => {
   it('a complete manifest makes downloads available with exact sizes', () => {
     const r = releaseFromManifest(manifest)
     expect(r?.available).toBe(true)
-    expect(r?.version).toBe('0.2.0')
+    expect(r?.version).toBe('0.1.0')
     expect(r?.installers.find((i) => i.id === 'win-setup')?.size).toBe(80)
     expect(r?.installers.every((i) => i.url === assetUrl(i.id))).toBe(true)
   })
@@ -81,13 +81,13 @@ describe('releases.json manifest', () => {
     const { 'win-portable': _, ...three } = manifest.assets
     expect(releaseFromManifest({ version: '1', assets: three })).toBeNull()
     const renamed = structuredClone(manifest)
-    renamed.assets['mac-arm64'].name = 'DevDock-0.2.0-arm64.dmg'
+    renamed.assets['mac-arm64'].name = 'DevDock-0.1.0-arm64.dmg'
     expect(releaseFromManifest(renamed)).toBeNull()
   })
 
   it('loadRelease prefers the manifest and falls back to the config', async () => {
     const ok = (async () => new Response(JSON.stringify(manifest))) as typeof fetch
-    expect((await loadRelease(ok)).version).toBe('0.2.0')
+    expect((await loadRelease(ok)).version).toBe('0.1.0')
 
     const missing = (async () => new Response('not found', { status: 404 })) as typeof fetch
     const config: ReleaseConfig = { ...RELEASE_CONFIG, available: true }
