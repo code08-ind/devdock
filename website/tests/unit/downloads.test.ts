@@ -36,10 +36,12 @@ describe('installer names and links', () => {
     expect(expand(name('portable'), 'x64')).toBe('DevDock-Portable.')
   })
 
-  it('the shipped config says "coming soon" until a release exists', () => {
-    expect(RELEASE_CONFIG.available).toBe(false)
+  it('the shipped config offers v0.2.0 (the first public release) with all four installers', () => {
+    expect(RELEASE_CONFIG).toMatchObject({ available: true, version: '0.2.0' })
     const r = releaseFromConfig()
-    expect(r.available).toBe(false)
+    expect(r.available).toBe(true)
+    // "Coming soon" stays possible for a config without a release.
+    expect(releaseFromConfig({ ...RELEASE_CONFIG, available: false }).available).toBe(false)
     expect(r.installers.map((i) => i.id)).toEqual([
       'mac-arm64',
       'mac-x64',
@@ -96,6 +98,9 @@ describe('releases.json manifest', () => {
     const offline = (async () => {
       throw new TypeError('Failed to fetch')
     }) as typeof fetch
-    expect((await loadRelease(offline)).available).toBe(false)
+    const none: ReleaseConfig = { ...RELEASE_CONFIG, available: false }
+    expect((await loadRelease(offline, none)).available).toBe(false)
+    // Offline with the shipped config: the config's links (latest release) still work.
+    expect((await loadRelease(offline)).available).toBe(true)
   })
 })

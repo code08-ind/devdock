@@ -117,6 +117,58 @@ function initTour(): void {
   select(0, false)
 }
 
+// ---------------------------------------------------------------- demo clips
+
+/**
+ * The feature clips play (muted, looping) only while on screen and in the open tab, and only
+ * fetch when they first play (`preload="none"`). Each has a visible Play / Pause button (WCAG
+ * 2.2.2 for motion over five seconds); with reduced motion they wait for Play.
+ */
+function initDemos(): void {
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)')
+  for (const video of document.querySelectorAll<HTMLVideoElement>('video[data-demo]')) {
+    const button = video.parentElement?.querySelector<HTMLButtonElement>('.demo-toggle')
+    if (!button) continue
+    const name = video.getAttribute('aria-label')?.replace(/^Demo: /, '') ?? 'demo'
+    let userPaused = false
+    let userPlayed = false
+    let visible = false
+    const show = () => {
+      const playing = !video.paused
+      button.textContent = playing ? 'Pause' : 'Play'
+      button.setAttribute('aria-label', `${playing ? 'Pause' : 'Play'} the clip: ${name}`)
+    }
+    const update = () => {
+      const wanted = visible && !userPaused && (!reduce.matches || userPlayed)
+      if (wanted && video.paused) void video.play().catch(() => undefined)
+      if (!wanted && !video.paused) video.pause()
+    }
+    button.hidden = false
+    button.addEventListener('click', () => {
+      if (video.paused) {
+        userPaused = false
+        userPlayed = true
+        void video.play().catch(() => undefined)
+      } else {
+        userPaused = true
+        video.pause()
+      }
+    })
+    video.addEventListener('play', show)
+    video.addEventListener('pause', show)
+    // A hidden tab panel has no box: it leaves the viewport, and the clip pauses.
+    new IntersectionObserver(
+      ([entry]) => {
+        visible = Boolean(entry?.isIntersecting)
+        update()
+      },
+      { threshold: 0.35 },
+    ).observe(video)
+    reduce.addEventListener('change', update)
+    show()
+  }
+}
+
 // ---------------------------------------------------------------- downloads
 
 function downloadLink(inst: Installer, text: string, className = ''): HTMLElement {
@@ -386,6 +438,7 @@ function initDownloads(release: Release, d: Detected): void {
 async function init(): Promise<void> {
   initTheme()
   initTour()
+  initDemos()
   initDialog()
   const [detected, release] = await Promise.all([
     detect(navigator as unknown as NavigatorLike),

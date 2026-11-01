@@ -160,11 +160,11 @@
             <div class="hero-actions" id="hero-download">
               <a class="btn btn-platform btn-primary" href="#download">
                 <svg aria-hidden="true"><use href="#i-apple" /></svg>
-                <span>Download for Mac</span><span class="visually-hidden">, coming soon</span>
+                <span>Download for Mac</span>
               </a>
               <a class="btn btn-platform btn-outline" href="#download">
                 <svg aria-hidden="true"><use href="#i-windows" /></svg>
-                <span>Download for Windows</span><span class="visually-hidden">, coming soon</span>
+                <span>Download for Windows</span>
               </a>
             </div>
             <p class="hero-meta" id="hero-meta">
@@ -212,6 +212,13 @@
               </dd>
             </div>
             <div>
+              <dt>AI, if you want it</dt>
+              <dd>
+                Your own key for Claude, GPT or Gemini, or your agent CLI (Claude Code, Codex,
+                Gemini CLI, Copilot CLI) started in DevDock's terminal. Off until you add one
+              </dd>
+            </div>
+            <div>
               <dt>Runs on</dt>
               <dd>macOS 12 or later (Apple silicon and Intel), Windows 10 and 11</dd>
             </div>
@@ -242,13 +249,14 @@
             <h2 id="tour-title">Features</h2>
           </div>
           <p class="block-lede">
-            Screens from DevDock in demo mode. Open the app when you need the detail; the panel by
-            the icon covers the rest.
+            DevDock in demo mode — short clips of the real app. Open the app when you need the
+            detail; the panel by the icon covers the rest.
           </p>
 
           <div class="tour" data-tour>
             <div class="tour-tabs" role="tablist" aria-label="Features" hidden>
               <button role="tab" id="tab-today" aria-controls="tp-today">Today</button>
+              <button role="tab" id="tab-panel" aria-controls="tp-panel">Menu-bar panel</button>
               <button role="tab" id="tab-repos" aria-controls="tp-repos">Repos</button>
               <button role="tab" id="tab-terminal" aria-controls="tp-terminal">Terminal</button>
               <button role="tab" id="tab-prs" aria-controls="tp-prs">Pull requests</button>
@@ -290,6 +298,36 @@
               </div>
             </article>
 
+            <article class="tour-panel" id="tp-panel" aria-labelledby="tab-panel">
+              <div class="tour-text">
+                <h3>Menu-bar panel</h3>
+                <p>
+                  Click the DevDock icon in the menu bar (or the Windows tray) for one-click
+                  actions: your PRs and watched builds, each repo with Sync base, Update my branch,
+                  Push and its dev server, tickets with Start work, and the standup. Open the app
+                  only when you need the detail.
+                </p>
+              </div>
+              <div class="shot shot-video shot-narrow">
+                <video
+                  class="demo"
+                  data-demo
+                  muted
+                  loop
+                  playsinline
+                  preload="none"
+                  width="400"
+                  height="600"
+                  poster="img/demo-panel.webp"
+                  aria-label="Demo: the menu-bar panel — Today, Repos, Tickets and Tools tabs, one click each."
+                >
+                  <source src="video/panel.webm" type="video/webm" />
+                  <source src="video/panel.mp4" type="video/mp4" />
+                </video>
+                <button class="demo-toggle" type="button" hidden>Play</button>
+              </div>
+            </article>
+
             <article class="tour-panel" id="tp-repos" aria-labelledby="tab-repos">
               <div class="tour-text">
                 <h3>Repos</h3>
@@ -297,17 +335,27 @@
                   Add your local git repos. Fetch, sync the base branch, update your branch (merge
                   or rebase, stashing if needed), make a branch and push. Every git command is shown
                   before it runs, protected branches are refused, and a conflict stops safely with
-                  Abort. Start the dev server and read its log.
+                  Abort. Push can run your check (like <code>npm test</code>) first and then watch
+                  the Jenkins build; the dev server can start itself after a branch switch.
                 </p>
               </div>
-              <div class="shot">
-                <img
-                  src="img/readme-repos.webp"
-                  width="1600"
-                  height="1017"
-                  loading="lazy"
-                  alt="The Repos screen: a list of local repositories with branch, ahead and behind counts, and buttons for Fetch, Sync base, Update my branch, Push and the dev server."
-                />
+              <div class="shot shot-video">
+                <video
+                  class="demo"
+                  data-demo
+                  muted
+                  loop
+                  playsinline
+                  preload="none"
+                  width="1240"
+                  height="820"
+                  poster="img/demo-repos-builds.webp"
+                  aria-label="Demo: Push branch runs the check command first and pushes once it passes; then a watched pipeline goes from running to passed."
+                >
+                  <source src="video/repos-builds.webm" type="video/webm" />
+                  <source src="video/repos-builds.mp4" type="video/mp4" />
+                </video>
+                <button class="demo-toggle" type="button" hidden>Play</button>
               </div>
             </article>
 
@@ -321,14 +369,23 @@
                   and open one from a repo’s row or the command palette.
                 </p>
               </div>
-              <div class="shot">
-                <img
-                  src="img/readme-terminal.webp"
-                  width="1600"
-                  height="1017"
-                  loading="lazy"
-                  alt="DevDock's Terminal screen with a tab in the clone repo: the green arrow prompt with the git branch, a git log, a new file, git status and ls in colour."
-                />
+              <div class="shot shot-video">
+                <video
+                  class="demo"
+                  data-demo
+                  muted
+                  loop
+                  playsinline
+                  preload="none"
+                  width="1240"
+                  height="820"
+                  poster="img/demo-terminal.webp"
+                  aria-label="Demo: the DevDock terminal in a repo — a new branch, a commit and git log, with the branch in the prompt."
+                >
+                  <source src="video/terminal.webm" type="video/webm" />
+                  <source src="video/terminal.mp4" type="video/mp4" />
+                </video>
+                <button class="demo-toggle" type="button" hidden>Play</button>
               </div>
             </article>
 
@@ -338,18 +395,28 @@
                 <p>
                   From Bitbucket, GitHub and GitLab in one list: yours, the ones waiting for your
                   review, recently merged, and any you watch by pasting a link. You get a
-                  notification when a build, review or comment changes. Approve, needs work and
-                  merge are there when you turn them on.
+                  notification when a build, review or comment changes. With your own AI key
+                  (Claude, GPT or Gemini), summarise a PR from its description and changed files —
+                  you see exactly what is sent before you press Send.
                 </p>
               </div>
-              <div class="shot">
-                <img
-                  src="img/readme-prs.webp"
-                  width="1600"
-                  height="1017"
-                  loading="lazy"
-                  alt="The Pull requests screen with tabs for Mine, Reviewing, Merged and Watched, and a pull request's builds, reviewers and comments."
-                />
+              <div class="shot shot-video">
+                <video
+                  class="demo"
+                  data-demo
+                  muted
+                  loop
+                  playsinline
+                  preload="none"
+                  width="1240"
+                  height="820"
+                  poster="img/demo-ai-summary.webp"
+                  aria-label="Demo: Summarise web-app #412 with Claude — the exact text is shown first, then the answer after Send."
+                >
+                  <source src="video/ai-summary.webm" type="video/webm" />
+                  <source src="video/ai-summary.mp4" type="video/mp4" />
+                </video>
+                <button class="demo-toggle" type="button" hidden>Play</button>
               </div>
             </article>
 
@@ -386,14 +453,23 @@
                   that message.
                 </p>
               </div>
-              <div class="shot">
-                <img
-                  src="img/readme-tickets.webp"
-                  width="1600"
-                  height="1017"
-                  loading="lazy"
-                  alt="The Tickets screen: my Jira issues with status and priority, and the detail of one issue with a Start work button."
-                />
+              <div class="shot shot-video">
+                <video
+                  class="demo"
+                  data-demo
+                  muted
+                  loop
+                  playsinline
+                  preload="none"
+                  width="1240"
+                  height="820"
+                  poster="img/demo-start-work.webp"
+                  aria-label="Demo: Start work on DD-101 makes the branch and the ticket brief, then starts Claude Code in a DevDock terminal tab."
+                >
+                  <source src="video/start-work.webm" type="video/webm" />
+                  <source src="video/start-work.mp4" type="video/mp4" />
+                </video>
+                <button class="demo-toggle" type="button" hidden>Play</button>
               </div>
             </article>
 
@@ -422,20 +498,29 @@
               <div class="tour-text">
                 <h3>Command palette</h3>
                 <p>
-                  Every action, searchable: <kbd>⌘K</kbd> in the app, or a global shortcut from any
-                  app. It takes arguments, like <code>watch &lt;PR link&gt;</code>,
-                  <code>branch NM-1234</code> or <code>kill 5173</code>. Recent commands come first,
-                  and one that can’t run says why.
+                  Every action is searchable: <kbd>⌘K</kbd> in the app, or <kbd>⌘⇧Space</kbd> from
+                  any app. Trigger a build, re-run a pipeline, move a ticket, watch a PR by pasting
+                  its link, <code>kill 5173</code>, <code>branch NM-1234</code>. Actions that change
+                  something still ask first.
                 </p>
               </div>
-              <div class="shot">
-                <img
-                  src="img/readme-palette.webp"
-                  width="1600"
-                  height="1017"
-                  loading="lazy"
-                  alt="The command palette open over the app, listing matching actions with their shortcuts."
-                />
+              <div class="shot shot-video">
+                <video
+                  class="demo"
+                  data-demo
+                  muted
+                  loop
+                  playsinline
+                  preload="none"
+                  width="1240"
+                  height="820"
+                  poster="img/demo-palette.webp"
+                  aria-label="Demo: the command palette finds actions as you type and opens Start work on a ticket."
+                >
+                  <source src="video/palette.webm" type="video/webm" />
+                  <source src="video/palette.mp4" type="video/mp4" />
+                </video>
+                <button class="demo-toggle" type="button" hidden>Play</button>
               </div>
             </article>
 
@@ -696,7 +781,10 @@
               <p>
                 No. There’s no telemetry and no DevDock server. It talks only to the services you
                 set up (Jira, Bitbucket, Jenkins, GitHub, GitLab), at the addresses you enter, using
-                tokens stored in your system’s keychain.
+                tokens stored in your system’s keychain — plus a daily look at its own GitHub
+                releases for updates. The AI features send text only to the provider whose key you
+                added (Anthropic, OpenAI or Google), only after you see it and press Send; a PR
+                summary includes file names and line counts, never your code.
               </p>
             </details>
             <details>
@@ -706,10 +794,12 @@
             <details>
               <summary>How do I update or uninstall it?</summary>
               <p>
-                To update, download the new version and install it over the old one; your settings
-                stay. To uninstall, drag DevDock from Applications to the Bin on a Mac, or use
-                Settings → Apps on Windows. To remove its data first, use Settings → Data → Clear
-                all data in DevDock.
+                DevDock checks once a day whether a newer version is out and tells you; Settings →
+                General has Download (it opens the release page) and a switch to turn the check off.
+                Install the new version over the old one; your settings stay. It never installs
+                anything by itself. To uninstall, drag DevDock from Applications to the Bin on a
+                Mac, or use Settings → Apps on Windows. To remove its data first, use Settings →
+                Data → Clear all data in DevDock.
               </p>
             </details>
           </div>

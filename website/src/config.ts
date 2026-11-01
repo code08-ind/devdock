@@ -27,15 +27,17 @@ export interface ReleaseConfig {
 const MB = 1_000_000
 
 export const RELEASE_CONFIG: ReleaseConfig = {
-  available: false,
-  version: '0.1.0',
-  // Measured for 0.1.0: DMGs from README "Install", Windows from CI run 40221500313. Once a
-  // release is published, releases.json gives the exact sizes.
+  // v0.2.0 is the first public release (owner, 2026-11-01). The site goes live after it is
+  // published, so /releases/latest/download/ links resolve.
+  available: true,
+  version: '0.2.0',
+  // Measured on the 2026-11-01 release build (draft); releases.json gives the exact sizes of the
+  // published release at build time.
   sizes: {
-    'mac-arm64': 103.5 * MB,
-    'mac-x64': 106.2 * MB,
-    'win-setup': 98.2 * MB,
-    'win-portable': 98.0 * MB,
+    'mac-arm64': 108.8 * MB,
+    'mac-x64': 112.0 * MB,
+    'win-setup': 105.7 * MB,
+    'win-portable': 105.5 * MB,
   },
   manifestPath: 'releases.json',
 }

@@ -857,6 +857,43 @@ h3 {
   border-radius: 11px;
 }
 
+/* Demo clips (initDemos): the video, and its Play / Pause button over the bottom-right corner. */
+.shot-video {
+  position: relative;
+}
+
+.shot-video .demo {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 11px;
+  background: var(--muted);
+}
+
+.shot-narrow {
+  max-width: 420px;
+  margin-inline: auto;
+}
+
+.demo-toggle {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  min-height: 32px;
+  padding: 4px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--foreground);
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.demo-toggle:hover {
+  background: var(--muted);
+}
+
 .shot-dark {
   display: none;
 }
