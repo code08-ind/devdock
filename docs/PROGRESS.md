@@ -150,9 +150,13 @@ docs-only pushes.
   Done 2026-11-01 (quiet mode: screenshots render without visible windows): 12 refreshed + 3 new
   (`readme-settings-ai`, `readme-ai`, `readme-agent`), all looked at. The agent shot is Start work
   offering "Start Claude Code now" (real DevDock UI) rather than a fake CLI's output in a tab.
-- [ ] **T14** Website refresh: `sh website/scripts/images.sh` after T13, `node
+- [x] **T14** Website refresh: `sh website/scripts/images.sh` after T13, `node
   website/scripts/og-image.mjs` if the card changes; final copy read (features from T6/T7, signing
   status from T8); Lighthouse + axe on the built site.
+  Done 2026-11-01: `images.sh` (13 images from T13); OG card unchanged (no new copy on it);
+  copy: Start work now names the agent CLIs (no T6/T7 features yet; signing undecided, so the
+  install help stays). Website build ok; Vitest 31/31; Playwright (Chrome, headless) site + axe 20
+  passed / 4 skipped (opt-in screenshots); Lighthouse mobile 98/100/100/100, desktop 100/100/100/100.
 - [ ] **T15** Docs final pass: README walk-through against the app top to bottom; CHANGELOG
   "Unreleased" → `0.1.0` notes; SPEC / DECISIONS / BUILD-PROMPTS consistent; THIRD_PARTY_NOTICES
   lists every bundled dependency (incl. `@anthropic-ai/sdk`, xterm, node-pty, any T6 SDKs).
@@ -806,3 +810,4 @@ Next step: owner review → merge `p7-providers` into `main`.
 | 2026-11-01 | T10 | Whole-product QA in demo mode: audit extended (GitHub/GitLab, terminal, dialogs, 16 Settings sections, both palettes; 263 screenshots reviewed), new axe + keyboard tests for the T4/T5 UI. Fixed: Home Builds copy, Builds watch field at 18 px, "Paste key" for the API key, quiet e2e windows let clicks through, branch-switch follower ordering, crash logging, two test races. lint 0; vitest 938 / 1 skipped; e2e 72 / 5 skipped; audit passed. | T11 |
 | 2026-11-01 | T11 | Code review (Standards + Spec, parallel) of 2b8cfff...HEAD: T11a cleanups, T11b CI actions in the palette, T11c terminal tab close confirmation (owner chose "ask only if something runs"). lint 0; vitest 940 / 1 skipped; e2e 74 / 5 skipped (full run), then terminal + a11y + agents 12/12 after a React Compiler lint fix. | T12 |
 | 2026-11-01 | T13 | README screenshots refreshed in quiet mode + 3 new (Settings → AI, AI preview, Start work offering an agent); README terminal copy updated for the T11c close prompt. | T14 |
+| 2026-11-01 | T14 | Website images regenerated, agent-CLI line in the Tickets tour; build, Vitest 31, Playwright + axe 20, Lighthouse mobile 98/100/100/100, desktop 100 ×4. | T15 |
