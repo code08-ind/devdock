@@ -51,6 +51,7 @@ const ctx = (over: Partial<CommandContext> = {}): CommandContext => ({
   openTerminal: vi.fn(),
   agent: null,
   aiPrs: [],
+  aiName: 'Claude',
   ...over,
 })
 

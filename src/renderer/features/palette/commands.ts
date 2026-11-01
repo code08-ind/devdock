@@ -172,9 +172,12 @@ export interface CommandContext {
   aiPrs: readonly { key: string; label: string }[]
   /**
    * Opens the AI dialog (preview, then Send) for the standup or a PR's status note. Left out
-   * where the dialog can't show, or when there is no Anthropic key and demo mode is off.
+   * where the dialog can't show, or when there is no key for the active AI provider and demo
+   * mode is off.
    */
   ai?: (request: { feature: 'standup' } | { feature: 'pr-summary'; key: string }) => unknown
+  /** The active AI provider's assistant ("Claude", "GPT", "Gemini"), for the titles. */
+  aiName: string
 }
 
 /**
@@ -268,23 +271,23 @@ function repoCommands(ctx: CommandContext): Command[] {
 }
 
 /** P7-C-B: the AI actions with your own key (SPEC 7: every action from the palette). */
-function aiCommands(ctx: Pick<CommandContext, 'ai' | 'aiPrs'>): Command[] {
+function aiCommands(ctx: Pick<CommandContext, 'ai' | 'aiPrs' | 'aiName'>): Command[] {
   const ai = ctx.ai
   if (!ai) return []
   return [
     {
       id: 'ai:standup',
-      title: 'Polish the standup with Claude…',
+      title: `Polish the standup with ${ctx.aiName}…`,
       group: 'Utilities',
       inMain: true,
-      keywords: ['ai', 'claude', 'standup', 'polish', 'daily'],
+      keywords: ['ai', 'claude', 'gpt', 'openai', 'gemini', 'standup', 'polish', 'daily'],
       run: () => ai({ feature: 'standup' }),
     },
     ...ctx.aiPrs.map<Command>((p) => ({
       id: `ai:pr-summary:${p.key}`,
-      title: `Draft a status note for ${p.label} with Claude…`,
+      title: `Draft a status note for ${p.label} with ${ctx.aiName}…`,
       group: 'Pull requests',
-      keywords: ['ai', 'claude', 'status', 'note', 'summary', 'pr'],
+      keywords: ['ai', 'claude', 'gpt', 'openai', 'gemini', 'status', 'note', 'summary', 'pr'],
       inMain: true,
       run: () => ai({ feature: 'pr-summary', key: p.key }),
     })),

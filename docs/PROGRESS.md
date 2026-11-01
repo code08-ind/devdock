@@ -89,6 +89,14 @@ docs-only pushes.
   prepare → preview → Send design, keys in the keychain, provider + model picker in Settings → AI,
   demo fixtures, tests; record the client choice (official SDK vs plain HTTP via HttpClient) in
   DECISIONS.
+  Branch `t6-openai-gemini` (2026-11-01; owner answers in DECISIONS "T6"):
+  - [x] **T6a** main: provider-aware models + date-aware prices, per-provider keys, `AiBackend`
+    (Anthropic SDK; OpenAI + Gemini over HTTP), demo fixtures. Evidence: `ai-providers.test.ts`
+    (10), `ai.test.ts`, diagnostics tests.
+  - [x] **T6b** UI: Settings → AI provider / key / model / test, assistant names in buttons,
+    palette and preview, Diagnostics rows. Evidence: e2e `ai.spec.ts` "T6: switching to OpenAI or
+    Google…" (5/5 AI specs).
+  - [ ] **T6c** docs + website copy, code review, full checks; merge when the owner says.
 - [ ] **T7** **True PR summary**: load the PR description and a bounded diff stat from Bitbucket,
   GitHub and GitLab; the AI status note becomes a summary when they're there.
 - [ ] **T8** 🧑 **Code signing decision**, then wire it: macOS Apple Developer Program (USD 99/yr)
@@ -826,3 +834,4 @@ Next step: owner review → merge `p7-providers` into `main`.
 | 2026-11-01 | T14 | Website images regenerated, agent-CLI line in the Tickets tour; build, Vitest 31, Playwright + axe 20, Lighthouse mobile 98/100/100/100, desktop 100 ×4. | T15 |
 | 2026-11-01 | T15 | Docs final pass: README, CHANGELOG (one 0.1.0 entry), SPEC (T5/T11), BUILD-PROMPTS pointer, notices ship every license file (SDK Apache-2.0 corrected). lint 0; vitest 940 / 1; build ok. | T16 |
 | 2026-11-01 | T16 | Full checks + dist (arm64 108.8 MB, x64 112.0 MB) + packaged smoke from the DMG (new opt-in smoke.spec, 1 passed; data folder backed up and restored). lint 0; vitest 940 / 1; e2e 74 / 6 skipped. | T17 (owner) |
+| 2026-11-01 | T6a + T6b | Branch t6-openai-gemini: OpenAI + Gemini behind the same preview → Send, one active provider (owner), plain HTTP (owner), 3 models each, date-aware prices. vitest 950 / 1; lint 0; ai.spec 5/5. | T6c |

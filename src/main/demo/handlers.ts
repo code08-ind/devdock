@@ -1,5 +1,5 @@
 import { http, HttpResponse, type RequestHandler } from 'msw'
-import { anthropicHandlers } from './anthropic'
+import { aiHandlers } from './ai'
 import { bitbucketHandlers } from './bitbucket'
 import { githubHandlers } from './github'
 import { gitlabHandlers } from './gitlab'
@@ -27,6 +27,6 @@ export function demoHandlers({
     ...jenkinsHandlers({ speed: jenkinsSpeed }),
     ...githubHandlers({ speed: jenkinsSpeed }),
     ...gitlabHandlers({ speed: jenkinsSpeed }),
-    ...anthropicHandlers,
+    ...aiHandlers,
   ]
 }

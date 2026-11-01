@@ -117,6 +117,9 @@ export const SECRET_KEYS = [
   'gitlab.token',
   /** P7-C-B: the user's own Anthropic API key (Settings → AI). */
   'anthropic.key',
+  /** T6: the user's own OpenAI and Google (Gemini) API keys (Settings → AI). */
+  'openai.key',
+  'google.key',
 ] as const
 export const SecretKeySchema = z.enum(SECRET_KEYS)
 export type SecretKey = z.infer<typeof SecretKeySchema>

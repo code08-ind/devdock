@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { TriangleAlert } from 'lucide-react'
 import {
   AI_FEATURE_LABELS,
+  AI_PROVIDER_INFO,
   aiModel,
   formatUsd,
   type AiPrepare,
@@ -22,7 +23,7 @@ type Stage =
   | { kind: 'error'; error: unknown; preview?: AiPreview }
 
 /**
- * One Claude request (P7-C-B): main prepares it, this shows exactly what will be sent, to which
+ * One AI request (P7-C-B; any provider since T6): main prepares it, this shows exactly what will be sent, to which
  * model and about what it costs, and sends it only when the user presses Send. The answer can
  * be copied, or handed to the caller with `onUse` (e.g. into the lesson being edited).
  */
@@ -80,7 +81,9 @@ export function AiDialog({
               disabled={sending}
               onClick={() => stage.kind === 'preview' && void send(stage.preview)}
             >
-              {sending ? 'Sending…' : 'Send to Claude'}
+              {sending
+                ? 'Sending…'
+                : `Send to ${AI_PROVIDER_INFO[stage.preview.provider].assistant}`}
             </Button>
           ) : null}
           {stage.kind === 'done' && onUse ? (
@@ -113,7 +116,7 @@ function Preview({ preview }: { preview: AiPreview }) {
       <p>
         {preview.demo
           ? 'Demo mode: a sample answer is made on this computer. Nothing is sent.'
-          : 'Nothing has been sent yet. Press Send to send the text below to Anthropic with your API key.'}
+          : `Nothing has been sent yet. Press Send to send the text below to ${AI_PROVIDER_INFO[preview.provider].name} with your API key.`}
       </p>
       <KeyValue
         items={[
@@ -140,11 +143,14 @@ function Preview({ preview }: { preview: AiPreview }) {
 }
 
 function Answer({ preview, result }: { preview: AiPreview; result: AiResult }) {
-  const other = result.model !== preview.model
+  // Anthropic's fallback may answer a declined request with another model. (Other providers
+  // name a dated snapshot of the chosen model, which isn't a different one.)
+  const other = preview.fallback && result.model !== preview.model
+  const assistant = AI_PROVIDER_INFO[preview.provider].assistant
   return (
     <div className="stack">
       <div role="status">
-        <CodeBlock code={result.text} label="Claude's answer" />
+        <CodeBlock code={result.text} label={`${assistant}'s answer`} />
       </div>
       {result.truncated ? (
         <div className="notice notice-warning">

@@ -1,4 +1,5 @@
 import { mkdtempSync } from 'node:fs'
+import { activeModel, AI_PROVIDER_INFO } from '../../src/shared/ai'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { vi, type Mock } from 'vitest'
@@ -182,8 +183,9 @@ export async function handlerSetup(
     platform: 'darwin',
     ai: new AiService({
       http,
-      key: () => secrets.get('anthropic.key'),
-      model: () => settings.get().ai.model,
+      // As in main: the active provider's key and model.
+      key: (provider) => secrets.get(AI_PROVIDER_INFO[provider].secret),
+      model: () => activeModel(settings.get().ai),
     }),
     settings,
     secrets,

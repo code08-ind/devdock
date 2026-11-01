@@ -16,6 +16,8 @@ const SECRET_LABELS: Record<SecretKey, string> = {
   'jira.token': 'Jira API token or personal access token',
   'github.token': 'GitHub personal access token (fine-grained or classic)',
   'anthropic.key': 'Anthropic API key (for the AI features)',
+  'openai.key': 'OpenAI API key (for the AI features)',
+  'google.key': 'Google Gemini API key (for the AI features)',
   'gitlab.token': 'GitLab personal access token',
 }
 

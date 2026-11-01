@@ -135,3 +135,48 @@ test('from the palette (SPEC 7): polish the standup and a PR status note open th
   await expect(note.getByRole('status')).toContainText('Demo answer: this PR adds')
   expect(errors).toEqual([])
 })
+
+test('T6: switching to OpenAI or Google — their key, models and test; the buttons and preview follow', async ({
+  launched,
+}) => {
+  const { win } = launched
+  await openSettings(win)
+  const ai = win.getByRole('region', { name: 'AI' })
+  const model = ai.getByRole('combobox', { name: 'Model' })
+
+  await ai.locator('label.segment', { hasText: 'OpenAI' }).click()
+  await expect(
+    ai.getByLabel('OpenAI API key (for the AI features)', { exact: true }),
+  ).toHaveAttribute('type', 'password')
+  await expect(ai).toContainText('platform.openai.com')
+  await expect(model).toHaveValue('gpt-6.1-sol')
+  await expect(model.locator('option')).toHaveText([
+    /^GPT-6.1 Sol — \$2 \/ \$10/,
+    /^GPT-6 Astra — \$10 \/ \$50/,
+    /^GPT-6 Luna — \$0.1 \/ \$0.5/,
+  ])
+  await ai.getByRole('button', { name: 'Test connection' }).click()
+  await expect(ai.getByRole('status')).toContainText('Key works (HTTP 200): 3 models available')
+
+  // The PR status note now goes to GPT (demo: answered locally).
+  await nav(win, 'Pull requests')
+  await win.getByRole('button', { name: /^Draft a status note for web-app #412 with GPT$/ }).click()
+  const dialog = win.getByRole('dialog', { name: 'Draft a status note' })
+  await expect(dialog).toContainText('GPT-6.1 Sol')
+  await dialog.getByRole('button', { name: 'Send to GPT' }).click()
+  await expect(dialog.getByRole('status')).toContainText('Demo answer: this PR adds')
+  await dialog.getByRole('button', { name: 'Close' }).click()
+
+  // Google: its own model list (the default kept for OpenAI when switching back).
+  await openSettings(win)
+  await ai.locator('label.segment', { hasText: 'Google' }).click()
+  await expect(model).toHaveValue('gemini-3.8-flash')
+  await model.selectOption('gemini-4-argon')
+  await ai.locator('label.segment', { hasText: 'OpenAI' }).click()
+  await expect(model).toHaveValue('gpt-6.1-sol')
+  await ai.locator('label.segment', { hasText: 'Google' }).click()
+  await expect(model).toHaveValue('gemini-4-argon')
+  await nav(win, 'Utilities')
+  await win.locator('label.segment', { hasText: 'Standup' }).click()
+  await expect(win.getByRole('button', { name: 'Polish with Gemini' })).toBeVisible()
+})

@@ -1,8 +1,10 @@
 /** Diagnostics screen data and the redacted export (P6.04). */
+import { AI_PROVIDER_INFO } from '@shared/ai'
 import { readFile } from 'node:fs/promises'
 import {
   credentialOf,
   SERVICES,
+  isAiKey,
   type Diagnostics,
   type ProxyRoute,
   type ServiceName,
@@ -217,7 +219,7 @@ export function diagnosticsReport(r: ReportInput): string {
 /** The address a service is reached at; GitHub / GitLab default to the public site when on. */
 function siteOf(settings: Settings, key: (typeof SERVICES)[number][1]): string {
   // Fixed endpoint (the key decides whether it's used; the route is worth knowing either way).
-  if (key === 'anthropic') return 'https://api.anthropic.com'
+  if (isAiKey(key)) return AI_PROVIDER_INFO[key].origin
   if (key === 'github' || key === 'gitlab') {
     return settings[key].enabled ? providerWeb(settings, key) : ''
   }
