@@ -15,7 +15,7 @@ Contract docs: `docs/SPEC.md`, `docs/UI-THEMES.md`, `docs/BUILD-PROMPTS.md` (pha
 | Field        | Value                                                         |
 | ------------ | ------------------------------------------------------------- |
 | Phase        | **Phase 7 — final wrap-up day is 2026-10-31.** Everything planned is merged on `main` (29328bd, pushed): P7-A terminal, P7-B GitHub/GitLab, P7-C-A agent CLIs, P7-C-B AI with your own key (Claude), P7-D website v2, P7-E accessibility (automated part). |
-| Next step    | **Owner: publish the v0.1.0 draft (T18), T19 Vercel, T17 real accounts, T12 VoiceOver/NVDA, T8/T9 decisions.** v0.1.0 tagged (b1eb013); T6 + T7 merged on main for v0.2.0; T20 cleanup next (owner confirms the list). |
+| Next step    | **Owner: publish the v0.1.0 draft (T18), T19 Vercel, T17 real accounts, T12 VoiceOver/NVDA, T8/T9 decisions.** v0.1.0 tagged (b1eb013); T6 + T7 merged on main for v0.2.0; T20 done (worktrees removed). |
 | Blockers     | None                                                          |
 | Last updated | 2026-11-01                                                    |
 
@@ -204,9 +204,11 @@ docs-only pushes.
   Lighthouse, axe, links). Optionally link it from aryangarg.com.
 
 ### G. Housekeeping
-- [ ] **T20** 🧑 (ask first) Remove merged worktrees under `.claude/worktrees/` (p7-terminal,
+- [x] **T20** 🧑 (ask first) Remove merged worktrees under `.claude/worktrees/` (p7-terminal,
   p7-providers, p7-website, p7-website-v2) and merged local branches (p7-agents, p7-ai,
   worktree-agent-*); nothing unmerged is on them.
+  Done 2026-11-01 (owner chose): the 4 worktrees removed (clean, merged; ~1.9 GB). The local
+  branches and origin/t6-openai-gemini, origin/t7-pr-summary are kept (owner's choice).
 
 Order (owner, 2026-11-01: **T6 and T7 move to after v0.1.0**, as a follow-up release): T4–T5 →
 T10–T12 → T13–T15 → T16–T17 → T18 → T19 → T20 → then T6, T7 (v0.2.0). T8/T9 decisions in parallel.
@@ -848,3 +850,4 @@ Next step: owner review → merge `p7-providers` into `main`.
 | 2026-11-01 | T18 prep | Owner: tag v0.1.0. CI on main had failed on windows-latest since T11c (terminal close asked on every Windows tab — node-pty reports the terminal type there) and once on macOS (a test pressed Enter before the palette listed the command): both fixed; CHANGELOG 0.1.0 dated. Tag after CI is green. | T18 |
 | 2026-11-01 | T18 | CI green on main (b1eb013: macOS, Windows, website). Tag v0.1.0 pushed; release workflow passed (check, macOS + Windows builds) and made the DRAFT release "DevDock 0.1.0": DevDock-arm64.dmg 108.8 MB, DevDock-x64.dmg 112.0 MB, DevDock-Setup.exe 105.7 MB, DevDock-Portable.exe 105.5 MB, SHA256SUMS.txt. Owner reviews and publishes; then T19 (Vercel redeploy) and merge T6 + T7 for v0.2.0. | owner: publish |
 | 2026-11-01 | v0.2.0 prep | Owner: publish v0.1.0 later; meanwhile T6 + T7 merged into main (branch t7-pr-summary, which carries t6-openai-gemini). The v0.1.0 tag stays on b1eb013. | checks, then T20 |
+| 2026-11-01 | T6+T7 merged, T20 | Merged main: lint 0; vitest 961 / 1 skipped; e2e 75 / 7 skipped; website Vitest 31. T20: 4 worktrees removed (branches kept, owner). | owner: publish v0.1.0, T19, T17, T12, T8/T9 |
