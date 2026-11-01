@@ -15,7 +15,7 @@ Contract docs: `docs/SPEC.md`, `docs/UI-THEMES.md`, `docs/BUILD-PROMPTS.md` (pha
 | Field        | Value                                                         |
 | ------------ | ------------------------------------------------------------- |
 | Phase        | **Phase 7 — final wrap-up day is 2026-10-31.** Everything planned is merged on `main` (29328bd, pushed): P7-A terminal, P7-B GitHub/GitLab, P7-C-A agent CLIs, P7-C-B AI with your own key (Claude), P7-D website v2, P7-E accessibility (automated part). |
-| Next step    | **T16 (full checks + packaged-app smoke on macOS)**; T12 🧑 VoiceOver/NVDA whenever the owner has time. T4, T5, T10, T11, T13–T15 done 2026-11-01. |
+| Next step    | **Owner: T17 (real accounts and machines), T12 (VoiceOver/NVDA), T8/T9 decisions, then T18 release.** T4, T5, T10, T11, T13–T16 done 2026-11-01. |
 | Blockers     | None                                                          |
 | Last updated | 2026-11-01                                                    |
 
@@ -169,8 +169,14 @@ docs-only pushes.
   DECISIONS had said MIT, corrected). lint 0; vitest 940 / 1 skipped; build ok.
 
 ### F. Release and go live
-- [ ] **T16** Full checks (all of the commands above) + packaged-app smoke on macOS (open the
+- [x] **T16** Full checks (all of the commands above) + packaged-app smoke on macOS (open the
   arm64 DMG's app: demo mode, terminal runs a real shell, AI dialog, quit stops shells).
+  Done 2026-11-01: lint 0; vitest 940 / 1 skipped; e2e 74 / 6 skipped (quiet); `npm run dist`
+  exit 0 — `DevDock-arm64.dmg` 108.8 MB, `DevDock-x64.dmg` 112.0 MB. Packaged smoke: new opt-in
+  `tests/e2e/smoke.spec.ts` against the app inside the mounted arm64 DMG (read-only) — demo mode,
+  a real login shell runs a command (checked by the file it writes: the packaged terminal draws on
+  the GPU, no DOM text), the AI preview answers in demo, quitting stops the shell: 1 passed. The
+  app's data folder was backed up first and restored byte for byte after.
 - [ ] **T17** 🧑 Owner checks on real accounts and machines: a real Anthropic key end to end (and
   OpenAI/Gemini after T6); own oh-my-zsh prompt/plugins in the terminal (Light/Dark/Slate); Windows
   Setup + Portable, PowerShell terminal and an agent CLI on a real Windows PC.
@@ -819,3 +825,4 @@ Next step: owner review → merge `p7-providers` into `main`.
 | 2026-11-01 | T13 | README screenshots refreshed in quiet mode + 3 new (Settings → AI, AI preview, Start work offering an agent); README terminal copy updated for the T11c close prompt. | T14 |
 | 2026-11-01 | T14 | Website images regenerated, agent-CLI line in the Tickets tour; build, Vitest 31, Playwright + axe 20, Lighthouse mobile 98/100/100/100, desktop 100 ×4. | T15 |
 | 2026-11-01 | T15 | Docs final pass: README, CHANGELOG (one 0.1.0 entry), SPEC (T5/T11), BUILD-PROMPTS pointer, notices ship every license file (SDK Apache-2.0 corrected). lint 0; vitest 940 / 1; build ok. | T16 |
+| 2026-11-01 | T16 | Full checks + dist (arm64 108.8 MB, x64 112.0 MB) + packaged smoke from the DMG (new opt-in smoke.spec, 1 passed; data folder backed up and restored). lint 0; vitest 940 / 1; e2e 74 / 6 skipped. | T17 (owner) |

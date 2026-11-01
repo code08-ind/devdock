@@ -262,8 +262,10 @@ npm run dist         # installers: dmg (arm64 + x64) on macOS, NSIS + portable o
 npm run screenshots  # regenerates docs/screenshots (demo mode)
 ```
 
-Opt-in checks: `DEVDOCK_AUDIT_DIR=<folder> npx playwright test audit` (every screen in every
-look) and `DEVDOCK_PERF=1 npx playwright test perf` (idle CPU and memory with 5 repos and 10
+Opt-in checks: `DEVDOCK_SMOKE_APP=<path>/DevDock.app npx playwright test smoke` (the packaged
+app from a DMG: demo mode, a real shell, the AI preview, quit stops the shell — it uses the app's
+own data folder, so back that up first), `DEVDOCK_AUDIT_DIR=<folder> npx playwright test audit`
+(every screen in every look) and `DEVDOCK_PERF=1 npx playwright test perf` (idle CPU and memory with 5 repos and 10
 watched items; last run 0.34 % CPU, see DECISIONS P6-C).
 
 ### Checking "stop a process by port" on Windows
