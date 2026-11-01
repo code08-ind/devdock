@@ -17,10 +17,12 @@ export const ciKeys = {
 }
 
 /** My recent runs: at the foreground interval while focused, and on focus (like the PR lists). */
-export function useCiRuns(provider: CiProvider) {
+/** My recent runs on a provider; `enabled: false` asks for nothing (e.g. the palette, CI off). */
+export function useCiRuns(provider: CiProvider, enabled = true) {
   const intervalMs = (useSettings().data?.polling.foregroundSec ?? 60) * 1000
   return useQuery({
     queryKey: ciKeys.runs(provider),
+    enabled,
     queryFn: () => unwrap(bridge.ci.runs({ provider })),
     staleTime: intervalMs,
     refetchInterval: intervalMs,

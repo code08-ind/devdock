@@ -198,6 +198,7 @@ export function App() {
     prAction: commandDialogs.prAction,
     ai: (request) => void commandDialogs.ai(request),
     trigger: commandDialogs.trigger,
+    ciAction: commandDialogs.ciAction,
     goto: setView,
     requestAction,
     watch: watchLink,

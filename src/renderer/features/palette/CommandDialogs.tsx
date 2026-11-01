@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import type { AiPrepare } from '@shared/ai'
 import type { PrAction, PullRequest } from '@shared/bitbucket'
+import type { CiAction, CiRun } from '@shared/ci'
 import type { BranchBuild } from '@shared/jenkins'
 import { queryClient } from '../../lib/devdock'
 import { useAction } from '../../lib/useAction'
 import { standupQuery } from '../../lib/utilities'
 import { ConfirmDialog } from '../../ui/Dialog'
 import { AiDialog } from '../ai/AiDialog'
+import { CiActionDialog, type CiActing } from '../builds/CiRuns'
 import { TriggerDialog } from '../builds/TriggerDialog'
 import { PrActionDialog } from '../prs/PrActionDialog'
 import type { ConfirmRequest } from './commands'
@@ -25,6 +27,7 @@ export function useCommandDialogs() {
   const [acting, setActing] = useState<{ pr: PullRequest; action: PrAction } | null>(null)
   const [asking, setAsking] = useState<AiPrepare | null>(null)
   const [triggering, setTriggering] = useState<BranchBuild | null>(null)
+  const [ciActing, setCiActing] = useState<CiActing | null>(null)
   const ai = async (request: AiCommandRequest) => {
     if (request.feature === 'pr-summary') {
       setAsking({ feature: 'pr-summary', ref: request.pr.ref })
@@ -57,6 +60,7 @@ export function useCommandDialogs() {
       ) : null}
       {asking ? <AiDialog request={asking} onClose={() => setAsking(null)} /> : null}
       {triggering ? <TriggerDialog row={triggering} onClose={() => setTriggering(null)} /> : null}
+      {ciActing ? <CiActionDialog acting={ciActing} onClose={() => setCiActing(null)} /> : null}
     </>
   )
   return {
@@ -64,6 +68,7 @@ export function useCommandDialogs() {
     prAction: (pr: PullRequest, action: PrAction) => setActing({ pr, action }),
     ai,
     trigger: setTriggering,
+    ciAction: (run: CiRun, action: CiAction) => setCiActing({ run, action }),
     dialogs,
   }
 }

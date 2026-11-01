@@ -35,6 +35,7 @@ const ctx = (over: Partial<CommandContext> = {}): CommandContext => ({
   branchBuilds: [],
   watchDeploy: vi.fn(),
   ticketMoves: [],
+  ciActions: [],
   moveTicket: vi.fn(),
   configured: { prs: true, jenkins: true, jira: true },
   prActions: [],
@@ -372,6 +373,33 @@ describe('palette completeness (P6.01)', () => {
     expect(d.title).toBe('Watch the deploy of feature/DD-1')
     void d.run()
     expect(c.watchDeploy).toHaveBeenCalledWith('feature/DD-1')
+  })
+
+  it('CI actions (T11): one command per allowed action, through its dialog, where one can show', () => {
+    const ciActions = [
+      { key: 'gh-1', action: 'retry' as const, title: 'Re-run failed jobs: storefront CI #345' },
+      {
+        key: 'gl-2',
+        action: 'cancel' as const,
+        title: 'Cancel pipeline: infra-tools Pipeline #77',
+      },
+    ]
+    const ids = (c: CommandContext) =>
+      buildCommands(c, VIEWS)
+        .filter((x) => x.id.startsWith('ci:'))
+        .map((x) => x.id)
+    expect(ids(ctx({ ciActions }))).toEqual([])
+    const ciAction = vi.fn()
+    const c = ctx({ ciActions, ciAction })
+    expect(ids(c)).toEqual(['ci:retry:gh-1', 'ci:cancel:gl-2'])
+    const retry = buildCommands(c, VIEWS).find((x) => x.id === 'ci:retry:gh-1')!
+    expect(retry).toMatchObject({
+      title: 'Re-run failed jobs: storefront CI #345…',
+      group: 'Builds',
+      inMain: true,
+    })
+    void retry.run()
+    expect(ciAction).toHaveBeenCalledWith('gh-1', 'retry')
   })
 
   it('move a ticket (T5): asks first, only where a dialog can show', () => {

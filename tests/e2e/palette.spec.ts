@@ -155,3 +155,24 @@ test('T4: trigger a build from the palette window opens its dialog in the main w
   await dialog.getByRole('button', { name: 'Cancel' }).click()
   await expect(dialog).toBeHidden()
 })
+
+test('T11: CI actions from the palette window open their confirmation in the main window', async ({
+  launched,
+}) => {
+  const { app, win } = launched
+  await win.evaluate(() =>
+    window.devdock.settings.update({ github: { enabled: true }, features: { ciActions: true } }),
+  )
+  await callHook(app, 'togglePalette')
+  const pw = await windowFor(app, 'palette.html')
+  await pw.getByRole('combobox', { name: 'Command' }).fill('re-run failed')
+  await expect(pw.getByRole('option').first()).toContainText(
+    'Re-run failed jobs: storefront CI #345…',
+  )
+  await pw.keyboard.press('Enter')
+  await expect.poll(() => callHook(app, 'isPaletteVisible')).toBe(false)
+  const dialog = win.getByRole('dialog', { name: 'Re-run failed jobs: storefront CI #345?' })
+  await expect(dialog).toBeVisible()
+  await dialog.getByRole('button', { name: 'Cancel' }).click()
+  await expect(dialog).toBeHidden()
+})

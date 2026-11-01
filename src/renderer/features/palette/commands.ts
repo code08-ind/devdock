@@ -135,6 +135,13 @@ export interface CommandContext {
     triggers: boolean
     deploys: boolean
   }[]
+  /**
+   * CI actions on my recent and watched GitHub Actions runs / GitLab pipelines (Settings →
+   * Actions → CI actions on), each with its title ("Re-run failed jobs: storefront CI #345").
+   */
+  ciActions: readonly { key: string; action: 'retry' | 'cancel'; title: string }[]
+  /** Opens the CI action's confirmation dialog; left out where it can't be shown. */
+  ciAction?: (key: string, action: 'retry' | 'cancel') => unknown
   /** Opens the trigger dialog (parameters, confirmation); left out where it can't be shown. */
   trigger?: (job: string) => unknown
   /** Watches the deploy job's next build for a branch (SPEC 6.4). */
@@ -366,7 +373,10 @@ function serverCommands(
   ]
 }
 
-/** SPEC 6.4 from the palette: trigger a build (its dialog), watch a branch's deploy. */
+/**
+ * SPEC 6.4 from the palette: trigger a build (its dialog), watch a branch's deploy; SPEC 6.3a
+ * CI actions on GitHub / GitLab runs (their confirmation dialog).
+ */
 function branchBuildCommands(ctx: CommandContext): Command[] {
   const trigger = ctx.trigger
   const triggers = trigger
@@ -391,7 +401,18 @@ function branchBuildCommands(ctx: CommandContext): Command[] {
     inMain: true,
     run: () => ctx.watchDeploy(branch),
   }))
-  return [...triggers, ...deploys]
+  const ciAction = ctx.ciAction
+  const ci = ciAction
+    ? ctx.ciActions.map<Command>((c) => ({
+        id: `ci:${c.action}:${c.key}`,
+        title: `${c.title}…`,
+        group: 'Builds',
+        keywords: ['github', 'gitlab', 'actions', 'pipeline', 'ci', c.action, 'rerun'],
+        inMain: true,
+        run: () => ciAction(c.key, c.action),
+      }))
+    : []
+  return [...triggers, ...deploys, ...ci]
 }
 
 export function buildCommands(ctx: CommandContext, views: readonly View[]): Command[] {

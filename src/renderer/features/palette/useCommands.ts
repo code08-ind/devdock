@@ -3,10 +3,17 @@ import type { AgentLaunch } from '@shared/agents'
 import { usePreferredAgent } from '../../lib/agents'
 import { useAiAvailable } from '../../lib/ai'
 import { PROVIDER_ACTIONS, providerOf, type PrAction, type PullRequest } from '@shared/bitbucket'
-import { ciRunLabel } from '@shared/ci'
+import {
+  CI_ACTION_COPY,
+  CI_ACTIONS,
+  ciActionAllowed,
+  ciRunLabel,
+  type CiAction,
+  type CiRun,
+} from '@shared/ci'
 import { isActive } from '@shared/devserver'
 import { jobLabel, triggerRefusal, type BranchBuild } from '@shared/jenkins'
-import { enabledProviders } from '@shared/settings'
+import { enabledCi, enabledProviders } from '@shared/settings'
 import { VIEWS, type View } from '@shared/channels'
 import type { ActionRequest } from '@shared/repos'
 import type { UtilityRequest } from '@shared/utilities'
@@ -22,7 +29,12 @@ import {
   useRemoveBuildWatch,
 } from '../../lib/jenkins'
 import { useJiraList } from '../../lib/jira'
-import { useCiWatches, useClearFinishedRuns, useRemoveCiWatch } from '../../lib/providers'
+import {
+  useCiRuns,
+  useCiWatches,
+  useClearFinishedRuns,
+  useRemoveCiWatch,
+} from '../../lib/providers'
 import { modLabel } from '../../lib/keyboard'
 import { OPEN_LABELS, useOpenRepo, useRepos } from '../../lib/repos'
 import { ticketMoveConfirm, useAcceptTicketMove, useTicketMoves } from '../../lib/ticketmoves'
@@ -58,6 +70,8 @@ export interface CommandHandlers {
   ai?: (request: AiCommandRequest) => void
   /** The trigger-build dialog (parameters, confirmation), in the same windows. */
   trigger?: (row: BranchBuild) => void
+  /** The CI action confirmation (re-run / retry / cancel), in the same windows. */
+  ciAction?: (run: CiRun, action: CiAction) => void
 }
 
 /**
@@ -114,6 +128,17 @@ export function useCommands(h: CommandHandlers): {
     ...jenkinsWatches.map((w) => ({ key: w.key, label: watchLabel(w), done: w.done, ci: false })),
     ...runWatches.map((w) => ({ key: w.key, label: ciRunLabel(w.run), done: w.done, ci: true })),
   ]
+  // CI actions (Settings → Actions → CI actions): my recent runs and the watched ones.
+  const ciOn = Boolean(settings?.features.ciActions)
+  const ciProviders = settings ? enabledCi(settings) : []
+  const githubRuns = useCiRuns('github', ciOn && ciProviders.includes('github')).data?.runs ?? []
+  const gitlabRuns = useCiRuns('gitlab', ciOn && ciProviders.includes('gitlab')).data?.runs ?? []
+  const ciRuns: CiRun[] = !ciOn
+    ? []
+    : [...githubRuns, ...gitlabRuns, ...runWatches.map((w) => w.run)].filter(
+        (r, i, all) =>
+          ciProviders.includes(r.ref.provider) && all.findIndex((x) => x.key === r.key) === i,
+      )
   const removeRun = useRemoveCiWatch()
   const clearFinishedRuns = useClearFinishedRuns()
   const removeBuild = useRemoveBuildWatch()
@@ -199,6 +224,19 @@ export function useCommands(h: CommandHandlers): {
         ? (job) => {
             const row = branchRows.find((b) => b.job === job)
             if (row) h.trigger?.(row)
+          }
+        : undefined,
+      ciActions: ciRuns.flatMap((run) =>
+        CI_ACTIONS.filter((a) => ciActionAllowed(a, run.state)).map((action) => ({
+          key: run.key,
+          action,
+          title: `${CI_ACTION_COPY[run.ref.provider][action]}: ${ciRunLabel(run)}`,
+        })),
+      ),
+      ciAction: h.ciAction
+        ? (key, action) => {
+            const run = ciRuns.find((r) => r.key === key)
+            if (run) h.ciAction?.(run, action)
           }
         : undefined,
       watchDeploy: (branch) =>

@@ -40,6 +40,7 @@ export function PaletteWindow() {
     prAction: inMain,
     ai: inMain,
     trigger: inMain,
+    ciAction: inMain,
   })
   const shown = useMemo(() => commands.map(handOver), [commands])
   return (

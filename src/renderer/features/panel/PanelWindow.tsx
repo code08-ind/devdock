@@ -84,6 +84,7 @@ export function PanelWindow() {
     prAction: commandDialogs.prAction,
     ai: (request) => void commandDialogs.ai(request),
     trigger: commandDialogs.trigger,
+    ciAction: commandDialogs.ciAction,
     goto,
     requestAction,
     watch,
