@@ -11,6 +11,9 @@ versions follow [Semantic Versioning](https://semver.org/).
   the provider, its key (each in the OS keychain) and model — GPT-6.1 Sol / Astra / Luna,
   Gemini 3.8 Flash / 4 Argon / 3.1 Flash-Lite — with the same preview before anything is sent and
   the cost at the day's price. Demo mode answers for every provider.
+- **PR summary** (T7): the AI "status note" is now a summary of the pull request — its
+  description and changed files (with line counts where the provider gives them) from Bitbucket,
+  GitHub and GitLab, plus where it stands — shown in the preview before anything is sent.
 
 ## [0.1.0] — not released yet (the date is set when it is tagged, T18)
 

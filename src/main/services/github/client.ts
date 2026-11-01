@@ -4,6 +4,10 @@ import {
   type PrList,
   type PrRef,
   type PullRequest,
+  boundChanges,
+  MAX_PR_FILES,
+  type PrChanges,
+  type PrFileChange,
 } from '@shared/bitbucket'
 import {
   LOG_TAIL_BYTES,
@@ -19,7 +23,7 @@ import type { HostConnection } from '@shared/hosting'
 import { GITHUB_WEB } from '@shared/providers'
 import { mapLimit } from '../async'
 import type { HttpClient } from '../http'
-import { obj, text } from '../json'
+import { num, obj, text } from '../json'
 import type { PrBase } from '../bitbucket/adapter'
 import type { ActionResult } from '../bitbucket/client'
 import {
@@ -114,6 +118,14 @@ const RUNS_LIMIT = 40
 interface Me {
   login: string
   name: string
+}
+
+/** File statuses (GitHub); copied / changed / unchanged count as modified. */
+const GITHUB_STATUS: Record<string, PrFileChange['status']> = {
+  added: 'added',
+  removed: 'removed',
+  renamed: 'renamed',
+  modified: 'modified',
 }
 
 export class GitHubClient implements HostClient {
@@ -286,6 +298,23 @@ export class GitHubClient implements HostClient {
     )
     const items = obj(res.body).items
     return (Array.isArray(items) ? items : []).flatMap((i) => repoOfSearchHit(i) ?? [])
+  }
+
+  /** T7: the PR body and up to MAX_PR_FILES files with their line counts. */
+  async changes(ref: PrRef): Promise<PrChanges> {
+    const pulls = `${this.repoUrl(ref)}/pulls/${ref.id}`
+    const [pull, list] = await Promise.all([
+      this.rest.json(pulls),
+      this.rest.json(`${pulls}/files?per_page=${MAX_PR_FILES}`),
+    ])
+    const p = obj(pull.body)
+    const files = (Array.isArray(list.body) ? list.body : []).map(obj).map((f) => ({
+      path: text(f.filename) ?? '(unknown)',
+      status: GITHUB_STATUS[String(f.status)] ?? ('modified' as const),
+      added: num(f.additions),
+      removed: num(f.deletions),
+    }))
+    return boundChanges(text(p.body) ?? '', files, num(p.changed_files))
   }
 
   private async base(ref: PrRef): Promise<PrBase> {

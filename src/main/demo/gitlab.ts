@@ -1,4 +1,5 @@
 import { http, HttpResponse, type RequestHandler } from 'msw'
+import { demoDescription, demoFiles } from './changes'
 import type { HostConfig } from '../services/providers/service'
 import { DEMO_GITLAB } from './origin'
 
@@ -299,6 +300,8 @@ export function gitlabHandlers({ speed = 1 }: { speed?: number } = {}): RequestH
       id: mr.iid * 100,
       iid: mr.iid,
       title: mr.title,
+      description: demoDescription(mr.title),
+      changes_count: String(demoFiles(mr.title).length),
       state: mr.state,
       web_url: `${DEMO_GITLAB}/${mr.project}/-/merge_requests/${mr.iid}`,
       references: { full: `${mr.project}!${mr.iid}` },
@@ -367,6 +370,25 @@ export function gitlabHandlers({ speed = 1 }: { speed?: number } = {}): RequestH
     http.get(`${API}/projects/:project/merge_requests/:iid`, ({ params }) => {
       const mr = findMr(params.project, params.iid)
       return mr ? HttpResponse.json(mrJson(mr, true)) : refused(404, '404 Not found')
+    }),
+    // T7: each file's diff (DevDock counts the +/- lines itself).
+    http.get(`${API}/projects/:project/merge_requests/:iid/diffs`, ({ params }) => {
+      const mr = findMr(params.project, params.iid)
+      if (!mr) return refused(404, '404 Not found')
+      return HttpResponse.json(
+        demoFiles(mr.title).map((f) => ({
+          old_path: f.path,
+          new_path: f.path,
+          new_file: f.status === 'added',
+          deleted_file: f.status === 'removed',
+          renamed_file: f.status === 'renamed',
+          diff: [
+            '@@ -1,1 +1,1 @@',
+            ...Array.from({ length: f.added }, (_, i) => `+line ${i}`),
+            ...Array.from({ length: f.removed }, (_, i) => `-old ${i}`),
+          ].join('\n'),
+        })),
+      )
     }),
     http.get(`${API}/projects/:project/merge_requests/:iid/approvals`, ({ params }) => {
       const mr = findMr(params.project, params.iid)

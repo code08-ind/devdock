@@ -7,6 +7,7 @@ import type {
   PrRef,
   PullRequest,
   RepoRef,
+  PrChanges,
 } from '@shared/bitbucket'
 import { CLOUD_WEB, cloudRepoFromRemote, isCloudHost } from '@shared/prlink'
 import type { Settings } from '@shared/settings'
@@ -57,6 +58,10 @@ export class BitbucketService {
 
   async pr(ref: PrRef): Promise<PullRequest> {
     return this.client().pr(ref)
+  }
+
+  async changes(ref: PrRef): Promise<PrChanges> {
+    return this.client().changes(ref)
   }
 
   /** Review comments on my recent PRs, for agent lessons (P6-F). */

@@ -71,7 +71,7 @@ export function PrRow({
           />
           {aiAvailable ? (
             <IconButton
-              label={`Draft a status note for ${label} with ${assistant}`}
+              label={`Summarise ${label} with ${assistant}`}
               icon={<Sparkles size={16} aria-hidden="true" />}
               onClick={() => setNoting(true)}
             />

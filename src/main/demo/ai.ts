@@ -10,9 +10,10 @@ import { SYSTEM } from '../services/ai/prompts'
 const REPLIES: [system: string, text: string][] = [
   [
     SYSTEM['pr-summary'],
-    'Demo answer: this PR adds the change named in its title. It has one approval and one ' +
-      'reviewer asking for changes; the build is failing on lint. Next step: fix the lint ' +
-      'error and reply to the open thread, then ask for a re-review.',
+    'Demo answer: this PR adds the change described in its description, in the component it ' +
+      'names, its hook and a new test file (four files). It has one approval and one reviewer ' +
+      'asking for changes; the build is failing on lint. Next step: fix the lint error and ' +
+      'reply to the open thread, then ask for a re-review.',
   ],
   [
     SYSTEM.lesson,

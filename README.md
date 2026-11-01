@@ -131,8 +131,8 @@ it (a dev server, an agent), DevDock asks first; quitting DevDock stops them all
 ![Terminal](docs/screenshots/readme-terminal.png)
 
 **AI with your own key** (optional, Settings → AI) — pick a provider (**Anthropic**, **OpenAI**
-or **Google**), add your own API key for it and DevDock can draft a status note for a pull
-request, word a reviewer's comment as a lesson, and tidy your standup. Each request is shown
+or **Google**), add your own API key for it and DevDock can summarise a pull request
+(its description, changed files and where it stands), word a reviewer's comment as a lesson, and tidy your standup. Each request is shown
 before it goes — the exact text, the model and about what it costs — and is sent only when you
 press Send. Models: Claude Opus 5.5 (default), Sonnet 5.5, Haiku 5.5; GPT-6.1 Sol (default),
 GPT-6 Astra, GPT-6 Luna; Gemini 3.8 Flash (default), Gemini 4 Argon, Gemini 3.1 Flash-Lite. You pay
@@ -140,7 +140,7 @@ the provider directly; DevDock ships no key. Demo mode answers with samples on y
 
 ![Settings → AI](docs/screenshots/readme-settings-ai.png)
 
-![A status note, shown before it is sent](docs/screenshots/readme-ai.png)
+![A PR summary, shown before it is sent](docs/screenshots/readme-ai.png)
 
 **Command palette** — every action, searchable: `⌘K` in the app, or the global shortcut from
 any app. It takes arguments: `watch <PR link>`, `pipeline <PR link>`, `branch NM-1234`,

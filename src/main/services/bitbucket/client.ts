@@ -8,6 +8,7 @@ import {
   type PrRef,
   type PullRequest,
   type RepoRef,
+  type PrChanges,
 } from '@shared/bitbucket'
 import { MIN_COMMENT_LENGTH, type ReviewComment } from '@shared/lessons'
 import type { HttpClient } from '../http'
@@ -80,6 +81,11 @@ export class BitbucketClient {
 
   async pr(ref: PrRef): Promise<PullRequest> {
     return this.withBuilds(await this.adapter.pr(ref))
+  }
+
+  /** T7: description and changed files (bounded), for the AI summary. */
+  changes(ref: PrRef): Promise<PrChanges> {
+    return this.adapter.changes(ref)
   }
 
   /**

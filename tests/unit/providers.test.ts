@@ -277,6 +277,7 @@ describe('PrHub', () => {
   const source = (over: Partial<PrSource> = {}): PrSource => ({
     list: vi.fn(async () => []),
     pr: vi.fn(),
+    changes: vi.fn(),
     act: vi.fn(),
     site: () => null,
     ...over,

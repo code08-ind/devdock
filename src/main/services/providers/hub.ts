@@ -5,6 +5,7 @@ import {
   type PrList,
   type PrRef,
   type PullRequest,
+  type PrChanges,
 } from '@shared/bitbucket'
 import { PROVIDER_NAMES, type Provider } from '@shared/providers'
 import type { ActionResult } from '../bitbucket/client'
@@ -18,6 +19,8 @@ import { ServiceError } from '../service-error'
 export interface PrSource {
   list(list: PrList): Promise<PullRequest[]>
   pr(ref: PrRef): Promise<PullRequest>
+  /** T7: description and changed files (bounded), for the AI summary. */
+  changes(ref: PrRef): Promise<PrChanges>
   /** Checks done: the handler confirmed the switch and the confirmation. */
   act(request: PrActionRequest): Promise<ActionResult>
   /** Where this provider's PRs are read from (`siteKey` spelling); null when not set up. */
@@ -33,6 +36,10 @@ export class PrHub {
 
   pr(ref: PrRef): Promise<PullRequest> {
     return this.sources[providerOf(ref)].pr(ref)
+  }
+
+  changes(ref: PrRef): Promise<PrChanges> {
+    return this.sources[providerOf(ref)].changes(ref)
   }
 
   async act(request: PrActionRequest): Promise<ActionResult> {

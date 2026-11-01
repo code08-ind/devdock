@@ -218,8 +218,13 @@ describe('AI with your own key (P7-C-B)', () => {
     // Main loads the PR's current state (the single-PR call fills unresolved threads).
     const current = await dispatch('prs:pr', first.ref, handlers)
     if (!current.ok) throw new Error(current.error.message)
-    // Demo PR times move with the clock: compare everything but the Opened line.
-    const facts = (p: string) => p.split('\n').filter((l) => !l.startsWith('Opened:'))
+    // Demo PR times move with the clock: compare the PR facts (up to the T7 description and
+    // files, tested in pr-changes.test.ts) but the Opened line.
+    const facts = (p: string) =>
+      p
+        .split('\nDescription')[0]!
+        .split('\n')
+        .filter((l) => !l.startsWith('Opened:'))
     expect(facts(prepared.data.prompt)).toEqual(facts(prPrompt(current.data)))
   })
 

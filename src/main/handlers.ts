@@ -627,7 +627,16 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
     'ai:prepare': (req) =>
       withService(async () => {
         if (req.feature === 'pr-summary') {
-          return deps.ai.prepare('pr-summary', prPrompt(await deps.prs.pr(req.ref)))
+          // T7: with its description and changed files when they can be read; the summary still
+          // works without them (the preview says so). A rate limit is a real answer, though.
+          const [pr, changes] = await Promise.all([
+            deps.prs.pr(req.ref),
+            deps.prs.changes(req.ref).catch((err: unknown) => {
+              if (err instanceof ServiceError && err.kind === 'rate_limited') throw err
+              return null
+            }),
+          ])
+          return deps.ai.prepare('pr-summary', prPrompt(pr, changes))
         }
         if (req.feature === 'standup') return deps.ai.prepare('standup', standupPrompt(req.draft))
         return deps.ai.prepare('lesson', lessonPrompt(req.comment, req.where))

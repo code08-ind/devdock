@@ -1,4 +1,5 @@
 import { http, HttpResponse, type RequestHandler } from 'msw'
+import { demoDescription, demoFiles } from './changes'
 import type { BitbucketConfig } from '../services/bitbucket/client'
 import { DEMO_ORIGIN } from './origin'
 
@@ -237,6 +238,7 @@ function prJson(pr: DemoPr, now: number) {
     id: pr.id,
     version: pr.version ?? 0,
     title: pr.title,
+    description: demoDescription(pr.title),
     state: pr.state,
     author: { user: pr.mine ? ME : user('Priya Reviewer'), role: 'AUTHOR' },
     fromRef: { displayId: pr.from, latestCommit: commitOf(pr), repository: repoJson(pr.repo) },
@@ -330,6 +332,20 @@ export function bitbucketHandlers(): RequestHandler[] {
         }
       })
       return page(threads)
+    }),
+    // T7: changed paths (Data Center gives no line counts here).
+    http.get(`${API}/projects/DEMO/repos/:repo/pull-requests/:id/changes`, ({ params }) => {
+      const pr = find(params)
+      if (!pr) return new HttpResponse(null, { status: 404 })
+      const type = { added: 'ADD', modified: 'MODIFY', removed: 'DELETE', renamed: 'MOVE' }
+      return HttpResponse.json({
+        values: demoFiles(pr.title).map((f) => ({
+          path: { toString: f.path },
+          type: type[f.status],
+        })),
+        isLastPage: true,
+        size: demoFiles(pr.title).length,
+      })
     }),
     http.get(`${API}/projects/DEMO/repos/:repo/pull-requests/:id`, ({ params }) => {
       const pr = find(params)

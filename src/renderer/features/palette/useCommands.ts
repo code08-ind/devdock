@@ -101,7 +101,7 @@ export function useCommands(h: CommandHandlers): {
   // PR actions once turned on in Settings: merge mine, approve / needs work on the ones I review.
   const prsOn = settings ? enabledProviders(settings).length > 0 : false
   const prActionsOn = Boolean(settings?.features.prActions && prsOn)
-  // AI status notes need the same lists (only where the AI dialog can show).
+  // AI PR summaries need the same lists (only where the AI dialog can show).
   const aiOn = useAiAvailable() && Boolean(h.ai)
   const aiName = useAiAssistant()
   const listsOn = prActionsOn || (aiOn && prsOn)

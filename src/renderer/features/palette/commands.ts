@@ -168,10 +168,10 @@ export interface CommandContext {
   openTerminal: (repoId: string | null, agent?: AgentLaunch) => unknown
   /** The agent CLI to offer per repo (P7-C: Settings → Workflow → Agent, if installed). */
   agent: { id: AgentCliId; name: string } | null
-  /** Open PRs (mine and the ones I review) that a status note can be drafted for (P7-C-B). */
+  /** Open PRs (mine and the ones I review) that can be summarised (P7-C-B, T7). */
   aiPrs: readonly { key: string; label: string }[]
   /**
-   * Opens the AI dialog (preview, then Send) for the standup or a PR's status note. Left out
+   * Opens the AI dialog (preview, then Send) for the standup or a PR summary. Left out
    * where the dialog can't show, or when there is no key for the active AI provider and demo
    * mode is off.
    */
@@ -285,7 +285,7 @@ function aiCommands(ctx: Pick<CommandContext, 'ai' | 'aiPrs' | 'aiName'>): Comma
     },
     ...ctx.aiPrs.map<Command>((p) => ({
       id: `ai:pr-summary:${p.key}`,
-      title: `Draft a status note for ${p.label} with ${ctx.aiName}…`,
+      title: `Summarise ${p.label} with ${ctx.aiName}…`,
       group: 'Pull requests',
       keywords: ['ai', 'claude', 'gpt', 'openai', 'gemini', 'status', 'note', 'summary', 'pr'],
       inMain: true,

@@ -5,9 +5,13 @@ import {
   type PrList,
   type PrRef,
   type RepoRef,
+  boundChanges,
+  MAX_PR_FILES,
+  type PrChanges,
+  type PrFileChange,
 } from '@shared/bitbucket'
 import { CLOUD_API, CLOUD_WEB, isCloudHost } from '@shared/prlink'
-import { obj, text, type JsonObject } from '../json'
+import { num, obj, text, type JsonObject } from '../json'
 import { ServiceError, type ServiceHints } from '../service-error'
 import {
   badResponse,
@@ -44,6 +48,14 @@ export function cloudAuthorization(username: string, token: string): string {
 }
 
 /** Pages: `{ values, next }`. `next` must stay on the API origin (it carries our token). */
+/** Diffstat statuses (Cloud); merge conflicts and the like count as modified. */
+const CLOUD_STATUS: Record<string, PrFileChange['status']> = {
+  added: 'added',
+  removed: 'removed',
+  renamed: 'renamed',
+  modified: 'modified',
+}
+
 function page(apiRoot: string) {
   const origin = new URL(apiRoot).origin
   return (body: unknown) => {
@@ -131,6 +143,22 @@ export class CloudAdapter implements BitbucketAdapter {
     // Unresolved threads: top-level, not deleted, no resolution.
     const unresolved = comments.filter((c) => !c.deleted && !c.parent && !c.resolution).length
     return { ...pr, unresolvedComments: unresolved }
+  }
+
+  async changes(ref: PrRef): Promise<PrChanges> {
+    const url = `${this.repoUrl(ref.owner, ref.repo)}/pullrequests/${ref.id}`
+    const [{ body }, stat] = await Promise.all([
+      this.call(url),
+      this.call(`${url}/diffstat?pagelen=${MAX_PR_FILES}`),
+    ])
+    const page = obj(stat.body)
+    const files = (Array.isArray(page.values) ? page.values : []).map(obj).map((v) => ({
+      path: text(obj(v.new).path) ?? text(obj(v.old).path) ?? '(unknown)',
+      status: CLOUD_STATUS[String(v.status)] ?? ('modified' as const),
+      added: num(v.lines_added),
+      removed: num(v.lines_removed),
+    }))
+    return boundChanges(text(obj(body).description) ?? '', files, num(page.size))
   }
 
   async comments(ref: PrRef): Promise<PrComment[]> {

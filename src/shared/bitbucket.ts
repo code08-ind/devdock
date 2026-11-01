@@ -114,6 +114,59 @@ export const PullRequestSchema = z.object({
 })
 export type PullRequest = z.infer<typeof PullRequestSchema>
 
+/** T7: the description and changed files the AI summary reads, bounded so a big PR stays small. */
+export const MAX_PR_DESCRIPTION = 4_000
+export const MAX_PR_FILES = 100
+
+export const PR_FILE_STATUSES = ['added', 'modified', 'removed', 'renamed'] as const
+
+export const PrChangesSchema = z.object({
+  /** The author's description, trimmed; cut at MAX_PR_DESCRIPTION characters. */
+  description: z.string(),
+  descriptionCut: z.boolean(),
+  /** Up to MAX_PR_FILES changed files, as the API lists them. */
+  files: z.array(
+    z.object({
+      path: z.string(),
+      status: z.enum(PR_FILE_STATUSES),
+      /** Lines added / removed; null where the API doesn't say (Bitbucket Data Center). */
+      added: z.number().int().nullable(),
+      removed: z.number().int().nullable(),
+    }),
+  ),
+  /** Changed files in all (more than `files` when the list was cut); null if unknown. */
+  filesTotal: z.number().int().nullable(),
+})
+export type PrChanges = z.infer<typeof PrChangesSchema>
+export type PrFileChange = PrChanges['files'][number]
+
+/** Description and files cut to the bounds, with the cut recorded. */
+export function boundChanges(
+  description: string,
+  files: PrFileChange[],
+  filesTotal: number | null,
+): PrChanges {
+  const text = description.trim()
+  return {
+    description: text.slice(0, MAX_PR_DESCRIPTION),
+    descriptionCut: text.length > MAX_PR_DESCRIPTION,
+    files: files.slice(0, MAX_PR_FILES),
+    filesTotal: filesTotal ?? (files.length > MAX_PR_FILES ? null : files.length),
+  }
+}
+
+/** Added / removed lines in a unified diff's body (`+`/`-` lines, not the `+++`/`---` headers). */
+export function diffLineCounts(diff: string): { added: number; removed: number } {
+  let added = 0
+  let removed = 0
+  for (const line of diff.split('\n')) {
+    // File headers are `+++ b/path` / `--- a/path`; a changed line may start with `++`.
+    if (line.startsWith('+') && !line.startsWith('+++ ')) added++
+    else if (line.startsWith('-') && !line.startsWith('--- ')) removed++
+  }
+  return { added, removed }
+}
+
 export const BitbucketUserSchema = z.object({
   displayName: z.string(),
   /** Nickname / account id (Cloud) or user name (Data Center). */

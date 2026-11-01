@@ -1,4 +1,5 @@
 import { http, HttpResponse, type RequestHandler } from 'msw'
+import { demoDescription, demoFiles } from './changes'
 import type { HostConfig } from '../services/providers/service'
 import { DEMO_GITHUB } from './origin'
 
@@ -316,6 +317,8 @@ export function githubHandlers({ speed = 1 }: { speed?: number } = {}): RequestH
     return {
       number: pr.number,
       title: pr.title,
+      body: demoDescription(pr.title),
+      changed_files: demoFiles(pr.title).length,
       html_url: `${DEMO_GITHUB}/acme/${pr.repo}/pull/${pr.number}`,
       state: pr.state === 'open' ? 'open' : 'closed',
       user: { login: pr.author },
@@ -476,6 +479,20 @@ export function githubHandlers({ speed = 1 }: { speed?: number } = {}): RequestH
     http.get(`${API}/repos/acme/:repo/pulls/:n`, ({ params }) => {
       const pr = find(params.repo, params.n)
       return pr ? HttpResponse.json(pullJson(pr)) : refused(404, 'Not Found')
+    }),
+    // T7: the PR's files with line counts.
+    http.get(`${API}/repos/acme/:repo/pulls/:n/files`, ({ params }) => {
+      const pr = find(params.repo, params.n)
+      if (!pr) return refused(404, 'Not Found')
+      return HttpResponse.json(
+        demoFiles(pr.title).map((f) => ({
+          filename: f.path,
+          status: f.status,
+          additions: f.added,
+          deletions: f.removed,
+          changes: f.added + f.removed,
+        })),
+      )
     }),
     http.get(`${API}/repos/acme/:repo/pulls/:n/reviews`, ({ params }) => {
       const pr = find(params.repo, params.n)

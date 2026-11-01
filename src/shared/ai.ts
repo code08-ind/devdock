@@ -135,7 +135,7 @@ export const AI_FEATURES = ['pr-summary', 'lesson', 'standup'] as const
 export type AiFeature = (typeof AI_FEATURES)[number]
 
 export const AI_FEATURE_LABELS: Record<AiFeature, string> = {
-  'pr-summary': 'Draft a status note',
+  'pr-summary': 'Summarise this pull request',
   lesson: 'Word this comment as a lesson',
   standup: 'Polish the standup',
 }

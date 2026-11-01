@@ -100,8 +100,12 @@ docs-only pushes.
     code review (Standards + Spec; fixes in DECISIONS "T6 code review"), full checks: lint 0;
     vitest 951 / 1 skipped; e2e 75 / 7 skipped (quiet); website Vitest 31, Playwright + axe 20.
     **Merge into `main` when the owner says** (after v0.1.0, or before it if they choose).
-- [ ] **T7** **True PR summary**: load the PR description and a bounded diff stat from Bitbucket,
+- [x] **T7** **True PR summary**: load the PR description and a bounded diff stat from Bitbucket,
   GitHub and GitLab; the AI status note becomes a summary when they're there.
+  Branch `t7-pr-summary` (on `t6-openai-gemini`, 2026-11-01): `changes(ref)` per provider +
+  demo fixtures, prompt with description and files, "Summarise this pull request". Evidence:
+  `pr-changes.test.ts` (8); e2e `ai.spec.ts` "PR summary: preview first…" (description and files in
+  the preview). Merge with T6 after v0.1.0.
 - [ ] **T8** 🧑 **Code signing decision**, then wire it: macOS Apple Developer Program (USD 99/yr)
   → Developer ID + notarization in the release workflow; Windows code-signing certificate (OV/EV
   or Azure Trusted Signing) → signed Setup + Portable. Without them, keep the website's install
@@ -839,3 +843,4 @@ Next step: owner review → merge `p7-providers` into `main`.
 | 2026-11-01 | T16 | Full checks + dist (arm64 108.8 MB, x64 112.0 MB) + packaged smoke from the DMG (new opt-in smoke.spec, 1 passed; data folder backed up and restored). lint 0; vitest 940 / 1; e2e 74 / 6 skipped. | T17 (owner) |
 | 2026-11-01 | T6a + T6b | Branch t6-openai-gemini: OpenAI + Gemini behind the same preview → Send, one active provider (owner), plain HTTP (owner), 3 models each, date-aware prices. vitest 950 / 1; lint 0; ai.spec 5/5. | T6c |
 | 2026-11-01 | T6c | Docs/site copy, code review fixes (billing-safe retries, provider row, tier order, shared tables), full checks green. Branch pushed, not merged. | owner: merge timing |
+| 2026-11-01 | T7 | Branch t7-pr-summary: PR description + bounded changed files from all providers into the AI summary; renamed to "Summarise this pull request". | review + full checks |

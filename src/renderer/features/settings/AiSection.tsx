@@ -58,7 +58,7 @@ export function AiSection({ settings }: { settings: Settings }) {
     <Section
       id="ai"
       title="AI"
-      description="Optional. With your own API key (Anthropic, OpenAI or Google), DevDock can draft a PR status note, word a review comment as a lesson and tidy your standup. Every request is shown to you first and sent only when you press Send; you pay the provider directly."
+      description="Optional. With your own API key (Anthropic, OpenAI or Google), DevDock can summarise a pull request, word a review comment as a lesson and tidy your standup. Every request is shown to you first and sent only when you press Send; you pay the provider directly."
     >
       <SegmentedControl<AiProvider>
         label="Provider"

@@ -340,7 +340,9 @@ Place this file at `docs/SPEC.md` in the new repository. Every build phase refer
   Luna; Gemini 3.8 Flash (default), Gemini 4 Argon, Gemini 3.1 Flash-Lite. DevDock ships no key;
   without one for the active provider the AI buttons are hidden (demo mode answers with local
   samples). Costs use each model's price on the day (announced changes are known).
-- Features: a status note for a pull request (from the PR facts DevDock shows), a reviewer's
+- Features: a summary of a pull request (T7: its description — up to 4,000 characters — and up
+  to 100 changed files with their line counts where the API gives them, plus the PR facts DevDock
+  shows; without them it still summarises where the PR stands), a reviewer's
   comment worded as a lesson (Utilities → Lessons, "Use as the lesson" fills it in), and a
   polished standup (from the user's edited draft).
 - Every request is prepared in main and shown first — the exact text and instructions, the

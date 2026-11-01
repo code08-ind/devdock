@@ -15,18 +15,20 @@ const TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']
 const nav = (win: Page, name: string) =>
   win.getByRole('navigation', { name: 'Main' }).getByRole('button', { name }).click()
 
-test('PR status note: preview first, sent on Send, answer shown; the dialog passes axe', async ({
+test('PR summary: preview first, sent on Send, answer shown; the dialog passes axe', async ({
   launched,
 }) => {
   const { win, errors } = launched
   await nav(win, 'Pull requests')
-  await win
-    .getByRole('button', { name: 'Draft a status note for web-app #415 with Claude' })
-    .click()
-  const dialog = win.getByRole('dialog', { name: 'Draft a status note' })
+  await win.getByRole('button', { name: 'Summarise web-app #415 with Claude' }).click()
+  const dialog = win.getByRole('dialog', { name: 'Summarise this pull request' })
   await expect(dialog).toContainText('Demo mode: a sample answer is made on this computer.')
   // What will be sent is on screen before anything is sent.
-  await expect(dialog.locator('.code').first()).toContainText('Pull request: ')
+  const sent = dialog.locator('.code').first()
+  await expect(sent).toContainText('Pull request: ')
+  // T7: the description and the changed files go with it.
+  await expect(sent).toContainText('Description:')
+  await expect(sent).toContainText('Changed files: 4')
   await expect(dialog).toContainText('Claude Opus 5.5')
   const { violations } = await new AxeBuilder({ page: win })
     .include('dialog[open]')
@@ -101,10 +103,10 @@ test('Settings → AI: the key field and the model, saved; no AI buttons without
   // Demo mode off and no key: the features stay hidden.
   await win.evaluate(() => window.devdock.settings.update({ general: { demoMode: false } }))
   await nav(win, 'Pull requests')
-  await expect(win.getByRole('button', { name: /status note/ })).toHaveCount(0)
+  await expect(win.getByRole('button', { name: /^Summarise / })).toHaveCount(0)
 })
 
-test('from the palette (SPEC 7): polish the standup and a PR status note open the same preview', async ({
+test('from the palette (SPEC 7): polish the standup and a PR summary open the same preview', async ({
   launched,
 }) => {
   const { win, errors } = launched
@@ -124,12 +126,10 @@ test('from the palette (SPEC 7): polish the standup and a PR status note open th
   await expect(polish).toBeHidden()
 
   p = await palette()
-  await win.keyboard.type('status note web-app #415')
-  await expect(p.getByRole('option').first()).toContainText(
-    'Draft a status note for web-app #415 with Claude…',
-  )
+  await win.keyboard.type('summarise web-app #415')
+  await expect(p.getByRole('option').first()).toContainText('Summarise web-app #415 with Claude…')
   await win.keyboard.press('Enter')
-  const note = win.getByRole('dialog', { name: 'Draft a status note' })
+  const note = win.getByRole('dialog', { name: 'Summarise this pull request' })
   await expect(note.locator('.code').first()).toContainText('Pull request: ')
   await note.getByRole('button', { name: 'Send to Claude' }).click()
   await expect(note.getByRole('status')).toContainText('Demo answer: this PR adds')
@@ -158,10 +158,10 @@ test('T6: switching to OpenAI or Google — their key, models and test; the butt
   await ai.getByRole('button', { name: 'Test connection' }).click()
   await expect(ai.getByRole('status')).toContainText('Key works (HTTP 200): 3 models available')
 
-  // The PR status note now goes to GPT (demo: answered locally).
+  // The PR summary now goes to GPT (demo: answered locally).
   await nav(win, 'Pull requests')
-  await win.getByRole('button', { name: /^Draft a status note for web-app #412 with GPT$/ }).click()
-  const dialog = win.getByRole('dialog', { name: 'Draft a status note' })
+  await win.getByRole('button', { name: /^Summarise web-app #412 with GPT$/ }).click()
+  const dialog = win.getByRole('dialog', { name: 'Summarise this pull request' })
   await expect(dialog).toContainText('GPT-6.1 Sol')
   await dialog.getByRole('button', { name: 'Send to GPT' }).click()
   await expect(dialog.getByRole('status')).toContainText('Demo answer: this PR adds')

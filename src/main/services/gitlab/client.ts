@@ -4,6 +4,10 @@ import {
   type PrList,
   type PrRef,
   type PullRequest,
+  boundChanges,
+  diffLineCounts,
+  MAX_PR_FILES,
+  type PrChanges,
 } from '@shared/bitbucket'
 import {
   LOG_TAIL_BYTES,
@@ -234,6 +238,49 @@ export class GitLabClient implements HostClient {
   }
 
   // ---------------------------------------------------------------------------------------
+
+  /**
+   * T7: the MR description and up to MAX_PR_FILES files; line counts come from each file's diff
+   * (empty when GitLab leaves a big diff out: then unknown). `/diffs` is GitLab 15.7+; older
+   * servers answer `/changes`.
+   */
+  async changes(ref: PrRef): Promise<PrChanges> {
+    const mr = this.mrUrl(ref)
+    const [single, diffs] = await Promise.all([
+      this.rest.json(mr),
+      this.rest
+        .json(`${mr}/diffs?per_page=${MAX_PR_FILES}`)
+        .then((r) => (Array.isArray(r.body) ? r.body : []))
+        .catch(async (err: unknown) => {
+          if (!(err instanceof ServiceError) || err.kind !== 'not_found') throw err
+          const old = await this.rest.json(`${mr}/changes`)
+          const list = obj(old.body).changes
+          return Array.isArray(list) ? list : []
+        }),
+    ])
+    const m = obj(single.body)
+    const files = diffs.map(obj).map((d) => {
+      const diff = text(d.diff)
+      const counts = diff ? diffLineCounts(diff) : null
+      return {
+        path: text(d.new_path) ?? text(d.old_path) ?? '(unknown)',
+        status:
+          d.new_file === true
+            ? ('added' as const)
+            : d.deleted_file === true
+              ? ('removed' as const)
+              : d.renamed_file === true
+                ? ('renamed' as const)
+                : ('modified' as const),
+        added: counts?.added ?? null,
+        removed: counts?.removed ?? null,
+      }
+    })
+    // `changes_count` is a string: "12", or "1000+" when GitLab caps it (then at least that many).
+    const count = /^(\d+)\+?$/.exec(text(m.changes_count) ?? '')
+    const total = count ? Number(count[1]) : null
+    return boundChanges(text(m.description) ?? '', files, total)
+  }
 
   private async base(ref: PrRef): Promise<{ pr: PrBase; raw: unknown }> {
     const mr = this.mrUrl(ref)
