@@ -206,6 +206,12 @@ docs-only pushes.
 - [ ] **T17** 🧑 Owner checks on real accounts and machines: a real Anthropic key end to end (and
   OpenAI/Gemini after T6); own oh-my-zsh prompt/plugins in the terminal (Light/Dark/Slate); Windows
   Setup + Portable, PowerShell terminal and an agent CLI on a real Windows PC.
+  2026-11-01: terminal with the owner's own setup (zsh + oh-my-zsh robbyrussell, `git` plugin;
+  DevDock prompt off) checked by new opt-in `own-shell.spec.ts`: prompt with `git:(branch)` and
+  ✗, git colours, readable in Light / Dark / Slate (screenshots reviewed) — pass. Windows: no PC
+  (owner) — untested by hand; CI builds and tests on windows-latest. AI keys: owner enters
+  Anthropic + Gemini keys in Settings → AI; then opt-in `live-ai.spec.ts` runs on a copy of the
+  data folder (cheapest models, under 1 US cent).
 - [ ] **T18** 🧑 Release `v0.1.0`: tag → release workflow builds a **draft** GitHub release
   (versionless installers: macOS arm64 + x64, Windows Setup + Portable) → owner reviews and
   publishes; patch releases as needed.
@@ -864,3 +870,4 @@ Next step: owner review → merge `p7-providers` into `main`.
 | 2026-11-01 | T6+T7 merged, T20 | Merged main: lint 0; vitest 961 / 1 skipped; e2e 75 / 7 skipped; website Vitest 31. T20: 4 worktrees removed (branches kept, owner). | owner: publish v0.1.0, T19, T17, T12, T8/T9 |
 | 2026-11-01 | T12 (automated) | Accessibility-tree review (sr.spec) + fixes: dialog focus, distinct button names, AI answer announcement. lint 0; vitest 961 / 1 skipped; e2e 75 / 8 skipped. Live listening still open for the owner. | owner steps |
 | 2026-11-01 | T8 / T9 | Owner: unsigned for now; update-available notice built (UpdateService, Settings → General switch + Check now + Download, notification type). lint 0; vitest 966 / 1 skipped; e2e 76 / 8 skipped; website 31. | owner: publish v0.1.0, T19, T17 |
+| 2026-11-01 | T17 (part) | Own oh-my-zsh prompt in DevDock's terminal: pass (own-shell.spec, Light/Dark/Slate). Windows untested by hand (no PC). Live AI check ready (live-ai.spec), waiting for the owner's keys in Settings → AI. | live AI |
