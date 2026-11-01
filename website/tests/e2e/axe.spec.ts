@@ -4,7 +4,7 @@ import { setup, UA } from './helpers'
 
 /**
  * Automated WCAG 2.2 AA checks (axe-core, the same rules as the app's tests/e2e/axe.spec.ts) on
- * the whole page in every theme, before and after a release exists, and with the install dialog
+ * the whole page in every theme, with and without releases.json, and with the install dialog
  * open. Keyboard use is covered in site.spec.ts; theme colours by tests/unit/themes.test.ts.
  */
 const TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']
@@ -29,10 +29,10 @@ for (const theme of THEMES) {
   })
 }
 
-test('no axe violations while downloads are "coming soon"', async ({ page }) => {
+test('no axe violations without releases.json (the shipped config)', async ({ page }) => {
   await setup(page)
   await page.goto('/')
-  await expect(page.getByRole('heading', { name: 'Downloads coming soon' })).toBeVisible()
+  await page.locator('#download-root .platform').first().waitFor()
   expect(await violations(page)).toEqual([])
 })
 

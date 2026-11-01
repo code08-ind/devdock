@@ -4,8 +4,8 @@
  * from the latest published GitHub release (`scripts/releases-json.mjs`, see `downloads.ts`).
  *
  * Installers are named without the version (DECISIONS "Phase 7 — Owner decisions"), so every link
- * is `/releases/latest/download/<file>` and never needs changing. Until a release is published,
- * keep `available: false`: the page then says "Downloads coming soon" and links nowhere.
+ * is `/releases/latest/download/<file>` and never needs changing. With `available: false` the page
+ * says "Downloads coming soon" and links nowhere (used before the first public release).
  */
 
 export const REPO = 'code08-ind/devdock'

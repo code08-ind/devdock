@@ -22,9 +22,24 @@ npm run preview    # serves website/dist at http://localhost:4173 (what gets pub
 
 ```sh
 npm test                                   # Vitest: OS/CPU detection, file names and links, manifest, install steps, palette + contrast
-npm run build && PW_CHANNEL=chrome npx playwright test site axe   # in a browser: downloads, dialog, tabs, theme; axe WCAG 2.2 AA in Light and Dark
+npm run build && PW_CHANNEL=chrome npx playwright test site axe   # in a browser: downloads, dialog, tabs, theme, demo clips; axe WCAG 2.2 AA in Light and Dark
 SHOTS_DIR=/tmp/devdock-shots PW_CHANNEL=chrome npx playwright test screens   # light/dark × desktop/phone screenshots
 ```
+
+## Demo clips
+
+The feature tabs play short looping clips of the real app in demo mode
+(`public/video/<name>.webm` + `.mp4`, poster `public/img/demo-<name>.webp`). To record them again
+after the app changes, from the repo root (needs ffmpeg and cwebp):
+
+```sh
+npx electron-vite build
+DEVDOCK_DEMOS_DIR=/tmp/devdock-demos npx playwright test demos   # records 6 clips (about 1.5 min, windows stay hidden)
+sh website/scripts/demos.sh /tmp/devdock-demos                  # trims, encodes, writes the posters
+```
+
+Clips play only while on screen, have a Play/Pause button, and wait for Play when the visitor
+prefers reduced motion (they then see the poster).
 
 `PW_CHANNEL=chrome` uses your installed Google Chrome; without it, run
 `npx playwright install chromium` once. The browser tests answer GitHub download links locally,

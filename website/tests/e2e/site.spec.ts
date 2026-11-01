@@ -1,17 +1,21 @@
 import { expect, test } from '@playwright/test'
 import { setup, UA } from './helpers'
 
-test.describe('no release yet (shipped config)', () => {
+test.describe('no releases.json (shipped config)', () => {
   test.use({ userAgent: UA.mac })
 
-  test('says "Downloads coming soon" and links to no installer', async ({ page }) => {
+  test('offers v0.2.0 from the config: latest-release links, no "coming soon"', async ({
+    page,
+  }) => {
     await setup(page)
     await page.goto('/')
     const section = page.locator('#download')
-    await expect(section.getByRole('heading', { name: 'Downloads coming soon' })).toBeVisible()
-    await expect(page.locator('a[data-asset]')).toHaveCount(0)
-    await expect(page.locator('a[href*="/download/"]')).toHaveCount(0)
-    await expect(page.locator('#hero-meta')).toContainText('Downloads coming soon')
+    await expect(
+      section.getByRole('link', { name: 'Download for macOS (Apple silicon)' }),
+    ).toHaveAttribute('href', /\/releases\/latest\/download\/DevDock-arm64\.dmg$/)
+    await expect(section.locator('table.installers tbody tr')).toHaveCount(4)
+    await expect(section.getByText('108.8 MB').first()).toBeVisible()
+    await expect(page.getByText('Downloads coming soon')).toHaveCount(0)
   })
 })
 
@@ -129,9 +133,12 @@ test.describe('page basics', () => {
     const tabs = page.getByRole('tablist', { name: 'Features' })
     await tabs.getByRole('tab', { name: 'Today' }).focus()
     await page.keyboard.press('ArrowRight')
-    await expect(tabs.getByRole('tab', { name: 'Repos' })).toHaveAttribute('aria-selected', 'true')
+    await expect(tabs.getByRole('tab', { name: 'Menu-bar panel' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    )
     await expect(page.getByRole('tabpanel')).toHaveCount(1)
-    await expect(page.locator('#tp-repos')).toBeVisible()
+    await expect(page.locator('#tp-panel')).toBeVisible()
 
     const toggle = page.getByRole('button', { name: 'Dark theme' })
     await expect(toggle).toHaveAttribute('aria-pressed', 'false')
@@ -151,8 +158,59 @@ test.describe('page basics', () => {
     for (const img of await page.locator('img').all()) {
       expect(await img.getAttribute('alt')).not.toBeNull()
     }
-    // 404 for releases.json is expected (no release yet); anything else is a bug.
+    // 404 for releases.json is expected (served only on Vercel); anything else is a bug.
     expect(errors.filter((e) => !/404|releases\.json/.test(e))).toEqual([])
+  })
+})
+
+test.describe('demo clips', () => {
+  test.use({ userAgent: UA.mac })
+
+  test('every clip has a poster and sources that load; it plays when shown and can be paused', async ({
+    page,
+    request,
+  }) => {
+    await setup(page)
+    await page.goto('/')
+    const videos = page.locator('video[data-demo]')
+    expect(await videos.count()).toBe(6)
+    for (const v of await videos.all()) {
+      await expect(v).toHaveAttribute('aria-label', /^Demo: /)
+      for (const src of [
+        await v.getAttribute('poster'),
+        ...(await v.locator('source').evaluateAll((s) => s.map((e) => e.getAttribute('src')))),
+      ]) {
+        expect((await request.get(`/${src}`)).status(), String(src)).toBe(200)
+      }
+    }
+    await page
+      .getByRole('tablist', { name: 'Features' })
+      .getByRole('tab', { name: 'Repos' })
+      .click()
+    const panel = page.locator('#tp-repos')
+    await panel.scrollIntoViewIfNeeded()
+    const video = panel.locator('video')
+    await expect.poll(() => video.evaluate((v: HTMLVideoElement) => !v.paused)).toBe(true)
+    const toggle = panel.getByRole('button', { name: /^Pause the clip/ })
+    await toggle.click()
+    await expect(panel.getByRole('button', { name: /^Play the clip/ })).toBeVisible()
+    expect(await video.evaluate((v: HTMLVideoElement) => v.paused)).toBe(true)
+  })
+
+  test('with reduced motion, a clip waits for Play', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await setup(page)
+    await page.goto('/')
+    await page
+      .getByRole('tablist', { name: 'Features' })
+      .getByRole('tab', { name: 'Repos' })
+      .click()
+    const panel = page.locator('#tp-repos')
+    await panel.scrollIntoViewIfNeeded()
+    await page.waitForTimeout(500)
+    expect(await panel.locator('video').evaluate((v: HTMLVideoElement) => v.paused)).toBe(true)
+    await panel.getByRole('button', { name: /^Play the clip/ }).click()
+    await expect(panel.getByRole('button', { name: /^Pause the clip/ })).toBeVisible()
   })
 })
 

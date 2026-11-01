@@ -641,3 +641,11 @@ Supersedes the "Website redesign" look above and the P7-D "Look" row (tokens fro
 | Opt-in `own-shell.spec.ts` (the owner's zsh + oh-my-zsh in DevDock's terminal, Light/Dark/Slate) and `live-ai.spec.ts` (Test connection + one tiny request per provider on its cheapest model, on a **copy** of a real data folder; checks every offered model is listed). Keys are entered by the owner in Settings → AI, never pasted into chat or files. | The owner provided keys; the check costs well under a cent and leaves their settings alone. |
 | Playwright starts Electron with `--use-mock-keychain`, so a test-launched DevDock can't decrypt keys saved by the real app. Test-only `DEVDOCK_REAL_KEYCHAIN=1` (honoured only with `DEVDOCK_E2E=1` in an unpackaged build, like `DEVDOCK_USER_DATA`) removes that switch; only `live-ai.spec` sets it. | Found when the first live run failed to decrypt; a shipped app ignores both variables. |
 
+## Website for v0.2.0 (2026-11-01)
+
+| Decision | Why |
+| --- | --- |
+| **v0.2.0 is the first public release** (owner). The unpublished v0.1.0 draft is deleted when v0.2.0 is cut; the `v0.1.0` tag stays. Website config: `available: true`, version 0.2.0, sizes from the release build; `releases.json` still wins at Vercel build time. | v0.1.0 lacks T6/T7/T9; publishing it first would only add an update step. |
+| Feature tabs show **short looping clips** of the real app in demo mode instead of stills (owner): palette, menu-bar panel (new tab), Start work → agent, Repos + push check + Builds, AI PR summary, terminal. Recorded by opt-in `tests/e2e/demos.spec.ts` (Playwright `recordVideo`, hidden windows), encoded by `website/scripts/demos.sh` (H.264 MP4 for Safari + VP9 WebM, 24 fps, ≤ 1240 px, each ≤ 250 KB; WebP poster). No new npm dependency; ffmpeg/cwebp are only needed to re-record. | Real behaviour, not mock-ups; small enough for the page budget. |
+| Clips: `muted loop playsinline preload="none"`, played only while ≥ 35 % on screen (IntersectionObserver), a visible Play/Pause button per clip (WCAG 2.2.2), and under `prefers-reduced-motion` they wait for Play. A paused clip stays paused. | Motion only when wanted; no bandwidth for clips never seen. |
+| The Start work clip uses a stand-in `claude` that only waits (no made-up agent output); its poster is the Start work dialog, not the empty agent tab. | Honest demo. |

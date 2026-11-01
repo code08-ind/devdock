@@ -62,6 +62,9 @@ async function record(
 
 /** Marks the start of the part worth showing (seconds into the video). */
 const markStart = (name: string, since: number) => (marks[name] = (Date.now() - since) / 1000)
+/** Marks the still used as the poster (default: the last frame). */
+const markPoster = (name: string, since: number) =>
+  (marks[`${name}:poster`] = (Date.now() - since) / 1000)
 const pause = (win: Page, ms: number) => win.waitForTimeout(ms)
 const nav = (win: Page, label: string) =>
   win
@@ -71,8 +74,11 @@ const nav = (win: Page, label: string) =>
 const slowType = (win: Page, text: string) => win.keyboard.type(text, { delay: 90 })
 
 test('demo: command palette', async () => {
+  repos = makeRepos()
+  const clip = repos.clone
   const t0 = Date.now()
   await record('palette', {}, async (_app, win) => {
+    await win.evaluate((p) => window.devdock.repos.add({ path: p }), clip)
     await nav(win, 'Today')
     await pause(win, 800)
     markStart('palette', t0)
@@ -89,16 +95,19 @@ test('demo: command palette', async () => {
     await win.keyboard.press('ArrowDown')
     await pause(win, 500)
     await win.keyboard.press('Enter')
-    await expect(win.getByRole('dialog')).toBeVisible()
+    await expect(win.getByRole('dialog', { name: /^Start work on DD-/ })).toBeVisible()
     await pause(win, 2500)
   })
 })
 
 test('demo: menu-bar panel', async () => {
+  repos = makeRepos()
+  const clip = repos.clone
   await record(
     'panel',
     {},
-    async (app) => {
+    async (app, win) => {
+      await win.evaluate((p) => window.devdock.repos.add({ path: p }), clip)
       await callHook(app, 'togglePanel')
       const panel = await windowFor(app, 'panel.html')
       // Its video starts with its window, not with the app.
@@ -146,7 +155,9 @@ test('demo: start work and the agent', async () => {
         await pause(win, 2000)
         await dialog.getByRole('button', { name: 'Start work', exact: true }).click()
         await expect(dialog.getByRole('status')).toContainText('Started work on')
-        await pause(win, 2000)
+        await pause(win, 1000)
+        markPoster('start-work', t0)
+        await pause(win, 1000)
         await dialog.getByRole('button', { name: 'Start Claude Code now' }).click()
         await expect(win.locator('main[data-view="terminal"]')).toBeVisible()
         await pause(win, 2500)
