@@ -15,7 +15,7 @@ Contract docs: `docs/SPEC.md`, `docs/UI-THEMES.md`, `docs/BUILD-PROMPTS.md` (pha
 | Field        | Value                                                         |
 | ------------ | ------------------------------------------------------------- |
 | Phase        | **Phase 7 — final wrap-up day is 2026-10-31.** Everything planned is merged on `main` (29328bd, pushed): P7-A terminal, P7-B GitHub/GitLab, P7-C-A agent CLIs, P7-C-B AI with your own key (Claude), P7-D website v2, P7-E accessibility (automated part). |
-| Next step    | **T19 (owner):** connect Vercel (import repo, Root Directory `website`, build `npm run build:site`), deploy; then agent checks the live page + download links. v0.1.0 is PUBLISHED (latest, not pre-release). |
+| Next step    | **All T-tasks done.** v0.1.0 published; site live at https://devdock.aryangarg.com (Vercel, Cloudflare CNAME DNS-only). Open, owner-side only: link the site from aryangarg.com; redeploy Vercel after each release; optional later: code signing (T8), real-Windows test, listening screen-reader pass (T12). |
 | Blockers     | None                                                          |
 | Last updated | 2026-11-01                                                    |
 
@@ -881,3 +881,4 @@ Next step: owner review → merge `p7-providers` into `main`.
 | 2026-11-02 | v0.1.0 draft | CI green on 32a26c9 (macOS, Windows, website); tagged v0.1.0 → Release run green, draft has DevDock-arm64.dmg 108.8 MB, DevDock-x64.dmg 112.0 MB, DevDock-Setup.exe 105.7 MB, DevDock-Portable.exe 105.5 MB, SHA256SUMS.txt (sizes match the website config). | owner publishes → T19 |
 | 2026-11-02 | v0.1.0 published | Owner published v0.1.0 (latest, not pre-release). /releases/latest/download/ → 200 for all four installers. | T19 Vercel |
 | 2026-11-02 | Website: Downloads page | Owner asked for a separate releases page. downloads.html (/downloads): platform cards (picked one first via #mac/#windows) + All versions from releases.json `releases`; home buttons link there. Website Vitest 36; Playwright (Chrome) 28 passed / 4 skipped (axe on both pages); Lighthouse / 98/100/100/100 mobile, 100 ×4 desktop; /downloads 100 ×4 both. | T19 Vercel (owner), redeploy after each release |
+| 2026-11-02 | T19 live | devdock.aryangarg.com on Vercel (owner: project root `website`, Cloudflare CNAME DNS-only). Live: /, /downloads, /releases.json (0.1.0, 1 version), 404 → 200/404 as expected, HSTS; axe 0 on both pages (Mac + Windows UAs), 0 console errors; download links 206 from GitHub; Apple silicon detected in real Chrome. Lighthouse live: / 100 ×4 mobile + desktop; /downloads had CLS 0.18 (cards drawn after load) → reserved height, local 100 ×4. | owner: portfolio link |

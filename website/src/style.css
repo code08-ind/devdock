@@ -1510,3 +1510,15 @@ dialog::backdrop {
   margin-top: 0;
   margin-bottom: 16px;
 }
+
+/* Room for the platform cards before the script draws them, so "All versions" doesn't jump down
+   (measured: about 570–645 px stacked, 320–345 px side by side). */
+#latest .download {
+  min-height: 570px;
+}
+
+@media (min-width: 760px) {
+  #latest .download {
+    min-height: 320px;
+  }
+}
