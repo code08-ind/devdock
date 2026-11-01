@@ -216,6 +216,30 @@ describe('TerminalManager', () => {
     expect(existsSync(join(promptDir, 'zsh'))).toBe(false)
   })
 
+  it('busy (T11): a command running in the shell or an agent tab; not an idle or exited shell', async () => {
+    const { m, pty } = manager()
+    const shell = await m.create(req())
+    const p = pty.ptys[0]!
+    expect(m.busy(1, shell.id)).toEqual({ busy: false, process: null })
+    p.process = 'zsh'
+    expect(m.busy(1, shell.id)).toEqual({ busy: false, process: null })
+    p.process = '-zsh' // a login shell's name
+    expect(m.busy(1, shell.id)).toEqual({ busy: false, process: null })
+    p.process = 'npm'
+    expect(m.busy(1, shell.id)).toEqual({ busy: true, process: 'npm' })
+    p.process = '/usr/local/bin/node'
+    expect(m.busy(1, shell.id)).toEqual({ busy: true, process: 'node' })
+    // Someone else's tab is reported like a missing one.
+    expect(() => m.busy(2, shell.id)).toThrow(/no longer open/)
+    p.exit(0)
+    expect(m.busy(1, shell.id)).toEqual({ busy: false, process: null })
+
+    const agent = await m.create(
+      req(1, { program: { file: '/b/claude', args: [], name: 'Claude Code', note: null } }),
+    )
+    expect(m.busy(1, agent.id)).toEqual({ busy: true, process: 'Claude Code' })
+  })
+
   it('creates still starting count towards the limit', async () => {
     // The DevDock prompt makes each create wait before it spawns, so they all overlap.
     const { m, pty } = manager({ settings: { devdockPrompt: true } })

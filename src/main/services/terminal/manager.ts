@@ -12,6 +12,7 @@ import {
   type TerminalOutputEvent,
   type TerminalSession,
   type TerminalSettings,
+  type TerminalBusy,
 } from '@shared/terminal'
 import { OutputBatcher } from './batcher'
 import { withDevdockPrompt } from './prompt'
@@ -25,6 +26,8 @@ export interface Pty {
   write(data: string): void
   resize(cols: number, rows: number): void
   kill(signal?: string): void
+  /** node-pty: the foreground process's name (macOS/Linux); Windows always reports the shell. */
+  readonly process?: string
 }
 
 export interface PtySpawnOptions {
@@ -87,6 +90,8 @@ interface Session {
   batcher: OutputBatcher
   exited: Promise<void>
   disposers: { dispose(): void }[]
+  /** Runs a program (an agent CLI) instead of a shell. */
+  program: boolean
 }
 
 /** The environment a DevDock terminal gets: the app's, minus Electron's own switches. */
@@ -237,7 +242,15 @@ export class TerminalManager {
     )
     let markExited!: () => void
     const exited = new Promise<void>((r) => (markExited = r))
-    const session: Session = { info, owner: req.owner, pty, batcher, exited, disposers: [] }
+    const session: Session = {
+      info,
+      owner: req.owner,
+      pty,
+      batcher,
+      exited,
+      disposers: [],
+      program: Boolean(req.program),
+    }
     session.disposers.push(
       pty.onData((d) => batcher.push(d)),
       pty.onExit(({ exitCode, signal }) => {
@@ -300,6 +313,23 @@ export class TerminalManager {
     } catch {
       // The PTY closed between the check and the call.
     }
+  }
+
+  /**
+   * What runs in a tab now, so closing it can ask first (T11, SPEC 7 "killing a process"): a
+   * program tab (an agent CLI) while it runs; a shell tab when its foreground process isn't the
+   * shell itself, e.g. `npm run dev`. An idle shell at its prompt isn't busy. Windows reports
+   * only the shell, so there a shell tab closes without asking.
+   */
+  busy(owner: number, id: string): TerminalBusy {
+    const s = this.own(owner, id)
+    if (s.info.status === 'exited') return { busy: false, process: null }
+    if (s.program) return { busy: true, process: s.info.shell }
+    const name = (p: string) =>
+      (p.replace(/^-/, '').split(/[\\/]/).pop() ?? '').replace(/\.exe$/i, '')
+    const foreground = name(s.pty.process ?? '')
+    if (!foreground || foreground === name(s.info.shell)) return { busy: false, process: null }
+    return { busy: true, process: foreground }
   }
 
   /** Closes a tab: the shell is asked to hang up, then it and its process group are killed. */

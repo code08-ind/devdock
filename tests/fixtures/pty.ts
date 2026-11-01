@@ -7,6 +7,8 @@ export class FakePty implements Pty {
   readonly writes: string[] = []
   readonly resizes: [number, number][] = []
   readonly kills: (string | undefined)[] = []
+  /** node-pty's foreground process name; tests set it to play a running command. */
+  process: string | undefined = undefined
   private dataListeners: ((d: string) => void)[] = []
   private exitListeners: ((e: { exitCode: number; signal?: number }) => void)[] = []
 

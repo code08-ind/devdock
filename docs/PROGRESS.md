@@ -15,7 +15,7 @@ Contract docs: `docs/SPEC.md`, `docs/UI-THEMES.md`, `docs/BUILD-PROMPTS.md` (pha
 | Field        | Value                                                         |
 | ------------ | ------------------------------------------------------------- |
 | Phase        | **Phase 7 — final wrap-up day is 2026-10-31.** Everything planned is merged on `main` (29328bd, pushed): P7-A terminal, P7-B GitHub/GitLab, P7-C-A agent CLIs, P7-C-B AI with your own key (Claude), P7-D website v2, P7-E accessibility (automated part). |
-| Next step    | **T11 (code review of Phase 7)**, then T12 screen readers (owner). T4, T5, T10 done 2026-11-01. |
+| Next step    | **T12 🧑 (VoiceOver / NVDA, owner)**, then T13–T15 (screenshots, website, docs). T4, T5, T10, T11 done 2026-11-01. |
 | Blockers     | None                                                          |
 | Last updated | 2026-11-01                                                    |
 
@@ -135,8 +135,12 @@ docs-only pushes.
 | Terminal e2e flake (Delete on a tab) | Fail → fixed (test) | a new terminal takes focus once its shell is up; the test now waits for that. terminal.spec × 5: 30/30 |
 | Keyboard T5 test flake | Fail → fixed (test) | under full-suite load Push branch was still disabled (repo status loading) when focused, so Enter did nothing; the test now waits for it to be enabled and focused (and for the view's heading focus first) |
 
-- [ ] **T11** Code review of all of Phase 7 (`code-review` skill, Standards + Spec, since the P6
+- [x] **T11** Code review of all of Phase 7 (`code-review` skill, Standards + Spec, since the P6
   close `2b8cfff`), after T2–T7; fix findings.
+  Done (T6/T7 moved after v0.1.0): Standards — no hard violations, 8 judgement calls (5 fixed:
+  dead `bitbucket:*` channels, shared guards/helpers, `prs` naming, a comment; 3 recorded or
+  rejected in DECISIONS "T11"). Spec — no missing confirmations, no scope creep; fixed: CI actions
+  in the palette (T11b), terminal tab close asks when something runs (T11c, owner's choice).
 - [ ] **T12** 🧑 VoiceOver (macOS) and NVDA (Windows) listening pass — the manual half of P7.12;
   the agent fixes what it finds.
 
@@ -797,3 +801,4 @@ Next step: owner review → merge `p7-providers` into `main`.
 | 2026-11-01 | T5d | Offer to move the ticket when a PR of mine opens (TicketMoves poller, Today card, notification, palette command; confirmed; status from Settings → Workflow, default In Review). lint 0; vitest 938 / 1 skipped; e2e 70 / 5 skipped. T5 complete. | T10 |
 | 2026-11-01 | Quiet e2e | Owner: test windows disturbed other work. e2e runs now invisible (opacity 0, never focused, no Dock icon, no system notifications); `DEVDOCK_E2E_VISIBLE=1` to watch. Full e2e in quiet mode, run in the background: 70 / 5 skipped (same as visible). | T10 |
 | 2026-11-01 | T10 | Whole-product QA in demo mode: audit extended (GitHub/GitLab, terminal, dialogs, 16 Settings sections, both palettes; 263 screenshots reviewed), new axe + keyboard tests for the T4/T5 UI. Fixed: Home Builds copy, Builds watch field at 18 px, "Paste key" for the API key, quiet e2e windows let clicks through, branch-switch follower ordering, crash logging, two test races. lint 0; vitest 938 / 1 skipped; e2e 72 / 5 skipped; audit passed. | T11 |
+| 2026-11-01 | T11 | Code review (Standards + Spec, parallel) of 2b8cfff...HEAD: T11a cleanups, T11b CI actions in the palette, T11c terminal tab close confirmation (owner chose "ask only if something runs"). lint 0; vitest 940 / 1 skipped; e2e 74 / 5 skipped (full run), then terminal + a11y + agents 12/12 after a React Compiler lint fix. | T12 |

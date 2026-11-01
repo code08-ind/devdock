@@ -141,6 +141,8 @@ export const INVOKE_CHANNELS = [
   'terminal:write',
   'terminal:resize',
   'terminal:kill',
+  /** Whether a tab runs something besides its idle shell (closing it then asks first). */
+  'terminal:busy',
   /** Palette window / panel → main window: open a DevDock terminal (in a repo or home). */
   'terminal:request',
   /** P7-C: which agent CLIs are installed (on PATH). */

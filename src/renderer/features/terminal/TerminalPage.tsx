@@ -1,10 +1,11 @@
 import type { AgentLaunch } from '@shared/agents'
 import { ArrowDown, ArrowUp, Copy, Eraser, Plus, Search, SquareTerminal, X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
-import { useSettings } from '../../lib/devdock'
+import { bridge, useSettings } from '../../lib/devdock'
 import { modLabel } from '../../lib/keyboard'
 import { useRepos } from '../../lib/repos'
 import { Button, IconButton } from '../../ui/Button'
+import { ConfirmDialog } from '../../ui/Dialog'
 import { EmptyState, ErrorDetails, useToast } from '../../ui/Feedback'
 import { Select } from '../../ui/Field'
 import { terminalStore, type TerminalTab } from './store'
@@ -103,6 +104,10 @@ export interface TerminalOpenRequest {
 export function TerminalPage({ request }: { request?: TerminalOpenRequest }) {
   const store = terminalStore()
   const { tabs, active } = useSyncExternalStore(store.subscribe, store.getSnapshot)
+  // T11 (SPEC 7 "killing a process"): closing a tab that runs something asks first.
+  const [closing, setClosing] = useState<{ key: string; title: string; process: string } | null>(
+    null,
+  )
   const settings = useSettings().data
   const repos = useRepos()
   const toast = useToast()
@@ -186,6 +191,20 @@ export function TerminalPage({ request }: { request?: TerminalOpenRequest }) {
     store.focusActive()
   }
 
+  const requestClose = async (key: string) => {
+    const tab = store.getSnapshot().tabs.find((t) => t.key === key)
+    if (!tab) return
+    if (tab.id && tab.status === 'running') {
+      const r = await bridge.terminal.busy({ id: tab.id })
+      // An idle shell (or one main no longer knows) closes at once.
+      if (r.ok && r.data.busy) {
+        setClosing({ key, title: tab.title, process: r.data.process ?? 'A program' })
+        return
+      }
+    }
+    await store.close(key)
+  }
+
   const onTabKey = (e: React.KeyboardEvent, index: number) => {
     let next = -1
     if (e.key === 'ArrowRight') next = (index + 1) % tabs.length
@@ -194,7 +213,7 @@ export function TerminalPage({ request }: { request?: TerminalOpenRequest }) {
     else if (e.key === 'End') next = tabs.length - 1
     else if (e.key === 'Delete') {
       e.preventDefault()
-      void store.close(tabs[index]!.key)
+      void requestClose(tabs[index]!.key)
       return
     } else return
     e.preventDefault()
@@ -242,7 +261,7 @@ export function TerminalPage({ request }: { request?: TerminalOpenRequest }) {
                 title={`Close ${t.title}`}
                 onClick={(e) => {
                   e.stopPropagation()
-                  void store.close(t.key)
+                  void requestClose(t.key)
                 }}
               >
                 <X size={14} />
@@ -282,7 +301,7 @@ export function TerminalPage({ request }: { request?: TerminalOpenRequest }) {
             icon={<X size={16} />}
             disabled={!activeTab}
             onClick={() => {
-              if (activeTab) void store.close(activeTab.key)
+              if (activeTab) void requestClose(activeTab.key)
             }}
           />
           <IconButton
@@ -297,6 +316,22 @@ export function TerminalPage({ request }: { request?: TerminalOpenRequest }) {
         </div>
       </div>
       {finding && activeTab ? <FindBar onClose={closeFind} /> : null}
+      {closing ? (
+        <ConfirmDialog
+          open
+          danger
+          title={`Stop ${closing.process} and close this tab?`}
+          body={
+            <p>
+              {closing.process} is still running in “{closing.title}”. Closing the tab stops it and
+              everything it started.
+            </p>
+          }
+          confirmLabel="Stop and close"
+          onConfirm={() => void store.close(closing.key)}
+          onClose={() => setClosing(null)}
+        />
+      ) : null}
       {activeTab?.error ? (
         <div className="terminal-error" role="alert">
           <p>{activeTab.error.message}</p>

@@ -219,3 +219,45 @@ for (const shell of ['/bin/zsh', '/bin/bash']) {
     }
   })
 }
+
+test('T11: closing a tab that runs a command asks first; Cancel keeps it running', async ({
+  launched,
+}) => {
+  test.skip(
+    process.platform === 'win32',
+    'Windows reports only the shell as the foreground process',
+  )
+  test.setTimeout(60_000)
+  const { app, win } = launched
+  await showView(win, 'Terminal')
+  const tabs = win.getByRole('tablist', { name: 'Terminals' })
+  await expect(tabs.getByRole('tab', { name: 'Home' })).toHaveAttribute('aria-selected', 'true')
+  await expect.poll(() => callHook(app, 'terminalPids'), { timeout: 15_000 }).toHaveLength(1)
+  const [pid] = await callHook(app, 'terminalPids')
+  await typeLine(win, 'echo ready')
+  await expect.poll(() => hasLine(win, 'ready'), { timeout: 15_000 }).toBe(true)
+
+  await typeLine(win, 'sleep 30')
+  const close = win.getByRole('button', { name: 'Close terminal' })
+  const dialog = win.getByRole('dialog', { name: 'Stop sleep and close this tab?' })
+  // The shell needs a moment to hand the terminal to `sleep` (a fresh app: the first tab is t1).
+  await expect
+    .poll(() => win.evaluate(() => window.devdock.terminal.busy({ id: 't1' })), {
+      timeout: 15_000,
+    })
+    .toEqual({ ok: true, data: { busy: true, process: 'sleep' } })
+  await close.click()
+  await expect(dialog).toBeVisible()
+  await expect(dialog).toContainText('everything it started')
+  await dialog.getByRole('button', { name: 'Cancel' }).click()
+  await expect(tabs.getByRole('tab')).toHaveCount(1)
+  expect(alive(pid!)).toBe(true)
+
+  await close.click()
+  await win
+    .getByRole('dialog', { name: 'Stop sleep and close this tab?' })
+    .getByRole('button', { name: 'Stop and close' })
+    .click()
+  await expect(tabs.getByRole('tab')).toHaveCount(0)
+  await expect.poll(() => alive(pid!), { timeout: 5_000 }).toBe(false)
+})

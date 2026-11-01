@@ -34,6 +34,9 @@ versions follow [Semantic Versioning](https://semver.org/).
   deploy, start / stop the baseline server. From the global-shortcut palette window, commands
   that need a dialog (trigger build, stop a server, PR actions, the AI actions) open it in the
   main window.
+- **Palette:** re-run / retry / cancel GitHub Actions runs and GitLab pipelines (with CI actions
+  on), through the same confirmation as in Builds.
+- **Terminal:** closing a tab that is running something (a dev server, an agent) asks first.
 - **Workflow follow-ups** (Settings → Workflow, each off by default): run the repo's check command
   (e.g. `npm test`, set in the repo's settings) before Push branch — nothing is pushed if it
   fails; watch the branch's Jenkins build after a push; start the dev server after a branch

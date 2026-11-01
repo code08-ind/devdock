@@ -70,6 +70,7 @@ import { DiagnosticsSchema } from './diagnostics'
 import { StandupDraftSchema } from './standup'
 import {
   TerminalCreateSchema,
+  TerminalBusySchema,
   TerminalRefSchema,
   TerminalRequestSchema,
   type TerminalRequest,
@@ -376,6 +377,7 @@ export const contract = {
   'terminal:resize': { req: TerminalResizeSchema, res: none },
   /** Closing a tab: the shell and what it started are stopped. */
   'terminal:kill': { req: TerminalRefSchema, res: none },
+  'terminal:busy': { req: TerminalRefSchema, res: TerminalBusySchema },
   /** Palette window / panel → main window: open a DevDock terminal tab there. */
   'terminal:request': { req: TerminalRequestSchema, res: none },
   'agents:detect': { req: none, res: z.array(AgentStatusSchema) },

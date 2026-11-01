@@ -49,6 +49,14 @@ export const TerminalWriteSchema = z.object({
 export const TerminalResizeSchema = z.object({ id: TerminalIdSchema, cols: Cols, rows: Rows })
 export const TerminalRefSchema = z.object({ id: TerminalIdSchema })
 
+/** What a tab runs now (T11): closing a busy one asks first. */
+export const TerminalBusySchema = z.object({
+  busy: z.boolean(),
+  /** The running program's name, e.g. `npm` or `claude`; null when idle. */
+  process: z.string().nullable(),
+})
+export type TerminalBusy = z.infer<typeof TerminalBusySchema>
+
 export const TerminalSessionSchema = z.object({
   id: TerminalIdSchema,
   /** Tab title: the repo name, or "Home". */

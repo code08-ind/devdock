@@ -614,6 +614,8 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
       withTerminal(() => deps.terminal.resize(terminalOwner(event), id, cols, rows)),
     'terminal:kill': ({ id }, event) =>
       withTerminal(() => deps.terminal.kill(terminalOwner(event), id)),
+    'terminal:busy': ({ id }, event) =>
+      withTerminal(async () => deps.terminal.busy(terminalOwner(event), id)),
     'terminal:request': (request) =>
       withGit(() => {
         if (request.repoId) deps.repos.get(request.repoId)
