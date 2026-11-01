@@ -134,24 +134,45 @@ export const PrChangesSchema = z.object({
       removed: z.number().int().nullable(),
     }),
   ),
-  /** Changed files in all (more than `files` when the list was cut); null if unknown. */
-  filesTotal: z.number().int().nullable(),
+  /** Changed files in all (more than `files` when the list was cut). */
+  filesTotal: z.number().int(),
+  /**
+   * False when the API gave no total (a full list may go on) or only a floor (GitLab's "1000+"):
+   * `filesTotal` is then "at least".
+   */
+  filesTotalExact: z.boolean(),
 })
 export type PrChanges = z.infer<typeof PrChangesSchema>
 export type PrFileChange = PrChanges['files'][number]
 
-/** Description and files cut to the bounds, with the cut recorded. */
+/** A provider's file status in DevDock's words; anything else (copied, conflicted…) is modified. */
+export const asFileStatus = (v: unknown): PrFileChange['status'] =>
+  (PR_FILE_STATUSES as readonly unknown[]).includes(v) ? (v as PrFileChange['status']) : 'modified'
+
+/**
+ * Description and files cut to the bounds, with the cut recorded. `total`: the API's count, or
+ * `{ atLeast }` for a floor (GitLab's "1000+"), or null when it gave none — then a list that
+ * fills the cap may go on, so the total is "at least" the list's length.
+ */
 export function boundChanges(
   description: string,
   files: PrFileChange[],
-  filesTotal: number | null,
+  total: number | { atLeast: number } | null,
 ): PrChanges {
   const text = description.trim()
+  const listed = files.slice(0, MAX_PR_FILES)
+  const [filesTotal, filesTotalExact] =
+    typeof total === 'number'
+      ? [Math.max(total, listed.length), true]
+      : total
+        ? [Math.max(total.atLeast, listed.length), false]
+        : [listed.length, files.length < MAX_PR_FILES]
   return {
     description: text.slice(0, MAX_PR_DESCRIPTION),
     descriptionCut: text.length > MAX_PR_DESCRIPTION,
-    files: files.slice(0, MAX_PR_FILES),
-    filesTotal: filesTotal ?? (files.length > MAX_PR_FILES ? null : files.length),
+    files: listed,
+    filesTotal,
+    filesTotalExact,
   }
 }
 

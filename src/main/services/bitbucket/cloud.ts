@@ -8,7 +8,7 @@ import {
   boundChanges,
   MAX_PR_FILES,
   type PrChanges,
-  type PrFileChange,
+  asFileStatus,
 } from '@shared/bitbucket'
 import { CLOUD_API, CLOUD_WEB, isCloudHost } from '@shared/prlink'
 import { num, obj, text, type JsonObject } from '../json'
@@ -48,14 +48,6 @@ export function cloudAuthorization(username: string, token: string): string {
 }
 
 /** Pages: `{ values, next }`. `next` must stay on the API origin (it carries our token). */
-/** Diffstat statuses (Cloud); merge conflicts and the like count as modified. */
-const CLOUD_STATUS: Record<string, PrFileChange['status']> = {
-  added: 'added',
-  removed: 'removed',
-  renamed: 'renamed',
-  modified: 'modified',
-}
-
 function page(apiRoot: string) {
   const origin = new URL(apiRoot).origin
   return (body: unknown) => {
@@ -154,7 +146,8 @@ export class CloudAdapter implements BitbucketAdapter {
     const page = obj(stat.body)
     const files = (Array.isArray(page.values) ? page.values : []).map(obj).map((v) => ({
       path: text(obj(v.new).path) ?? text(obj(v.old).path) ?? '(unknown)',
-      status: CLOUD_STATUS[String(v.status)] ?? ('modified' as const),
+      // Diffstat statuses; merge conflicts and the like count as modified.
+      status: asFileStatus(v.status),
       added: num(v.lines_added),
       removed: num(v.lines_removed),
     }))

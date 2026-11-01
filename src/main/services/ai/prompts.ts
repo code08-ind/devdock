@@ -4,12 +4,7 @@
  * is included; never tokens, paths outside the repo, or environment values.
  */
 import type { AiFeature } from '@shared/ai'
-import {
-  MAX_PR_DESCRIPTION,
-  type PrChanges,
-  type PrFileChange,
-  type PullRequest,
-} from '@shared/bitbucket'
+import { MAX_PR_DESCRIPTION, type PrChanges, type PullRequest } from '@shared/bitbucket'
 import type { StandupDraft } from '@shared/standup'
 
 export const SYSTEM: Record<AiFeature, string> = {
@@ -28,41 +23,46 @@ export const SYSTEM: Record<AiFeature, string> = {
     'Blockers (write "None" when there are none). Do not invent work. Markdown, nothing else.',
 }
 
-const SIGN: Record<PrFileChange['status'], string> = {
-  added: 'added',
-  modified: 'modified',
-  removed: 'removed',
-  renamed: 'renamed',
-}
-
 /** T7: the description and changed files, or why they're missing. */
-function changesLines(changes: PrChanges | null): string[] {
-  if (!changes) return ['Description and changed files: could not be read.']
+function changesLines(changes: PrChanges | string | null): string[] {
+  if (changes === null) return ['Description and changed files: could not be read.']
+  if (typeof changes === 'string') {
+    return [`Description and changed files: could not be read (${changes}).`]
+  }
   const description = changes.description
     ? `${changes.description}${changes.descriptionCut ? `\n[… cut at ${MAX_PR_DESCRIPTION} characters]` : ''}`
     : '(none)'
+  const listed = changes.files.length
   const known = changes.files.filter((f) => f.added !== null && f.removed !== null)
   const sum = (k: 'added' | 'removed') => known.reduce((n, f) => n + (f[k] ?? 0), 0)
-  const totals =
-    known.length === changes.files.length && known.length > 0
-      ? ` (+${sum('added')} −${sum('removed')} lines)`
-      : ''
-  const total = changes.filesTotal ?? changes.files.length
+  const complete = changes.filesTotalExact && changes.filesTotal === listed
+  // Line totals only when every listed file has counts; for a cut list they cover those files.
+  const lines =
+    known.length === listed && listed > 0 ? `+${sum('added')} −${sum('removed')} lines` : ''
+  const totals = !lines ? '' : complete ? ` (${lines})` : ` (the ${listed} listed: ${lines})`
+  const count = changes.filesTotalExact
+    ? String(changes.filesTotal)
+    : `at least ${changes.filesTotal}`
   const files = changes.files.map(
     (f) =>
-      `- ${SIGN[f.status]} ${f.path}${f.added !== null && f.removed !== null ? ` (+${f.added} −${f.removed})` : ''}`,
+      `- ${f.status} ${f.path}${f.added !== null && f.removed !== null ? ` (+${f.added} −${f.removed})` : ''}`,
   )
-  const more = total - changes.files.length
+  const more = changes.filesTotal - listed
   return [
     'Description:',
     description,
-    `Changed files: ${total}${totals}`,
+    `Changed files: ${count}${totals}`,
     ...files,
-    ...(more > 0 ? [`(and ${more} more files)`] : []),
+    ...(more > 0
+      ? [`(and ${changes.filesTotalExact ? '' : 'at least '}${more} more files)`]
+      : !changes.filesTotalExact
+        ? ['(the list may go on)']
+        : []),
   ]
 }
 
-export function prPrompt(pr: PullRequest, changes: PrChanges | null = null): string {
+/** `changes`: what was read, or why it couldn't be (a short reason), or null. */
+export function prPrompt(pr: PullRequest, changes: PrChanges | string | null = null): string {
   const reviewers = pr.reviewers.length
     ? pr.reviewers.map((r) => `${r.name} (${r.status.replace(/_/g, ' ')})`).join(', ')
     : 'none yet'

@@ -19,6 +19,7 @@ vi.mock('electron', () => ({ ipcMain: { handle: vi.fn() } }))
 const { prPrompt } = await import('../../src/main/services/ai/prompts')
 const { dispatch } = await import('../../src/main/ipc/registry')
 const { handlerSetup } = await import('../fixtures/handler-deps')
+const { ServiceError } = await import('../../src/main/services/service-error')
 
 const file = (path: string, added: number | null = 1, removed: number | null = 0) =>
   ({ path, status: 'modified', added, removed }) as const
@@ -38,10 +39,16 @@ describe('PR changes (T7): bounds and line counts', () => {
     expect(c.description).toHaveLength(MAX_PR_DESCRIPTION)
     expect(c.descriptionCut).toBe(true)
     expect(c.files).toHaveLength(MAX_PR_FILES)
-    expect(c.filesTotal).toBeNull()
+    // No total from the API and a full list: at least that many.
+    expect(c).toMatchObject({ filesTotal: MAX_PR_FILES, filesTotalExact: false })
     expect(boundChanges('ok', [file('a.ts')], null)).toMatchObject({
       descriptionCut: false,
       filesTotal: 1,
+      filesTotalExact: true,
+    })
+    expect(boundChanges('', [file('a.ts')], { atLeast: 1000 })).toMatchObject({
+      filesTotal: 1000,
+      filesTotalExact: false,
     })
   })
 })
@@ -72,10 +79,13 @@ describe('PR changes (T7): the prompt', () => {
         { path: 'src/DatePicker.test.tsx', status: 'added', added: 40, removed: 0 },
       ],
       filesTotal: 5,
+      filesTotalExact: true,
     }
     const text = prPrompt(pr, changes)
     expect(text).toContain('Description:\nKeeps focus on the grid.')
-    expect(text).toContain('Changed files: 5 (+52 −3 lines)')
+    // The sums cover the listed files only, and say so.
+    expect(text).toContain('Changed files: 5 (the 2 listed: +52 −3 lines)')
+    expect(prPrompt(pr, { ...changes, filesTotal: 2 })).toContain('Changed files: 2 (+52 −3 lines)')
     expect(text).toContain('- modified src/DatePicker.tsx (+12 −3)')
     expect(text).toContain('- added src/DatePicker.test.tsx (+40 −0)')
     expect(text).toContain('(and 3 more files)')
@@ -87,13 +97,33 @@ describe('PR changes (T7): the prompt', () => {
       descriptionCut: true,
       files: [{ path: 'a.ts', status: 'removed', added: null, removed: null }],
       filesTotal: 1,
+      filesTotalExact: true,
     })
     expect(text).toContain(`[… cut at ${MAX_PR_DESCRIPTION} characters]`)
     expect(text).toContain('Changed files: 1\n- removed a.ts')
     expect(
-      prPrompt(pr, { description: '', descriptionCut: false, files: [], filesTotal: 0 }),
+      prPrompt(pr, {
+        description: '',
+        descriptionCut: false,
+        files: [],
+        filesTotal: 0,
+        filesTotalExact: true,
+      }),
     ).toContain('Description:\n(none)')
     expect(prPrompt(pr, null)).toContain('Description and changed files: could not be read.')
+    expect(prPrompt(pr, 'no access with this token')).toContain(
+      'Description and changed files: could not be read (no access with this token).',
+    )
+    // A floor (GitLab "1000+"): "at least", never an exact count.
+    const floor = prPrompt(pr, {
+      description: '',
+      descriptionCut: false,
+      files: [{ path: 'a.ts', status: 'added', added: 1, removed: 0 }],
+      filesTotal: 1000,
+      filesTotalExact: false,
+    })
+    expect(floor).toContain('Changed files: at least 1000 (the 1 listed: +1 −0 lines)')
+    expect(floor).toContain('(and at least 999 more files)')
   })
 })
 
@@ -146,6 +176,7 @@ describe('PR changes (T7): each provider', () => {
         { path: 'src/c.ts', status: 'modified', added: 1, removed: 1 },
       ],
       filesTotal: 3,
+      filesTotalExact: true,
     })
     expect(
       new URL(http.requests.find((r) => r.url.includes('diffstat'))!.url).searchParams.get(
@@ -211,6 +242,7 @@ describe('PR changes (T7): each provider', () => {
       files: [{ path: 'b', status: 'renamed', added: 1, removed: 1 }],
       // "1000+": at least that many (not the one file listed).
       filesTotal: 1000,
+      filesTotalExact: false,
     })
   })
 
@@ -233,5 +265,24 @@ describe('PR changes (T7): each provider', () => {
       expect(r.data.prompt, ref.repo).toMatch(/Changed files: 4/)
       expect(r.data.prompt, ref.repo).toContain('- added src/components/')
     }
+  })
+
+  it('extras that can’t be read: the summary is still prepared, saying why; a rate limit is reported', async () => {
+    const { deps, handlers } = await handlerSetup()
+    deps.settings.update({ general: { demoMode: true } })
+    const ref = { owner: 'DEMO', repo: 'web-app', id: 412 }
+    const spy = vi
+      .spyOn(deps.prs, 'changes')
+      .mockRejectedValueOnce(new ServiceError('forbidden', 'nope', { status: 403 }))
+    const r = await dispatch('ai:prepare', { feature: 'pr-summary', ref }, handlers)
+    if (!r.ok) throw new Error(r.error.message)
+    expect(r.data.prompt).toContain(
+      'Description and changed files: could not be read (no access with this token).',
+    )
+    spy.mockRejectedValueOnce(new ServiceError('rate_limited', 'slow down', { status: 429 }))
+    expect(await dispatch('ai:prepare', { feature: 'pr-summary', ref }, handlers)).toMatchObject({
+      ok: false,
+      error: { code: 'RATE_LIMITED' },
+    })
   })
 })

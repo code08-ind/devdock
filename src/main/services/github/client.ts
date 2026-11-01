@@ -7,7 +7,7 @@ import {
   boundChanges,
   MAX_PR_FILES,
   type PrChanges,
-  type PrFileChange,
+  asFileStatus,
 } from '@shared/bitbucket'
 import {
   LOG_TAIL_BYTES,
@@ -118,14 +118,6 @@ const RUNS_LIMIT = 40
 interface Me {
   login: string
   name: string
-}
-
-/** File statuses (GitHub); copied / changed / unchanged count as modified. */
-const GITHUB_STATUS: Record<string, PrFileChange['status']> = {
-  added: 'added',
-  removed: 'removed',
-  renamed: 'renamed',
-  modified: 'modified',
 }
 
 export class GitHubClient implements HostClient {
@@ -310,7 +302,8 @@ export class GitHubClient implements HostClient {
     const p = obj(pull.body)
     const files = (Array.isArray(list.body) ? list.body : []).map(obj).map((f) => ({
       path: text(f.filename) ?? '(unknown)',
-      status: GITHUB_STATUS[String(f.status)] ?? ('modified' as const),
+      // Copied / changed / unchanged count as modified.
+      status: asFileStatus(f.status),
       added: num(f.additions),
       removed: num(f.deletions),
     }))

@@ -8,6 +8,7 @@ import {
   diffLineCounts,
   MAX_PR_FILES,
   type PrChanges,
+  type PrFileChange,
 } from '@shared/bitbucket'
 import {
   LOG_TAIL_BYTES,
@@ -79,6 +80,14 @@ interface Me {
   id: number
   username: string
   name: string
+}
+
+/** GitLab marks a file's change with three flags. */
+function gitlabStatus(d: Record<string, unknown>): PrFileChange['status'] {
+  if (d.new_file === true) return 'added'
+  if (d.deleted_file === true) return 'removed'
+  if (d.renamed_file === true) return 'renamed'
+  return 'modified'
 }
 
 export class GitLabClient implements HostClient {
@@ -264,21 +273,14 @@ export class GitLabClient implements HostClient {
       const counts = diff ? diffLineCounts(diff) : null
       return {
         path: text(d.new_path) ?? text(d.old_path) ?? '(unknown)',
-        status:
-          d.new_file === true
-            ? ('added' as const)
-            : d.deleted_file === true
-              ? ('removed' as const)
-              : d.renamed_file === true
-                ? ('renamed' as const)
-                : ('modified' as const),
+        status: gitlabStatus(d),
         added: counts?.added ?? null,
         removed: counts?.removed ?? null,
       }
     })
     // `changes_count` is a string: "12", or "1000+" when GitLab caps it (then at least that many).
-    const count = /^(\d+)\+?$/.exec(text(m.changes_count) ?? '')
-    const total = count ? Number(count[1]) : null
+    const count = /^(\d+)(\+?)$/.exec(text(m.changes_count) ?? '')
+    const total = count ? (count[2] ? { atLeast: Number(count[1]) } : Number(count[1])) : null
     return boundChanges(text(m.description) ?? '', files, total)
   }
 
