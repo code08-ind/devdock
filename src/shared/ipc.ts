@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { TicketMoveResultSchema, TicketMoveSchema, type TicketMove } from './ticketmoves'
 import { AgentStatusSchema } from './agents'
 import { AiConnectionSchema, AiPrepareSchema, AiPreviewSchema, AiResultSchema } from './ai'
 import {
@@ -359,6 +360,13 @@ export const contract = {
   'utilities:request': { req: UtilityRequestSchema, res: none },
   'tickets:request': { req: z.object({ key: IssueKeySchema }), res: none },
   'commands:request': { req: z.object({ id: z.string().min(1).max(1000) }), res: none },
+  'ticketmove:list': { req: none, res: z.array(TicketMoveSchema) },
+  'ticketmove:dismiss': { req: z.object({ prKey: z.string().min(1).max(2400) }), res: none },
+  'ticketmove:accept': {
+    // A Jira transition: the renderer must say the user confirmed it (SPEC 7).
+    req: z.object({ prKey: z.string().min(1).max(2400), confirmed: z.literal(true) }),
+    res: TicketMoveResultSchema,
+  },
   /** Read-only: branch name, commands, brief path + .gitignore check, agent and message. */
   'startwork:plan': { req: StartWorkRequestSchema, res: StartWorkPlanSchema },
   'startwork:run': { req: StartWorkRunSchema, res: StartWorkResultSchema },
@@ -441,6 +449,7 @@ export interface EventPayloads {
   'utilities:requested': z.infer<typeof UtilityRequestSchema>
   'tickets:requested': { key: string }
   'commands:requested': { id: string }
+  'ticketmove:changed': TicketMove[]
   'terminal:output': TerminalOutputEvent
   'terminal:exit': TerminalExitEvent
   'terminal:requested': TerminalRequest

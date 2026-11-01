@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
+import type { TicketMove } from '@shared/ticketmoves'
 import { isLive } from '@shared/bitbucket'
 import type { View } from '@shared/channels'
 import type { BuildWatch } from '@shared/jenkins'
@@ -8,8 +9,16 @@ import { isNotConfigured } from '../../lib/devdock'
 import { useBuildWatches, byLiveFirst } from '../../lib/jenkins'
 import { useJiraList } from '../../lib/jira'
 import { useRepoStatus, useRepos } from '../../lib/repos'
+import {
+  ticketMoveConfirm,
+  useAcceptTicketMove,
+  useDismissTicketMove,
+  useTicketMoves,
+} from '../../lib/ticketmoves'
+import { useAction } from '../../lib/useAction'
+import { ConfirmDialog } from '../../ui/Dialog'
 import { Button } from '../../ui/Button'
-import { ErrorNotice } from '../../ui/Feedback'
+import { ErrorNotice, useToast } from '../../ui/Feedback'
 import { WatchHead, watchNote } from '../builds/BuildBits'
 import { WatchedRunRow } from '../builds/CiRuns'
 import { useCiWatches } from '../../lib/providers'
@@ -21,12 +30,69 @@ import { StatusOf } from '../tickets/IssueBits'
 export function TodayPage({ onView }: { onView: (v: View) => void }) {
   return (
     <div className="today">
+      <TicketMoves />
       <MyPrs onView={onView} />
       <Watched onView={onView} />
       <WatchedBuilds onView={onView} />
       <InProgress onView={onView} />
       <Repos onView={onView} />
     </div>
+  )
+}
+
+/**
+ * T5: a PR of mine opened for a Jira key; move the ticket? Shown only while there are offers.
+ * Moving asks first (SPEC 7: Jira transitions).
+ */
+function TicketMoves() {
+  const offers = useTicketMoves().data ?? []
+  const accept = useAcceptTicketMove()
+  const dismiss = useDismissTicketMove()
+  const { run } = useAction()
+  const toast = useToast()
+  const [confirming, setConfirming] = useState<TicketMove | null>(null)
+  if (offers.length === 0) return null
+  return (
+    <section className="today-section" aria-labelledby="today-moves">
+      <h2 id="today-moves">Move tickets?</h2>
+      <ul className="today-rows" aria-label="Tickets to move">
+        {offers.map((o) => (
+          <li key={o.prKey} className="today-row">
+            <span className="mono issue-key">{o.key}</span>
+            <span className="today-row-text">
+              {o.prLabel} opened: move {o.key} to {o.status}?
+            </span>
+            <span className="row-actions">
+              <Button size="sm" onClick={() => setConfirming(o)}>
+                Move to {o.status}…
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                aria-label={`Dismiss: leave ${o.key} as it is`}
+                onClick={() => void run(dismiss.mutateAsync(o.prKey))}
+              >
+                Dismiss
+              </Button>
+            </span>
+          </li>
+        ))}
+      </ul>
+      {confirming ? (
+        <ConfirmDialog
+          open
+          {...ticketMoveConfirm(confirming)}
+          onClose={() => setConfirming(null)}
+          onConfirm={() => {
+            const o = confirming
+            setConfirming(null)
+            void run(accept.mutateAsync(o.prKey)).then((r) => {
+              if (r.ok) toast(r.value.message, r.value.result === 'done' ? undefined : 'warning')
+            })
+          }}
+        />
+      ) : null}
+    </section>
   )
 }
 

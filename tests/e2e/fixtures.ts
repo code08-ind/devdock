@@ -107,6 +107,8 @@ interface TestHook {
   terminalPids(): number[]
   /** Polls the GitHub / GitLab run watcher now (P7). */
   pollRuns(): Promise<void>
+  pollTicketMoves(): Promise<void>
+  forgetSeenPrs(): void
 }
 
 export function callHook<K extends keyof TestHook>(

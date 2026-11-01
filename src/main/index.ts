@@ -61,6 +61,7 @@ import { demoCommits } from './demo/standup'
 import { loginShellPath, mergePath } from './services/process/shell-path'
 import { RepoWatcher } from './services/repo-watcher'
 import { BranchSwitchFollower } from './services/branch-switch'
+import { TicketMoves } from './services/ticket-moves'
 import { RepoService } from './services/repos'
 import { registerIpc } from './ipc/registry'
 import { checkExternalUrl, installSecurity, isAppUrl, linkHosts } from './security'
@@ -434,6 +435,15 @@ function start(): void {
       tray?.refresh()
     },
   })
+  const ticketMoves = new TicketMoves({
+    file: join(userData, 'ticket-moves.json'),
+    settings: () => store.get(),
+    jiraReady: () => store.get().general.demoMode || store.get().jira.baseUrl !== '',
+    myPrs,
+    jira,
+    notify: (n) => notifications.notify(n),
+    onChange: (offers) => broadcast('ticketmove:changed', offers),
+  })
   // SPEC 6.3: 60 s while a DevDock window has focus, 3 min otherwise (Settings → Polling).
   const intervalsMs = () => {
     const { foregroundSec, backgroundSec } = store.get().polling
@@ -446,7 +456,12 @@ function start(): void {
     intervalsMs,
   })
   const ciPolling = new Scheduler({ name: 'ci watcher', run: () => ciWatcher.poll(), intervalsMs })
-  const pollers = [prPolling, buildPolling, ciPolling]
+  const ticketMovePolling = new Scheduler({
+    name: 'ticket move offers',
+    run: () => ticketMoves.poll(),
+    intervalsMs,
+  })
+  const pollers = [prPolling, buildPolling, ciPolling, ticketMovePolling]
   const openRepo = async (repo: RepoConfig, target: OpenTarget): Promise<void> => {
     if (target === 'files') {
       const error = await shell.openPath(repo.path)
@@ -581,6 +596,7 @@ function start(): void {
         showView('tickets')
         mainWindow?.webContents.send('tickets:requested', { key })
       },
+      ticketMoves,
       requestCommand: (id) => {
         paletteWindow?.hide()
         panelWindow?.hide()
@@ -633,6 +649,14 @@ function start(): void {
     JSON.stringify([s.bitbucket, s.github, s.gitlab, s.general.demoMode]),
     JSON.stringify([s.jenkins, s.bitbucket, s.github, s.gitlab, s.general.demoMode]),
     JSON.stringify([s.github, s.gitlab, s.general.demoMode]),
+    JSON.stringify([
+      s.bitbucket,
+      s.github,
+      s.gitlab,
+      s.jira,
+      s.workflow.moveTicketOnPr,
+      s.general.demoMode,
+    ]),
   ]
   let lastSignatures = signatures(store.get())
   store.onChange((s) => {
@@ -723,6 +747,9 @@ function start(): void {
         /** PIDs of the in-app terminals' shells (to check closing a tab stops them). */
         terminalPids: () => terminal.pids(),
         pollRuns: () => ciPolling.runNow(),
+        pollTicketMoves: () => ticketMovePolling.runNow(),
+        /** As if every open PR of mine had just opened (demo PRs never change). */
+        forgetSeenPrs: () => ticketMoves.forgetSeen(),
       },
     })
   }

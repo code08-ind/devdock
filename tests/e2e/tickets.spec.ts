@@ -2,7 +2,7 @@ import { mkdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { ElectronApplication, Page } from '@playwright/test'
 import { makeRepos, type Repos } from '../fixtures/git-repos'
-import { expect, openSettings, test } from './fixtures'
+import { callHook, expect, openSettings, test, windowFor } from './fixtures'
 
 /** P2.D3: Start work in demo mode, through the UI, on a real temp repo. */
 const shots = process.env.DEVDOCK_SCREENSHOTS
@@ -208,4 +208,53 @@ test('with the transition setting on, the Start button says it will move the iss
       .locator('.field', { has: win.getByRole('textbox', { name: 'Board id for Current sprint' }) })
       .getByRole('button', { name: 'Save' }),
   ).toBeDisabled()
+})
+
+test('T5: a PR of mine opened for a ticket → Today offers to move it; moving asks first (also from the palette window)', async ({
+  launched,
+}) => {
+  const { app, win } = launched
+  await win.evaluate(() => window.devdock.settings.update({ workflow: { moveTicketOnPr: true } }))
+  // The first poll only records the PRs already open; then pretend they all just opened.
+  await callHook(app, 'pollTicketMoves')
+  expect(await win.evaluate(() => window.devdock.ticketmove.list())).toEqual({ ok: true, data: [] })
+  await callHook(app, 'forgetSeenPrs')
+  await callHook(app, 'pollTicketMoves')
+
+  await win.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Today' }).click()
+  const offers = win.getByRole('list', { name: 'Tickets to move' })
+  const dd101 = offers.getByRole('listitem').filter({ hasText: 'DD-101' })
+  await expect(dd101).toContainText('opened: move DD-101 to In Review?')
+  await dd101.getByRole('button', { name: 'Move to In Review…' }).click()
+  const dialog = win.getByRole('dialog', { name: 'Move DD-101 to In Review?' })
+  await expect(dialog).toContainText('This changes the issue in Jira.')
+  await dialog.getByRole('button', { name: 'Move to In Review' }).click()
+  await expect(win.getByText('Moved DD-101 to In Review')).toBeVisible()
+  await expect(dd101).toHaveCount(0)
+
+  // DD-102 is To Do in the demo: no "In Review" transition from there, so Jira is left alone.
+  await callHook(app, 'togglePalette')
+  const pw = await windowFor(app, 'palette.html')
+  await pw.getByRole('combobox', { name: 'Command' }).fill('move DD-102')
+  await expect(pw.getByRole('option').first()).toContainText('Move DD-102 to In Review…')
+  await pw.keyboard.press('Enter')
+  const confirm = win.getByRole('dialog', { name: 'Move DD-102 to In Review?' })
+  await confirm.getByRole('button', { name: 'Move to In Review' }).click()
+  await expect(
+    win.getByText(
+      'DD-102 has no "In Review" transition from its current status; it was left as is.',
+    ),
+  ).toBeVisible()
+
+  // Dismiss drops an offer and leaves its ticket alone (offers made again for both PRs).
+  await callHook(app, 'forgetSeenPrs')
+  await callHook(app, 'pollTicketMoves')
+  const items = offers.getByRole('listitem')
+  await expect(items).toHaveCount(2)
+  await items
+    .filter({ hasText: 'DD-102' })
+    .getByRole('button', { name: 'Dismiss: leave DD-102 as it is' })
+    .click()
+  await expect(items).toHaveCount(1)
+  await expect(items).toContainText('DD-101')
 })

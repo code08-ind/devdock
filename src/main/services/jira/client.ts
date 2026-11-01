@@ -1,5 +1,5 @@
 import type { JiraConnection, JiraFlavor, JiraIssue, JiraIssueDetail } from '@shared/jira'
-import { ISSUE_KEY, isInProgress } from '@shared/jira'
+import { ISSUE_KEY, isInProgress, sameStatusName } from '@shared/jira'
 import type { HttpClient } from '../http'
 import { requestJson } from '../rest'
 import { ServiceError } from '../service-error'
@@ -98,6 +98,18 @@ export class JiraClient {
    * status (SPEC 6.5 step 6). Matches the transition's name or its target status, case-insensitive.
    */
   async transitionToInProgress(key: string): Promise<'done' | 'unavailable'> {
+    return this.transitionWhere(key, isInProgress)
+  }
+
+  /** T5: moves the issue to the named status (transition or target status name). */
+  async transitionToStatus(key: string, status: string): Promise<'done' | 'unavailable'> {
+    return this.transitionWhere(key, (name) => sameStatusName(name, status))
+  }
+
+  private async transitionWhere(
+    key: string,
+    wanted: (name: string) => boolean,
+  ): Promise<'done' | 'unavailable'> {
     if (!ISSUE_KEY.test(key)) throw new ServiceError('not_found', `"${key}" is not an issue key.`)
     const url = `${this.config.baseUrl}${this.api.api}/issue/${key}/transitions`
     const { body } = await this.get(url)
@@ -105,7 +117,7 @@ export class JiraClient {
     if (!Array.isArray(list)) throw badResponse('a transition list')
     const match = list.map(obj).find((t) => {
       const names = [t.name, obj(t.to).name].map((n) => (typeof n === 'string' ? n.trim() : ''))
-      return names.some(isInProgress)
+      return names.some((n) => n !== '' && wanted(n))
     })
     if (!match) return 'unavailable'
     if (typeof match.id !== 'string' && typeof match.id !== 'number') {

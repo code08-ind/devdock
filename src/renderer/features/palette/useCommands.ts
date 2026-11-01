@@ -25,8 +25,10 @@ import { useJiraList } from '../../lib/jira'
 import { useCiWatches, useClearFinishedRuns, useRemoveCiWatch } from '../../lib/providers'
 import { modLabel } from '../../lib/keyboard'
 import { OPEN_LABELS, useOpenRepo, useRepos } from '../../lib/repos'
+import { ticketMoveConfirm, useAcceptTicketMove, useTicketMoves } from '../../lib/ticketmoves'
 import { useAction } from '../../lib/useAction'
 import { THEME_LABELS } from '../../ui/appearance'
+import { useToast } from '../../ui/Feedback'
 import { watchLabel } from '../builds/BuildBits'
 import { MINE, OTHERS } from '../prs/actions'
 import { prLabel } from '../prs/PrBits'
@@ -67,6 +69,7 @@ export function useCommands(h: CommandHandlers): {
   forQuery: (query: string) => Command[]
 } {
   const { run } = useAction()
+  const toast = useToast()
   const notifications = useNotificationActions()
   const update = useUpdateSettingsAction()
   const openRepo = useOpenRepo()
@@ -116,6 +119,8 @@ export function useCommands(h: CommandHandlers): {
   const removeBuild = useRemoveBuildWatch()
   const clearFinished = useClearFinished()
   const addBuildWatch = useAddBuildWatch()
+  const ticketMoves = useTicketMoves().data ?? []
+  const acceptMove = useAcceptTicketMove()
   // My branches' jobs, for Trigger build / Watch deploy: asked for only once Jenkins is set up.
   const jenkinsOn = settings ? isSetUp(settings, 'jenkins') : false
   const branchRows = useBranches(jenkinsOn).data?.builds ?? []
@@ -231,6 +236,16 @@ export function useCommands(h: CommandHandlers): {
               if (pr) h.ai?.({ feature: 'pr-summary', pr })
             }
           : undefined,
+      ticketMoves: ticketMoves.map((o) => ({
+        prKey: o.prKey,
+        key: o.key,
+        status: o.status,
+        confirm: ticketMoveConfirm(o),
+      })),
+      moveTicket: (prKey) =>
+        run(acceptMove.mutateAsync(prKey)).then((r) => {
+          if (r.ok) toast(r.value.message, r.value.result === 'done' ? undefined : 'warning')
+        }),
       watches: watches.map((w) => ({ key: w.key, label: prLabel(w.pr) })),
       unwatch: (key) => {
         const w = watches.find((x) => x.key === key)

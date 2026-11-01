@@ -116,6 +116,28 @@ export function WorkflowSection({ settings }: { settings: Settings }) {
         'Watch the Jenkins build after Push branch',
         "Push branch starts with this ticked; DevDock watches the branch's Jenkins build and notifies you when it ends.",
       )}
+      {toggle(
+        'moveTicketOnPr',
+        'Offer to move the ticket when a PR opens',
+        'When a pull request of yours opens with a Jira key in its branch or title, Today (and a notification) offers to move the ticket. DevDock asks before it changes Jira.',
+      )}
+      {w.moveTicketOnPr ? (
+        <TextSetting
+          label="Move it to"
+          hint="The Jira status (or transition name) to move the ticket to, e.g. In Review or Code Review."
+          value={w.prOpenedStatus}
+          validate={(v) =>
+            v.trim() === ''
+              ? 'Enter a status'
+              : v.trim().length > 100
+                ? 'Use 100 characters at most'
+                : null
+          }
+          onSave={(prOpenedStatus) =>
+            save({ prOpenedStatus: prOpenedStatus.trim() }, 'Status saved')
+          }
+        />
+      ) : null}
       {update.error ? <ErrorNotice error={update.error} /> : null}
     </Section>
   )

@@ -136,6 +136,10 @@ export const INVOKE_CHANNELS = [
   'tickets:request',
   /** Palette window → main window: run a command that needs a dialog there (by registry id). */
   'commands:request',
+  /** T5: "move the ticket when a PR opens" offers; accept moves it in Jira (confirmed). */
+  'ticketmove:list',
+  'ticketmove:dismiss',
+  'ticketmove:accept',
   /** P7-A in-app terminal: real PTYs in main, owned by the window that made them. */
   'terminal:create',
   'terminal:write',
@@ -175,6 +179,8 @@ export const EVENT_CHANNELS = [
   'utilities:requested',
   'tickets:requested',
   'commands:requested',
+  /** The ticket move offers changed. */
+  'ticketmove:changed',
   /** PTY output, batched (~16 ms), only to the window that owns the session. */
   'terminal:output',
   'terminal:exit',

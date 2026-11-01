@@ -95,6 +95,31 @@ describe('handlers', () => {
     expect(deps.requestCommand).toHaveBeenCalledTimes(1)
   })
 
+  it('ticketmove:accept: refused while the option is off; moves a demo ticket once on', async () => {
+    const { deps, handlers } = await setup()
+    const accept = (prKey: string) =>
+      dispatch('ticketmove:accept', { prKey, confirmed: true }, handlers)
+    expect(await accept('x')).toMatchObject({ ok: false, error: { code: 'NOT_ALLOWED' } })
+    expect(await dispatch('ticketmove:accept', { prKey: 'x' }, handlers)).toMatchObject({
+      ok: false,
+      error: { code: 'INVALID_PAYLOAD' },
+    })
+    deps.settings.update({ general: { demoMode: true }, workflow: { moveTicketOnPr: true } })
+    await deps.ticketMoves.poll()
+    deps.ticketMoves.forgetSeen()
+    await deps.ticketMoves.poll()
+    const list = await dispatch('ticketmove:list', undefined, handlers)
+    if (!list.ok) throw new Error(list.error.message)
+    const dd101 = list.data.find((o) => o.key === 'DD-101')!
+    expect(dd101).toMatchObject({ status: 'In Review' })
+    // Demo Jira: DD-101 is In Progress, which offers "Request review" → In Review.
+    expect(await accept(dd101.prKey)).toEqual({
+      ok: true,
+      data: { result: 'done', message: 'Moved DD-101 to In Review' },
+    })
+    expect(await accept(dd101.prKey)).toMatchObject({ ok: false, error: { code: 'NOT_FOUND' } })
+  })
+
   it('answers demo:ping from fixtures', async () => {
     const { handlers } = await setup()
     expect(await dispatch('demo:ping', undefined, handlers)).toEqual({

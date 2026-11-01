@@ -143,7 +143,9 @@ window when run from the global-shortcut palette.
 scrollback, DevDock prompt), accessibility (reduce motion,
 larger click targets, underlined links, an always-visible focus ring, screen-reader announcements
 of notifications), notifications (types, quiet hours,
-history), services and credentials, workflow options (lessons, Start work follow-ups), and
+history), services and credentials, workflow options (lessons, Start work follow-ups; each off until you turn it on: run a check
+command before Push branch, watch the Jenkins build after a push, start the dev server after a
+branch switch, offer to move the ticket when your PR opens), and
 **Diagnostics**: versions, the proxy in use (or your own), Test all connections, and a report
 to send with a bug.
 

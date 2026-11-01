@@ -37,7 +37,9 @@ versions follow [Semantic Versioning](https://semver.org/).
 - **Workflow follow-ups** (Settings → Workflow, each off by default): run the repo's check command
   (e.g. `npm test`, set in the repo's settings) before Push branch — nothing is pushed if it
   fails; watch the branch's Jenkins build after a push; start the dev server after a branch
-  switch (in DevDock, a terminal or an editor) when it isn't running.
+  switch (in DevDock, a terminal or an editor) when it isn't running; when a PR of yours opens
+  for a Jira key, offer (on Today, a notification and the palette) to move the ticket to a status
+  you choose, "In Review" by default — always confirmed first.
 
 ## [0.1.0] — 2026-10-25
 

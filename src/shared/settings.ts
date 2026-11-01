@@ -27,6 +27,8 @@ export const NOTIFICATION_TYPES = [
   /** A watched PR was merged or declined (P3-B). */
   'pr-closed',
   'job-finished',
+  /** T5: a PR of mine opened for a Jira key: move the ticket? */
+  'pr-opened',
 ] as const
 
 export type Theme = (typeof THEMES)[number]

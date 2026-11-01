@@ -15,6 +15,19 @@ export const IssueKeySchema = z.string().regex(ISSUE_KEY, 'Not a Jira issue key'
 /** A status or transition name meaning "In Progress" (case and spacing ignored). */
 export const isInProgress = (name: string) => /^in\s+progress$/i.test(name.trim())
 
+/** Two status / transition names are the same, ignoring case and spacing ("In  review"). */
+export const sameStatusName = (a: string, b: string) =>
+  a.trim().replace(/\s+/g, ' ').toLowerCase() === b.trim().replace(/\s+/g, ' ').toLowerCase()
+
+/**
+ * The first Jira key in a branch name or PR title (`bugfix/DD-101-date-picker` → DD-101).
+ * Upper case only, as Jira writes them, so `release-1` or `node-18` aren't taken for keys.
+ */
+export function issueKeyIn(text: string): string | null {
+  const m = /(?:^|[^A-Za-z0-9])([A-Z][A-Z0-9_]{0,19}-\d{1,9})(?!\d)/.exec(text)
+  return m && ISSUE_KEY.test(m[1]!) ? m[1]! : null
+}
+
 /** Jira's status categories: To Do / In Progress / Done. */
 export const STATUS_CATEGORIES = ['new', 'indeterminate', 'done', 'unknown'] as const
 

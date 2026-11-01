@@ -31,6 +31,7 @@ import type { RemoteHost } from '@shared/hosting'
 import type { CiProvider } from '@shared/providers'
 import type { JiraService } from './services/jira/service'
 import { StartWorkError, type StartWorkService } from './services/startwork'
+import type { TicketMoves } from './services/ticket-moves'
 import type { NotificationService } from './services/notifications'
 import { DevServerError, type DevServerManager } from './services/process/devserver'
 import { ProcessError, type ProcessErrorKind, type PortService } from './services/process/ports'
@@ -97,6 +98,8 @@ export interface HandlerDeps {
   lessons: LessonsService
   buildWatcher: BuildWatcher
   startWork: StartWorkService
+  /** T5: offers to move a ticket when a PR of mine opens. */
+  ticketMoves: TicketMoves
   /** Shows PRs in the main window and hands it a link to watch (from the palette window). */
   requestWatch: (link: string, pipeline: boolean) => void
   /** Shows Utilities in the main window on a tab (from the palette window). */
@@ -568,6 +571,17 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
     'utilities:request': (request) => deps.requestUtility(request),
     'tickets:request': ({ key }) => deps.requestTicket(key),
     'commands:request': ({ id }) => deps.requestCommand(id),
+    'ticketmove:list': () => deps.ticketMoves.list(),
+    'ticketmove:dismiss': ({ prKey }) => deps.ticketMoves.dismiss(prKey),
+    'ticketmove:accept': ({ prKey }) => {
+      if (!deps.settings.get().workflow.moveTicketOnPr) {
+        throw new IpcError(
+          'NOT_ALLOWED',
+          'Moving tickets when a PR opens is off. Turn it on in Settings → Workflow.',
+        )
+      }
+      return withService(() => deps.ticketMoves.accept(prKey))
+    },
     'startwork:plan': (request) => withStartWork(() => deps.startWork.plan(request)),
     'startwork:run': (request) =>
       withStartWork(() =>

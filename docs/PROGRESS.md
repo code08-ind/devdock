@@ -15,7 +15,7 @@ Contract docs: `docs/SPEC.md`, `docs/UI-THEMES.md`, `docs/BUILD-PROMPTS.md` (pha
 | Field        | Value                                                         |
 | ------------ | ------------------------------------------------------------- |
 | Phase        | **Phase 7 — final wrap-up day is 2026-10-31.** Everything planned is merged on `main` (29328bd, pushed): P7-A terminal, P7-B GitHub/GitLab, P7-C-A agent CLIs, P7-C-B AI with your own key (Claude), P7-D website v2, P7-E accessibility (automated part). |
-| Next step    | **T5d (move the ticket when a PR opens).** T5a–T5c done 2026-11-01. |
+| Next step    | **T10 (whole-product QA in demo mode)**, then T11 code review, T12 screen readers (owner). T4 + T5 done 2026-11-01. |
 | Blockers     | None                                                          |
 | Last updated | 2026-11-01                                                    |
 
@@ -66,7 +66,7 @@ docs-only pushes.
   palette window. Evidence: unit `palette.test.ts` (baseline, trigger/deploy, `inMain` marks),
   `handlers.test.ts` (`commands:request` validated); e2e `palette.spec.ts` "T4: trigger a build
   from the palette window…"; lint 0; vitest 920 / 1 skipped; e2e 67 / 5 skipped.
-- [ ] **T5** P6.13 workflow follow-ups not built yet (DECISIONS P6-F): watch the PR build after
+- [x] **T5** P6.13 workflow follow-ups not built yet (DECISIONS P6-F): watch the PR build after
   push, move the ticket when a PR opens, run a check command before push, start the dev server
   after a branch switch — each behind a Settings → Workflow checkbox, off by default.
   Split (owner answers in DECISIONS "T5 owner answers"):
@@ -78,7 +78,11 @@ docs-only pushes.
   - [x] **T5c** start the dev server after a branch switch (only if not running). Evidence:
     `branch-switch.test.ts` (5 tests), `devserver.test.ts` ifStopped; e2e `devserver.spec.ts`
     "T5: a branch switch outside DevDock starts the dev server".
-  - [ ] **T5d** move the ticket when a PR opens (configurable status, default In Review; confirmed).
+  - [x] **T5d** move the ticket when a PR opens (configurable status, default In Review; confirmed).
+    Evidence: `ticket-moves.test.ts` (7), `handlers.test.ts` ticketmove:accept, `palette.test.ts`
+    move command; e2e `tickets.spec.ts` "T5: a PR of mine opened for a ticket…". Full run: lint 0;
+    vitest 938 / 1 skipped; e2e 70 / 5 skipped (one terminal test failed once in the run
+    before, passed alone 6/6 and in the full re-run).
 
 ### C. Deferred features (now in scope)
 - [ ] **T6** **OpenAI and Google Gemini** for "AI with your own key" (rest of P7.09): same
@@ -758,3 +762,4 @@ Next step: owner review → merge `p7-providers` into `main`.
 | 2026-11-01 | T4 | Palette: trigger build (parameters dialog), watch deploy, baseline server start/stop; the global palette window hands dialog commands (`inMain`) to the main window by id (`commands:request`). app.spec "jenkins" search updated for the deploy commands. lint 0; vitest 920 / 1 skipped; e2e 67 / 5 skipped. | T5 |
 | 2026-11-01 | T5a + T5b | Check command per repo, run before Push branch when ticked (no shell, 15 min timeout, failure pushes nothing); "Watch the Jenkins build after pushing" (job watch per branch job, retried 15 s / 45 s for new branches). Owner answered the T5 scope questions. lint 0; vitest 924 / 1 skipped; e2e repos.spec T5 passed. | T5c |
 | 2026-11-01 | T5c | Dev server starts after a branch switch (HEAD watcher → BranchSwitchFollower; only if not running; detached HEAD ignored); `devserver:start` `ifStopped`. vitest branch-switch 5 + devserver; e2e devserver.spec 3/3. | T5d |
+| 2026-11-01 | T5d | Offer to move the ticket when a PR of mine opens (TicketMoves poller, Today card, notification, palette command; confirmed; status from Settings → Workflow, default In Review). lint 0; vitest 938 / 1 skipped; e2e 70 / 5 skipped. T5 complete. | T10 |

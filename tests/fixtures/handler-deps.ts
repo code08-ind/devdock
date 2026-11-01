@@ -68,6 +68,7 @@ export async function handlerSetup(
   const { HostService } = await import('../../src/main/services/providers/service')
   const { PrHub } = await import('../../src/main/services/providers/hub')
   const { CiWatcher } = await import('../../src/main/services/ci/watcher')
+  const { TicketMoves } = await import('../../src/main/services/ticket-moves')
   const { GitHubClient } = await import('../../src/main/services/github/client')
   const { GitLabClient } = await import('../../src/main/services/gitlab/client')
   const { DEMO_GITHUB_CONFIG } = await import('../../src/main/demo/github')
@@ -288,6 +289,15 @@ export async function handlerSetup(
       briefsDir: join(dir, 'briefs'),
       writeClipboard,
       openEditor: (repo) => openRepo(repo, 'editor'),
+    }),
+    ticketMoves: new TicketMoves({
+      file: join(dir, 'ticket-moves.json'),
+      settings: () => settings.get(),
+      jiraReady: () => true,
+      myPrs: () => prs.listAll(['bitbucket'], 'mine'),
+      jira,
+      notify: (n) => notifications.notify(n),
+      onChange: vi.fn(),
     }),
   }
   return { deps, handlers: createHandlers(deps), output, git, ptys: pty.ptys, terminalEvents }

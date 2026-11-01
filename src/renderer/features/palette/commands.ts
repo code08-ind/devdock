@@ -143,6 +143,17 @@ export interface CommandContext {
   issues: readonly { key: string; summary: string }[]
   /** Opens Start work for an issue key (preview first, then the user starts it). */
   startWork: (key: string) => unknown
+  /**
+   * T5 offers to move a ticket (a PR of mine opened for it), with their confirmation text;
+   * moving needs `confirm` (SPEC 7: Jira transitions).
+   */
+  ticketMoves: readonly {
+    prKey: string
+    key: string
+    status: string
+    confirm: { title: string; body: string; confirmLabel: string }
+  }[]
+  moveTicket: (prKey: string) => unknown
   /** Watched pull requests, to stop watching. */
   watches: readonly { key: string; label: string }[]
   unwatch: (key: string) => unknown
@@ -481,6 +492,16 @@ export function buildCommands(ctx: CommandContext, views: readonly View[]): Comm
       disabled: noRepoReason(ctx),
       run: () => ctx.startWork(i.key),
     })),
+    ...(ctx.confirm
+      ? ctx.ticketMoves.map<Command>((m) => ({
+          id: `ticket:move:${m.prKey}`,
+          title: `Move ${m.key} to ${m.status}…`,
+          group: 'Tickets',
+          keywords: ['jira', 'transition', 'review', 'status', m.key.toLowerCase()],
+          inMain: true,
+          run: () => ctx.confirm?.({ ...m.confirm, run: () => ctx.moveTicket(m.prKey) }),
+        }))
+      : []),
     ...themes,
     ctx.paused
       ? {

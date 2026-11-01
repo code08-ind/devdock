@@ -1,3 +1,4 @@
+import type { TicketMove } from '@shared/ticketmoves'
 import {
   QueryClient,
   focusManager,
@@ -76,6 +77,8 @@ export const keys = {
   buildWatches: ['buildwatches'],
   /** Watched GitHub Actions runs / GitLab pipelines (lib/providers.ts), `ciwatch:changed`. */
   ciWatches: ['ciwatches'],
+  /** T5 ticket move offers (lib/ticketmoves.ts), `ticketmove:changed`. */
+  ticketMoves: ['ticketmoves'],
 } as const
 
 export function useBridgeEvent<E extends EventChannel>(
@@ -133,11 +136,14 @@ const onWatchesChanged = (items: WatchItem[]) => queryClient.setQueryData(keys.w
 const onBuildWatchesChanged = (items: BuildWatch[]) =>
   queryClient.setQueryData(keys.buildWatches, items)
 const onCiWatchesChanged = (items: CiWatch[]) => queryClient.setQueryData(keys.ciWatches, items)
+const onTicketMovesChanged = (items: TicketMove[]) =>
+  queryClient.setQueryData(keys.ticketMoves, items)
 
 export function useMainEvents(): void {
   useBridgeEvent('watch:changed', onWatchesChanged)
   useBridgeEvent('buildwatch:changed', onBuildWatchesChanged)
   useBridgeEvent('ciwatch:changed', onCiWatchesChanged)
+  useBridgeEvent('ticketmove:changed', onTicketMovesChanged)
   useBridgeEvent('settings:changed', onSettingsChanged)
   useBridgeEvent('notifications:changed', onNotificationsChanged)
   useBridgeEvent('repos:changed', onRepoChanged)

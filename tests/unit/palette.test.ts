@@ -34,6 +34,8 @@ const ctx = (over: Partial<CommandContext> = {}): CommandContext => ({
   baselines: [],
   branchBuilds: [],
   watchDeploy: vi.fn(),
+  ticketMoves: [],
+  moveTicket: vi.fn(),
   configured: { prs: true, jenkins: true, jira: true },
   prActions: [],
   buildWatches: [],
@@ -370,6 +372,42 @@ describe('palette completeness (P6.01)', () => {
     expect(d.title).toBe('Watch the deploy of feature/DD-1')
     void d.run()
     expect(c.watchDeploy).toHaveBeenCalledWith('feature/DD-1')
+  })
+
+  it('move a ticket (T5): asks first, only where a dialog can show', () => {
+    const ticketMoves = [
+      {
+        prKey: 'k2',
+        key: 'DD-101',
+        status: 'In Review',
+        confirm: {
+          title: 'Move DD-101 to In Review?',
+          body: 'b',
+          confirmLabel: 'Move to In Review',
+        },
+      },
+    ]
+    const find = (c: CommandContext) =>
+      buildCommands(c, VIEWS).find((x) => x.id === 'ticket:move:k2')
+    expect(find(ctx({ ticketMoves }))).toBeUndefined()
+    const confirm = vi.fn()
+    const c = ctx({ ticketMoves, confirm })
+    const move = find(c)!
+    expect(move).toMatchObject({
+      title: 'Move DD-101 to In Review…',
+      group: 'Tickets',
+      inMain: true,
+    })
+    void move.run()
+    expect(c.moveTicket).not.toHaveBeenCalled()
+    expect(confirm).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Move DD-101 to In Review?',
+        confirmLabel: 'Move to In Review',
+      }),
+    )
+    void (confirm.mock.calls[0]![0] as { run: () => void }).run()
+    expect(c.moveTicket).toHaveBeenCalledWith('k2')
   })
 
   it('commands with a dialog are marked to hand over from the palette window', () => {

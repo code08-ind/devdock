@@ -73,6 +73,11 @@ export class JiraService {
     return this.client().transitionToInProgress(key)
   }
 
+  /** Only the "move the ticket when a PR opens" offer calls this, after the user confirms (T5). */
+  async transitionToStatus(key: string, status: string): Promise<'done' | 'unavailable'> {
+    return this.client().transitionToStatus(key, status)
+  }
+
   private client(): JiraClient {
     const config = this.config()
     const signature = JSON.stringify(config)
