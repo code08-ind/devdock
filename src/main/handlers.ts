@@ -1,5 +1,4 @@
 /** One handler per IPC channel in @shared/ipc `contract`. Electron-free: adapters are injected. */
-import { activeModel, aiModel } from '@shared/ai'
 import { stat } from 'node:fs/promises'
 import type { IpcMainInvokeEvent } from 'electron'
 import { AI_SERVICE_NAME, type ServiceName } from '@shared/diagnostics'
@@ -635,8 +634,6 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
       }),
     'ai:run': ({ id }) => withService(() => deps.ai.run(id)),
     'ai:testConnection': () =>
-      recorded(AI_SERVICE_NAME[aiModel(activeModel(deps.settings.get().ai)).provider], () =>
-        deps.ai.testConnection(),
-      ),
+      recorded(AI_SERVICE_NAME[deps.settings.get().ai.provider], () => deps.ai.testConnection()),
   }
 }

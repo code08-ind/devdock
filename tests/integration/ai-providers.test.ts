@@ -174,6 +174,49 @@ describe('AI providers (T6): OpenAI', () => {
     expect(flaky.sent).toHaveLength(2)
   })
 
+  it('retries: a paid request only when nothing was done (503, 429); the free list on more', async () => {
+    // 500 after a POST: the answer may have been made and billed, so no second attempt.
+    const broken = fakeHttp(() => Response.json({ error: { message: 'oops' } }, { status: 500 }))
+    const ai = service(broken.http, 'gpt-6.1-sol')
+    await expect(ai.run((await ai.prepare('lesson', 'x')).id)).rejects.toMatchObject({
+      kind: 'server',
+    })
+    expect(broken.sent).toHaveLength(1)
+    // 429 with a short Retry-After: waits, then tries again.
+    const limited = fakeHttp((_, n) =>
+      n === 0
+        ? Response.json(
+            { error: { message: 'slow down' } },
+            { status: 429, headers: { 'retry-after': '1' } },
+          )
+        : gptAnswer(),
+    )
+    const ai2 = service(limited.http, 'gpt-6.1-sol')
+    expect(await ai2.run((await ai2.prepare('lesson', 'x')).id)).toMatchObject({ truncated: false })
+    expect(limited.sent).toHaveLength(2)
+    // 429 asking to wait longer than 10 s: reported straight away.
+    const later = fakeHttp(() =>
+      Response.json({ error: {} }, { status: 429, headers: { 'retry-after': '60' } }),
+    )
+    const ai3 = service(later.http, 'gpt-6.1-sol')
+    await expect(ai3.run((await ai3.prepare('lesson', 'x')).id)).rejects.toMatchObject({
+      kind: 'rate_limited',
+    })
+    expect(later.sent).toHaveLength(1)
+    // The models list (free) is tried again after a dropped connection; a POST would not be.
+    let calls = 0
+    const flaky: HttpClient = {
+      demo: false,
+      async fetch() {
+        calls++
+        if (calls === 1) throw new TypeError('fetch failed: ECONNRESET')
+        return Response.json({ data: [{ id: 'gpt-6.1-sol' }] })
+      },
+    }
+    expect(await service(flaky, 'gpt-6.1-sol').testConnection()).toMatchObject({ status: 200 })
+    expect(calls).toBe(2)
+  }, 15_000)
+
   it('Test connection lists the key’s models (GET /v1/models)', async () => {
     const { http, sent } = fakeHttp(() =>
       Response.json({ data: [{ id: 'gpt-6.1-sol' }, { id: 'gpt-6-luna' }] }),

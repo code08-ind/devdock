@@ -346,7 +346,8 @@ Place this file at `docs/SPEC.md` in the new repository. Every build phase refer
 - Every request is prepared in main and shown first — the exact text and instructions, the
   provider and model, an estimated and a maximum cost, and (Anthropic) that another Claude model
   may answer if Claude declines — and sent only when the user presses Send. Each prepared request can be sent once
-  (a failed attempt is retried up to twice; failed attempts aren't billed) and expires after ten
+  (a failed attempt is retried up to twice when nothing can have been billed — Anthropic's SDK
+  rules; for OpenAI and Google a 503 or a short 429) and expires after ten
   minutes; it is refused if demo mode was switched since. The renderer can't change what is sent.
 - Refusals, a cut-off answer, a rejected key, rate limits and network failures each say so in
   plain words; the answer shows the tokens used and the cost.

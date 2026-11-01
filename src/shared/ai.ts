@@ -41,8 +41,8 @@ export const AI_PROVIDER_INFO = {
 >
 
 /**
- * The models offered in Settings → AI, per provider (current generation; USD per million
- * tokens, input / output, from each provider's pricing page on 2026-11-01). A price that changes
+ * The models offered in Settings → AI, per provider, best first (current generation; USD per
+ * million tokens, input / output, from each provider's pricing page on 2026-11-01). A price that changes
  * on a known date has `until` (the last day, UTC) and `then` (the price after it).
  */
 export const AI_MODELS = [
@@ -61,18 +61,9 @@ export const AI_MODELS = [
     input: 0.1,
     output: 0.5,
   },
-  { id: 'gpt-6.1-sol', provider: 'openai', name: 'GPT-6.1 Sol', input: 2, output: 10 },
   { id: 'gpt-6-astra', provider: 'openai', name: 'GPT-6 Astra', input: 10, output: 50 },
+  { id: 'gpt-6.1-sol', provider: 'openai', name: 'GPT-6.1 Sol', input: 2, output: 10 },
   { id: 'gpt-6-luna', provider: 'openai', name: 'GPT-6 Luna', input: 0.1, output: 0.5 },
-  {
-    id: 'gemini-3.8-flash',
-    provider: 'google',
-    name: 'Gemini 3.8 Flash',
-    input: 0.75,
-    output: 3.75,
-    until: '2026-12-31',
-    then: { input: 1.5, output: 7.5 },
-  },
   {
     id: 'gemini-4-argon',
     provider: 'google',
@@ -81,6 +72,15 @@ export const AI_MODELS = [
     output: 10,
     until: '2026-11-30',
     then: { input: 4, output: 20 },
+  },
+  {
+    id: 'gemini-3.8-flash',
+    provider: 'google',
+    name: 'Gemini 3.8 Flash',
+    input: 0.75,
+    output: 3.75,
+    until: '2026-12-31',
+    then: { input: 1.5, output: 7.5 },
   },
   {
     id: 'gemini-3.1-flash-lite',
@@ -155,19 +155,20 @@ export const AiSettingsSchema = z
   .prefault({})
 export type AiSettings = z.infer<typeof AiSettingsSchema>
 
-/** The model the active provider uses. */
-export const activeModel = (s: AiSettings): AiModelId =>
-  s.provider === 'openai' ? s.openaiModel : s.provider === 'google' ? s.googleModel : s.model
+/** Where each provider's model is kept in Settings → AI. */
+const MODEL_FIELD = {
+  anthropic: 'model',
+  openai: 'openaiModel',
+  google: 'googleModel',
+} as const satisfies Record<AiProvider, keyof AiSettings>
 
-/** The settings patch that picks `model` for its provider. */
-export const modelPatch = (id: AiModelId): Partial<AiSettings> => {
-  const p = aiModel(id).provider
-  return p === 'openai'
-    ? { openaiModel: id as AiSettings['openaiModel'] }
-    : p === 'google'
-      ? { googleModel: id as AiSettings['googleModel'] }
-      : { model: id as AiSettings['model'] }
-}
+/** The model the active provider uses. */
+export const activeModel = (s: AiSettings): AiModelId => s[MODEL_FIELD[s.provider]]
+
+/** The settings patch that picks `id` for its provider. */
+export const modelPatch = (id: AiModelId): Partial<AiSettings> => ({
+  [MODEL_FIELD[aiModel(id).provider]]: id,
+})
 
 /** What to prepare. Main loads the PR itself; a comment and the edited standup come from the screen. */
 export const AiPrepareSchema = z.discriminatedUnion('feature', [

@@ -31,13 +31,12 @@ function priceLabel(id: AiModelId): string {
   const now = aiPrice(id)
   const label = `$${now.input} / $${now.output}`
   const change = priceChange(id)
-  // Already past the change: today's price is the new one.
-  if (!change || now.input === change.then.input) return label
-  const m = change
-  const from = new Date(`${m.until}T00:00:00Z`)
+  // No change announced, or it has happened (today's price is already the new one).
+  if (!change || new Date().toISOString().slice(0, 10) > change.until) return label
+  const from = new Date(`${change.until}T00:00:00Z`)
   from.setUTCDate(from.getUTCDate() + 1)
   const day = from.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })
-  return `${label} (then $${m.then.input} / $${m.then.output} from ${day})`
+  return `${label} (then $${change.then.input} / $${change.then.output} from ${day})`
 }
 
 const PROVIDER_OPTIONS = AI_PROVIDERS.map((p) => ({ value: p, label: AI_PROVIDER_INFO[p].name }))

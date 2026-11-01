@@ -3,6 +3,7 @@
  * `x-goog-api-key` header (never in the URL, where proxies and logs could see it). Thinking is
  * left at each model's default: the levels a model accepts differ between models.
  */
+import { AI_PROVIDER_INFO } from '@shared/ai'
 import type { HttpClient } from '../http'
 import { num, obj, text as str } from '../json'
 import { ServiceError } from '../service-error'
@@ -10,7 +11,7 @@ import type { AiBackend, AiReply, AiSend } from './backend'
 import { aiJson, badShape } from './http'
 
 /** Pinned like Anthropic's: nothing in the environment can redirect the key. */
-export const GEMINI_API = 'https://generativelanguage.googleapis.com/v1beta'
+export const GEMINI_API = `${AI_PROVIDER_INFO.google.origin}/v1beta`
 const SERVICE = 'Google'
 
 /** Finish reasons that mean the answer was withheld rather than written. */

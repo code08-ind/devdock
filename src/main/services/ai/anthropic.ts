@@ -4,7 +4,7 @@
  * from an in-process fixture.
  */
 import Anthropic from '@anthropic-ai/sdk'
-import type { AiFeature } from '@shared/ai'
+import { AI_PROVIDER_INFO, type AiFeature } from '@shared/ai'
 import type { HttpClient } from '../http'
 import { ServiceError } from '../service-error'
 import type { AiBackend, AiReply, AiSend } from './backend'
@@ -23,7 +23,7 @@ export class AnthropicBackend implements AiBackend {
     const http = this.http
     return new Anthropic({
       // Pinned: ANTHROPIC_BASE_URL in the user's environment must never redirect their key.
-      baseURL: 'https://api.anthropic.com',
+      baseURL: AI_PROVIDER_INFO.anthropic.origin,
       // Sent as `Authorization: Bearer`; passing it also stops the SDK reading credentials
       // from the environment or a CLI profile.
       apiKey: key,

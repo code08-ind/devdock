@@ -151,8 +151,8 @@ test('T6: switching to OpenAI or Google — their key, models and test; the butt
   await expect(ai).toContainText('platform.openai.com')
   await expect(model).toHaveValue('gpt-6.1-sol')
   await expect(model.locator('option')).toHaveText([
-    /^GPT-6.1 Sol — \$2 \/ \$10/,
     /^GPT-6 Astra — \$10 \/ \$50/,
+    /^GPT-6.1 Sol — \$2 \/ \$10/,
     /^GPT-6 Luna — \$0.1 \/ \$0.5/,
   ])
   await ai.getByRole('button', { name: 'Test connection' }).click()

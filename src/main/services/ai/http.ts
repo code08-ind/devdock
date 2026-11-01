@@ -8,9 +8,30 @@ import { readJson, send } from '../rest'
 import { ServiceError } from '../service-error'
 
 const TIMEOUT_MS = 120_000
-/** Server-side hiccups (500/502/503/504) are tried again, twice, like the Anthropic SDK does. */
-const RETRY_STATUS = new Set([500, 502, 503, 504])
+/**
+ * Tried again, twice (1 s, 2 s; a 429 waits its Retry-After, up to 10 s). A paid request (POST)
+ * only when the provider says it did no work — 503 (unavailable) and 429 (rate limited): after a
+ * 500/502/504 or a dropped connection the answer may already have been made and billed, and a
+ * retry could bill it twice. The free models list (GET) also on those.
+ */
+const RETRY_STATUS = { GET: new Set([429, 500, 502, 503, 504]), POST: new Set([429, 503]) }
 const RETRY_DELAYS_MS = [1_000, 2_000]
+const MAX_RETRY_AFTER_S = 10
+
+/** How long to wait before attempt `attempt + 1`, or null when it shouldn't be tried again. */
+function retryDelay(method: 'GET' | 'POST', err: unknown, attempt: number): number | null {
+  if (attempt >= RETRY_DELAYS_MS.length || !(err instanceof ServiceError)) return null
+  const delay = RETRY_DELAYS_MS[attempt]!
+  // A failed connection (no status) is safe to repeat only for the free GET.
+  if (err.status === undefined) {
+    return method === 'GET' && (err.kind === 'network' || err.kind === 'timeout') ? delay : null
+  }
+  if (!RETRY_STATUS[method].has(err.status)) return null
+  if (err.status !== 429) return delay
+  const after = err.retryAfterSec
+  if (after === undefined) return delay
+  return after <= MAX_RETRY_AFTER_S ? Math.max(delay, after * 1000) : null
+}
 
 export interface AiHttpTarget {
   /** "OpenAI", "Google": the name in error messages. */
@@ -81,15 +102,17 @@ export async function aiJson(
   url: string,
   body?: unknown,
 ): Promise<{ status: number; body: unknown }> {
+  // `aiError` words 401/403 for API keys, so the generic REST hints stay empty.
   const rest = {
     service: target.service,
     hints: { auth: '', forbidden: '' },
     timeoutMs: TIMEOUT_MS,
   }
+  const method = body === undefined ? 'GET' : 'POST'
   for (let attempt = 0; ; attempt++) {
     try {
       const res = await send(http, rest, url, {
-        method: body === undefined ? 'GET' : 'POST',
+        method,
         headers: {
           Accept: 'application/json',
           ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
@@ -99,13 +122,9 @@ export async function aiJson(
       })
       return { status: res.status, body: await readJson(rest, res) }
     } catch (err) {
-      const retry =
-        err instanceof ServiceError &&
-        err.status !== undefined &&
-        RETRY_STATUS.has(err.status) &&
-        attempt < RETRY_DELAYS_MS.length
-      if (retry) {
-        await sleep(RETRY_DELAYS_MS[attempt]!)
+      const delay = retryDelay(method, err, attempt)
+      if (delay !== null) {
+        await sleep(delay)
         continue
       }
       throw err instanceof ServiceError ? aiError(target.service, err) : err

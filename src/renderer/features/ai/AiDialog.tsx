@@ -23,8 +23,8 @@ type Stage =
   | { kind: 'error'; error: unknown; preview?: AiPreview }
 
 /**
- * One AI request (P7-C-B; any provider since T6): main prepares it, this shows exactly what will be sent, to which
- * model and about what it costs, and sends it only when the user presses Send. The answer can
+ * One AI request (P7-C-B; any provider since T6): main prepares it, this shows exactly what
+ * will be sent, to which provider and model and about what it costs, and sends it only when the user presses Send. The answer can
  * be copied, or handed to the caller with `onUse` (e.g. into the lesson being edited).
  */
 export function AiDialog({
@@ -120,6 +120,7 @@ function Preview({ preview }: { preview: AiPreview }) {
       </p>
       <KeyValue
         items={[
+          ['Provider', AI_PROVIDER_INFO[preview.provider].name],
           ['Model', aiModel(preview.model).name],
           [
             'About',

@@ -24,8 +24,8 @@ test('diagnostics: versions and proxy, every connection tested (demo), a report 
   await section.getByText('Use this proxy', { exact: true }).click()
   await section.getByLabel('Proxy server').fill('127.0.0.1:3128')
   await section.getByRole('button', { name: 'Save', exact: true }).click()
-  // Jira (set above) and the fixed AI endpoint (P7-C-B) both go through it.
-  await expect(section.getByText('PROXY 127.0.0.1:3128')).toHaveCount(2)
+  // Jira (set above) and the fixed AI endpoints (Anthropic, OpenAI, Google — T6) go through it.
+  await expect(section.getByText('PROXY 127.0.0.1:3128')).toHaveCount(4)
   await section.getByText('Use the system proxy', { exact: true }).click()
   await expect(section.getByText('PROXY 127.0.0.1:3128')).toHaveCount(0)
 

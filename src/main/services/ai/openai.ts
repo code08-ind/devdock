@@ -3,7 +3,7 @@
  * is not stored on OpenAI's side (`store: false`); reasoning effort follows the feature, like
  * Claude's.
  */
-import type { AiFeature } from '@shared/ai'
+import { AI_PROVIDER_INFO, type AiFeature } from '@shared/ai'
 import type { HttpClient } from '../http'
 import { num, obj, text as str } from '../json'
 import { ServiceError } from '../service-error'
@@ -11,7 +11,7 @@ import type { AiBackend, AiReply, AiSend } from './backend'
 import { aiJson, badShape } from './http'
 
 /** Pinned like Anthropic's: nothing in the environment can redirect the key. */
-export const OPENAI_API = 'https://api.openai.com/v1'
+export const OPENAI_API = `${AI_PROVIDER_INFO.openai.origin}/v1`
 const SERVICE = 'OpenAI'
 
 const EFFORT: Record<AiFeature, 'low' | 'medium'> = {
