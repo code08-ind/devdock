@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { TicketMoveResultSchema, TicketMoveSchema, type TicketMove } from './ticketmoves'
+import { UpdateStatusSchema, type UpdateStatus } from './updates'
 import { AgentStatusSchema } from './agents'
 import { AiConnectionSchema, AiPrepareSchema, AiPreviewSchema, AiResultSchema } from './ai'
 import {
@@ -362,6 +363,10 @@ export const contract = {
   'tickets:request': { req: z.object({ key: IssueKeySchema }), res: none },
   'commands:request': { req: z.object({ id: z.string().min(1).max(1000) }), res: none },
   'ticketmove:list': { req: none, res: z.array(TicketMoveSchema) },
+  'updates:status': { req: none, res: UpdateStatusSchema },
+  'updates:check': { req: none, res: UpdateStatusSchema },
+  /** Opens the newer release's page; main knows the URL (only this repo's releases). */
+  'updates:open': { req: none, res: none },
   'ticketmove:dismiss': { req: z.object({ prKey: z.string().min(1).max(2400) }), res: none },
   'ticketmove:accept': {
     // A Jira transition: the renderer must say the user confirmed it (SPEC 7).
@@ -452,6 +457,7 @@ export interface EventPayloads {
   'tickets:requested': { key: string }
   'commands:requested': { id: string }
   'ticketmove:changed': TicketMove[]
+  'updates:changed': UpdateStatus
   'terminal:output': TerminalOutputEvent
   'terminal:exit': TerminalExitEvent
   'terminal:requested': TerminalRequest

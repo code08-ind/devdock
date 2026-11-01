@@ -20,6 +20,7 @@ const TYPE_LABELS: Record<NotificationType, string> = {
   'pr-closed': 'Watched PR merged or declined',
   'job-finished': 'Watched job finished',
   'pr-opened': 'My PR opened: move its ticket?',
+  'update-available': 'A new DevDock version is out',
 }
 
 const SUPPRESSED: Record<NonNullable<NotificationRecord['suppressedReason']>, string> = {

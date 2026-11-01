@@ -1,4 +1,5 @@
 import type { TicketMove } from '@shared/ticketmoves'
+import type { UpdateStatus } from '@shared/updates'
 import {
   QueryClient,
   focusManager,
@@ -138,12 +139,15 @@ const onBuildWatchesChanged = (items: BuildWatch[]) =>
 const onCiWatchesChanged = (items: CiWatch[]) => queryClient.setQueryData(keys.ciWatches, items)
 const onTicketMovesChanged = (items: TicketMove[]) =>
   queryClient.setQueryData(keys.ticketMoves, items)
+const onUpdatesChanged = (status: UpdateStatus) =>
+  queryClient.setQueryData(['updates', 'status'], status)
 
 export function useMainEvents(): void {
   useBridgeEvent('watch:changed', onWatchesChanged)
   useBridgeEvent('buildwatch:changed', onBuildWatchesChanged)
   useBridgeEvent('ciwatch:changed', onCiWatchesChanged)
   useBridgeEvent('ticketmove:changed', onTicketMovesChanged)
+  useBridgeEvent('updates:changed', onUpdatesChanged)
   useBridgeEvent('settings:changed', onSettingsChanged)
   useBridgeEvent('notifications:changed', onNotificationsChanged)
   useBridgeEvent('repos:changed', onRepoChanged)

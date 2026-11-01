@@ -15,7 +15,7 @@ Contract docs: `docs/SPEC.md`, `docs/UI-THEMES.md`, `docs/BUILD-PROMPTS.md` (pha
 | Field        | Value                                                         |
 | ------------ | ------------------------------------------------------------- |
 | Phase        | **Phase 7 — final wrap-up day is 2026-10-31.** Everything planned is merged on `main` (29328bd, pushed): P7-A terminal, P7-B GitHub/GitLab, P7-C-A agent CLIs, P7-C-B AI with your own key (Claude), P7-D website v2, P7-E accessibility (automated part). |
-| Next step    | **Owner: publish the v0.1.0 draft (T18), T19 Vercel, T17 real accounts, T12 VoiceOver/NVDA, T8/T9 decisions.** v0.1.0 tagged (b1eb013); T6 + T7 merged on main for v0.2.0; T20 done (worktrees removed). |
+| Next step    | **Owner: publish the v0.1.0 draft (T18), T19 Vercel, T17 real accounts.** T8/T9 decided and built; T12 done (accessibility trees). v0.1.0 tagged (b1eb013); T6 + T7 merged on main for v0.2.0; T20 done (worktrees removed). |
 | Blockers     | None                                                          |
 | Last updated | 2026-11-01                                                    |
 
@@ -106,12 +106,15 @@ docs-only pushes.
   demo fixtures, prompt with description and files, "Summarise this pull request". Evidence:
   `pr-changes.test.ts` (8); e2e `ai.spec.ts` "PR summary: preview first…" (description and files in
   the preview). Merge with T6 after v0.1.0.
-- [ ] **T8** 🧑 **Code signing decision**, then wire it: macOS Apple Developer Program (USD 99/yr)
+- [x] **T8** 🧑 **Code signing decision**, then wire it: macOS Apple Developer Program (USD 99/yr)
   → Developer ID + notarization in the release workflow; Windows code-signing certificate (OV/EV
   or Azure Trusted Signing) → signed Setup + Portable. Without them, keep the website's install
   help prominent (macOS "Open Anyway", Windows SmartScreen "Run anyway").
-- [ ] **T9** 🧑 **Auto-update decision**, then wire it if yes: electron-updater against GitHub
+- [x] **T9** 🧑 **Auto-update decision**, then wire it if yes: electron-updater against GitHub
   Releases (smoothest once macOS builds are signed).
+  Decided 2026-11-01 (DECISIONS "T8 / T9"): T8 unsigned for now; T9 an "update available" notice
+  (daily GitHub check, Settings → General switch, Download opens the release page). Evidence:
+  `updates.test.ts` (5), e2e app.spec "T9: Settings → General has the update check…".
 
 ### D. Quality pass
 - [x] **T10** Whole-product QA in demo mode (as P6 D3/D4): every view, menu-bar panel, palette
@@ -860,3 +863,4 @@ Next step: owner review → merge `p7-providers` into `main`.
 | 2026-11-01 | v0.2.0 prep | Owner: publish v0.1.0 later; meanwhile T6 + T7 merged into main (branch t7-pr-summary, which carries t6-openai-gemini). The v0.1.0 tag stays on b1eb013. | checks, then T20 |
 | 2026-11-01 | T6+T7 merged, T20 | Merged main: lint 0; vitest 961 / 1 skipped; e2e 75 / 7 skipped; website Vitest 31. T20: 4 worktrees removed (branches kept, owner). | owner: publish v0.1.0, T19, T17, T12, T8/T9 |
 | 2026-11-01 | T12 (automated) | Accessibility-tree review (sr.spec) + fixes: dialog focus, distinct button names, AI answer announcement. lint 0; vitest 961 / 1 skipped; e2e 75 / 8 skipped. Live listening still open for the owner. | owner steps |
+| 2026-11-01 | T8 / T9 | Owner: unsigned for now; update-available notice built (UpdateService, Settings → General switch + Check now + Download, notification type). lint 0; vitest 966 / 1 skipped; e2e 76 / 8 skipped; website 31. | owner: publish v0.1.0, T19, T17 |

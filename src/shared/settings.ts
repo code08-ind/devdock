@@ -29,6 +29,8 @@ export const NOTIFICATION_TYPES = [
   'job-finished',
   /** T5: a PR of mine opened for a Jira key: move the ticket? */
   'pr-opened',
+  /** T9: a newer DevDock release is published. */
+  'update-available',
 ] as const
 
 export type Theme = (typeof THEMES)[number]
@@ -165,6 +167,8 @@ export const SettingsSchema = z.object({
       closeToTray: z.boolean().default(true),
       launchAtLogin: z.boolean().default(false),
       paletteShortcut: z.string().min(1).default('CommandOrControl+Shift+Space'),
+      /** T9: once a day, ask GitHub whether a newer DevDock release is published. */
+      checkUpdates: z.boolean().default(true),
     })
     .prefault({}),
   polling: z

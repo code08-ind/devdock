@@ -150,7 +150,9 @@ window when run from the global-shortcut palette.
 
 ![Command palette](docs/screenshots/readme-palette.png)
 
-**Settings** — appearance (five themes, font size, density), terminal (shell, font size, cursor,
+**Settings** — general (tray, launch at login, refresh intervals, and **Check for updates**: once
+a day DevDock asks GitHub whether a newer version is out and tells you — it never installs
+anything by itself), appearance (five themes, font size, density), terminal (shell, font size, cursor,
 scrollback, DevDock prompt), accessibility (reduce motion,
 larger click targets, underlined links, an always-visible focus ring, screen-reader announcements
 of notifications), notifications (types, quiet hours,
@@ -223,7 +225,9 @@ company needs a specific one, set it in **Settings → Diagnostics → Proxy**.
 - **Nothing changes without you.** Pushing, merging, approving, triggering a build, moving an
   issue or stopping a process always shows exactly what will happen and waits for you; git
   commands are shown before they run, and protected branches and jobs are refused.
-- **Only your services.** DevDock talks to the Jira, Bitbucket, GitHub, GitLab and Jenkins addresses you enter,
+- **Only your services.** DevDock talks to the Jira, Bitbucket, GitHub, GitLab and Jenkins addresses you enter
+  (plus, once a day, GitHub's public releases list to see whether DevDock has an update — you can
+  turn that off),
   and opens links only on hosts you allow (Settings → Links). There's no telemetry, no account,
   and no AI service unless you add your own key (Anthropic, OpenAI or Google — Settings → AI);
   then each request is

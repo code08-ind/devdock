@@ -136,6 +136,10 @@ export const INVOKE_CHANNELS = [
   'ticketmove:list',
   'ticketmove:dismiss',
   'ticketmove:accept',
+  /** T9: is a newer DevDock release published? Check now; open its release page. */
+  'updates:status',
+  'updates:check',
+  'updates:open',
   /** P7-A in-app terminal: real PTYs in main, owned by the window that made them. */
   'terminal:create',
   'terminal:write',
@@ -179,6 +183,7 @@ export const EVENT_CHANNELS = [
   'commands:requested',
   /** The ticket move offers changed. */
   'ticketmove:changed',
+  'updates:changed',
   /** PTY output, batched (~16 ms), only to the window that owns the session. */
   'terminal:output',
   'terminal:exit',

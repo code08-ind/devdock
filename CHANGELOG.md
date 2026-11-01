@@ -7,6 +7,9 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- **Update notice** (T9): once a day DevDock checks GitHub for a newer release and tells you
+  (Settings → General → Check for updates, on by default; Check now; Download opens the release
+  page). Nothing is installed by itself, and nothing about you is sent.
 - **AI with your own key: OpenAI and Google Gemini** (T6) besides Anthropic. Settings → AI picks
   the provider, its key (each in the OS keychain) and model — GPT-6.1 Sol / Astra / Luna,
   Gemini 3.8 Flash / 4 Argon / 3.1 Flash-Lite — with the same preview before anything is sent and

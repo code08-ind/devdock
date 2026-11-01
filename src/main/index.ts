@@ -63,6 +63,7 @@ import { loginShellPath, mergePath } from './services/process/shell-path'
 import { RepoWatcher } from './services/repo-watcher'
 import { BranchSwitchFollower } from './services/branch-switch'
 import { TicketMoves } from './services/ticket-moves'
+import { UpdateService } from './services/updates'
 import { RepoService } from './services/repos'
 import { registerIpc } from './ipc/registry'
 import { checkExternalUrl, installSecurity, isAppUrl, linkHosts } from './security'
@@ -464,6 +465,16 @@ function start(): void {
     notify: (n) => notifications.notify(n),
     onChange: (offers) => broadcast('ticketmove:changed', offers),
   })
+  // T9: an "update available" notice (DevDock is unsigned: no auto-install).
+  const updates = new UpdateService({
+    http,
+    current: app.getVersion(),
+    enabled: () => store.get().general.checkUpdates,
+    notify: (n) => notifications.notify(n),
+    onChange: (status) => broadcast('updates:changed', status),
+    file: join(userData, 'update-notice.json'),
+  })
+  if (!E2E) updates.start()
   // SPEC 6.3: 60 s while a DevDock window has focus, 3 min otherwise (Settings → Polling).
   const intervalsMs = () => {
     const { foregroundSec, backgroundSec } = store.get().polling
@@ -611,6 +622,7 @@ function start(): void {
       requestUtility: (request) => handToMain('utilities:requested', request, 'utilities'),
       requestTicket: (key) => handToMain('tickets:requested', { key }, 'tickets'),
       ticketMoves,
+      updates,
       requestCommand: (id) => handToMain('commands:requested', { id }),
       requestWatch: (link, pipeline) =>
         handToMain('watch:requested', { link, pipeline }, pipeline ? 'builds' : 'prs'),
@@ -658,8 +670,12 @@ function start(): void {
     ]),
   ]
   let lastSignatures = signatures(store.get())
+  let checkUpdates = store.get().general.checkUpdates
   store.onChange((s) => {
     broadcast('settings:changed', s)
+    // T9: turning the update check on checks now (not in a day).
+    if (s.general.checkUpdates && !checkUpdates && !E2E) void updates.check()
+    checkUpdates = s.general.checkUpdates
     // New intervals apply now; a new site or demo toggle is worth a check straight away.
     const next = signatures(s)
     pollers.forEach((poller, i) => {

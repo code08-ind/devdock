@@ -169,6 +169,7 @@ describe('notification types added later', () => {
       'pr-closed': true,
       // T5: added later too, so also on.
       'pr-opened': true,
+      'update-available': true,
       'job-finished': false,
     })
     expect(defaultSettings().notifications.types['pr-closed']).toBe(true)

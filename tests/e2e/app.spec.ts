@@ -223,3 +223,19 @@ test('the window never scrolls: only the content pane does, on every view (18px)
     expect(layout, label).toEqual({ pageScrolls: false, railTop: 0, railFillsHeight: true })
   }
 })
+
+test('T9: Settings → General has the update check, on; demo mode says it makes no network calls', async ({
+  launched,
+}) => {
+  const { win } = launched
+  await openSettings(win)
+  const general = win.getByRole('region', { name: 'General' })
+  await expect(general.getByRole('switch', { name: 'Check for updates' })).toBeChecked()
+  await expect
+    .poll(async () => {
+      await win.evaluate(() => window.devdock.updates.check())
+      return general.getByRole('status').first().innerText()
+    })
+    .toMatch(/^DevDock \d+\.\d+\.\d+\. Demo mode makes no network calls/)
+  await expect(general.getByRole('button', { name: 'Check now' })).toHaveCount(0)
+})

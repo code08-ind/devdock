@@ -32,6 +32,7 @@ import type { CiProvider } from '@shared/providers'
 import type { JiraService } from './services/jira/service'
 import { StartWorkError, type StartWorkService } from './services/startwork'
 import type { TicketMoves } from './services/ticket-moves'
+import type { UpdateService } from './services/updates'
 import type { NotificationService } from './services/notifications'
 import { DevServerError, type DevServerManager } from './services/process/devserver'
 import { ProcessError, type ProcessErrorKind, type PortService } from './services/process/ports'
@@ -101,6 +102,8 @@ export interface HandlerDeps {
   startWork: StartWorkService
   /** T5: offers to move a ticket when a PR of mine opens. */
   ticketMoves: TicketMoves
+  /** T9: is a newer release published? */
+  updates: UpdateService
   /** Shows PRs in the main window and hands it a link to watch (from the palette window). */
   requestWatch: (link: string, pipeline: boolean) => void
   /** Shows Utilities in the main window on a tab (from the palette window). */
@@ -562,6 +565,13 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
     'tickets:request': ({ key }) => deps.requestTicket(key),
     'commands:request': ({ id }) => deps.requestCommand(id),
     'ticketmove:list': () => deps.ticketMoves.list(),
+    'updates:status': () => deps.updates.get(),
+    'updates:check': () => deps.updates.check(),
+    'updates:open': async () => {
+      const url = deps.updates.releaseUrl()
+      if (!url) throw new IpcError('NOT_FOUND', 'There is no newer DevDock release to open.')
+      await deps.openExternal(url)
+    },
     'ticketmove:dismiss': ({ prKey }) => deps.ticketMoves.dismiss(prKey),
     'ticketmove:accept': ({ prKey }) => {
       if (!deps.settings.get().workflow.moveTicketOnPr) {

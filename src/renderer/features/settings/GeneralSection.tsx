@@ -1,7 +1,9 @@
 import { useState } from 'react'
+import { Download } from 'lucide-react'
 import type { Settings } from '@shared/settings'
 import { bridge, unwrap, useUpdateSettings } from '../../lib/devdock'
 import { formatAccelerator } from '../../lib/keyboard'
+import { useUpdateStatus } from '../../lib/updates'
 import { useAction } from '../../lib/useAction'
 import { Button } from '../../ui/Button'
 import { ErrorNotice, useToast } from '../../ui/Feedback'
@@ -97,6 +99,62 @@ function IntervalField({
   )
 }
 
+/** T9: the update notice's switch, where things stand, Check now and Download. */
+function UpdateCheck({ on, onChecked }: { on: boolean; onChecked: (on: boolean) => void }) {
+  const status = useUpdateStatus().data
+  const { run, pending } = useAction()
+  const time = (ms: number) =>
+    new Date(ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  const line = !status
+    ? null
+    : status.demo
+      ? `DevDock ${status.current}. Demo mode makes no network calls, so updates aren't checked.`
+      : status.url
+        ? `DevDock ${status.latest} is available (you have ${status.current}).`
+        : status.error
+          ? `DevDock ${status.current}. ${status.error}`
+          : status.noRelease
+            ? `DevDock ${status.current}. No release is published yet.`
+            : status.checkedAt
+              ? `DevDock ${status.current} is up to date (checked at ${time(status.checkedAt)}).`
+              : `DevDock ${status.current}.`
+  return (
+    <div className="stack">
+      <Toggle
+        label="Check for updates"
+        description="Once a day DevDock asks GitHub whether a newer version is out and tells you; it never installs anything by itself. Nothing about you is sent."
+        checked={on}
+        onChecked={onChecked}
+      />
+      {line ? (
+        <div className="button-row">
+          <span role="status">{line}</span>
+          {status?.url ? (
+            <Button
+              variant="primary"
+              size="sm"
+              icon={<Download size={14} aria-hidden="true" />}
+              disabled={pending}
+              onClick={() => void run(unwrap(bridge.updates.open()))}
+            >
+              Download {status.latest}
+            </Button>
+          ) : null}
+          {!status?.demo ? (
+            <Button
+              size="sm"
+              disabled={pending}
+              onClick={() => void run(unwrap(bridge.updates.check()))}
+            >
+              Check now
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
 export function GeneralSection({ settings }: { settings: Settings }) {
   const update = useUpdateSettings()
   const toast = useToast()
@@ -117,6 +175,10 @@ export function GeneralSection({ settings }: { settings: Settings }) {
         description="Only takes effect in the installed app."
         checked={g.launchAtLogin}
         onChecked={(launchAtLogin) => update.mutate({ general: { launchAtLogin } })}
+      />
+      <UpdateCheck
+        on={g.checkUpdates}
+        onChecked={(checkUpdates) => update.mutate({ general: { checkUpdates } })}
       />
       <div className="field-row">
         <IntervalField

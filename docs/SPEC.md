@@ -303,7 +303,10 @@ Place this file at `docs/SPEC.md` in the new repository. Every build phase refer
 - **Terminal** (Phase 7, P7-A): shell (empty = login shell), font size (follows the app by default), cursor style and blink, scrollback, Use DevDock prompt (off).
 - **Accessibility** (Phase 7, P7.13; all off by default): reduce motion (follow the system / always), larger click targets (44 × 44px), underline links, always show the focus ring, read out background events to screen readers.
 - **Notifications:** per type, quiet hours, sound on/off.
-- **Polling intervals**, global shortcut, launch at login, and demo mode.
+- **Polling intervals**, global shortcut, launch at login, demo mode, and **Check for updates**
+  (T9, on by default: once a day an anonymous `GET` of the latest published GitHub release; a
+  newer version is announced once with a Download link to its release page; never installed
+  automatically; not in demo mode).
 - **Import/export settings JSON.** Secrets are never included in the export.
 - **Danger zone:** clear credentials, clear all data.
 

@@ -70,6 +70,7 @@ export async function handlerSetup(
   const { PrHub } = await import('../../src/main/services/providers/hub')
   const { CiWatcher } = await import('../../src/main/services/ci/watcher')
   const { TicketMoves } = await import('../../src/main/services/ticket-moves')
+  const { UpdateService } = await import('../../src/main/services/updates')
   const { GitHubClient } = await import('../../src/main/services/github/client')
   const { GitLabClient } = await import('../../src/main/services/gitlab/client')
   const { DEMO_GITHUB_CONFIG } = await import('../../src/main/demo/github')
@@ -291,6 +292,14 @@ export async function handlerSetup(
       briefsDir: join(dir, 'briefs'),
       writeClipboard,
       openEditor: (repo) => openRepo(repo, 'editor'),
+    }),
+    updates: new UpdateService({
+      http,
+      current: '0.1.0',
+      enabled: () => settings.get().general.checkUpdates,
+      notify: (n) => notifications.notify(n),
+      onChange: vi.fn(),
+      file: join(dir, 'update-notice.json'),
     }),
     ticketMoves: new TicketMoves({
       file: join(dir, 'ticket-moves.json'),
