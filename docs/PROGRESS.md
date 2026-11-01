@@ -15,7 +15,7 @@ Contract docs: `docs/SPEC.md`, `docs/UI-THEMES.md`, `docs/BUILD-PROMPTS.md` (pha
 | Field        | Value                                                         |
 | ------------ | ------------------------------------------------------------- |
 | Phase        | **Phase 7 — final wrap-up day is 2026-10-31.** Everything planned is merged on `main` (29328bd, pushed): P7-A terminal, P7-B GitHub/GitLab, P7-C-A agent CLIs, P7-C-B AI with your own key (Claude), P7-D website v2, P7-E accessibility (automated part). |
-| Next step    | **All T-tasks done.** v0.1.0 published; site live at https://devdock.aryangarg.com (Vercel, Cloudflare CNAME DNS-only). Open, owner-side only: link the site from aryangarg.com; redeploy Vercel after each release; optional later: code signing (T8), real-Windows test, listening screen-reader pass (T12). |
+| Next step    | **All T-tasks done.** v0.1.0 published; site live at https://devdock.aryangarg.com (Vercel, Cloudflare CNAME DNS-only). Linked from aryangarg.com (owner, checked). Open, owner-side only: redeploy Vercel after each release; optional later: code signing (T8), real-Windows test, listening screen-reader pass (T12). |
 | Blockers     | None                                                          |
 | Last updated | 2026-11-01                                                    |
 
