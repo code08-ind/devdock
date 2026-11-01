@@ -80,6 +80,21 @@ describe('handlers', () => {
     expect(s.general).toMatchObject({ closeToTray: false, demoMode: false })
   })
 
+  it('commands:request hands a palette command to the main window by id (validated)', async () => {
+    const { deps, handlers } = await setup()
+    const id = 'build:trigger:web-app/feature%2FDD-1'
+    expect(await dispatch('commands:request', { id }, handlers)).toEqual({
+      ok: true,
+      data: undefined,
+    })
+    expect(deps.requestCommand).toHaveBeenCalledWith(id)
+    for (const bad of [{ id: '' }, { id: 'x'.repeat(1001) }, {}]) {
+      const r = await dispatch('commands:request', bad, handlers)
+      expect(r).toMatchObject({ ok: false, error: { code: 'INVALID_PAYLOAD' } })
+    }
+    expect(deps.requestCommand).toHaveBeenCalledTimes(1)
+  })
+
   it('answers demo:ping from fixtures', async () => {
     const { handlers } = await setup()
     expect(await dispatch('demo:ping', undefined, handlers)).toEqual({

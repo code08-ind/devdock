@@ -31,6 +31,9 @@ const ctx = (over: Partial<CommandContext> = {}): CommandContext => ({
   quickLinks: [],
   openLink: vi.fn(),
   devServers: [],
+  baselines: [],
+  branchBuilds: [],
+  watchDeploy: vi.fn(),
   configured: { prs: true, jenkins: true, jira: true },
   prActions: [],
   buildWatches: [],
@@ -297,6 +300,97 @@ describe('palette completeness (P6.01)', () => {
     )
     void (confirm.mock.calls[0]![0] as { run: () => void }).run()
     expect(c.devServer).toHaveBeenCalledWith('r1', false)
+  })
+
+  it('baseline server: only for repos with the script; Stop asks first', () => {
+    const find = (c: CommandContext) =>
+      buildCommands(c, VIEWS).find((x) => x.id === 'repo:r1:baseline')
+    expect(find(ctx({ repos: [repo] }))).toBeUndefined()
+    const c = ctx({ repos: [repo], baselines: [{ repoId: 'r1', running: false }] })
+    const start = find(c)!
+    expect(start.title).toBe('Start baseline server — web-app')
+    void start.run()
+    expect(c.devServer).toHaveBeenCalledWith('r1', true, 'baseline')
+    const running = [{ repoId: 'r1', running: true }]
+    expect(find(ctx({ repos: [repo], baselines: running }))).toBeUndefined()
+    const confirm = vi.fn()
+    const stop = find(ctx({ repos: [repo], baselines: running, confirm }))!
+    expect(stop).toMatchObject({ title: 'Stop baseline server — web-app…', inMain: true })
+    void stop.run()
+    expect(confirm).toHaveBeenCalledWith(
+      expect.objectContaining({ confirmLabel: 'Stop baseline server' }),
+    )
+  })
+
+  it('trigger a build (where its dialog can show) and watch a deploy, per branch job', () => {
+    const job = 'web-app/feature%2FDD-1'
+    const branchBuilds = [
+      {
+        job,
+        label: 'web-app › feature/DD-1',
+        branch: 'feature/DD-1',
+        triggers: true,
+        deploys: true,
+      },
+      // Same branch in another project: one deploy command for the branch.
+      {
+        job: 'api/feature%2FDD-1',
+        label: 'api › feature/DD-1',
+        branch: 'feature/DD-1',
+        triggers: false,
+        deploys: true,
+      },
+      {
+        job: 'web-app/PR-412',
+        label: 'web-app › PR-412',
+        branch: 'PR-412',
+        triggers: true,
+        deploys: false,
+      },
+    ]
+    const ids = (c: CommandContext) =>
+      buildCommands(c, VIEWS)
+        .filter((x) => x.id.startsWith('build:trigger') || x.id.startsWith('build:deploy'))
+        .map((x) => x.id)
+    // No trigger dialog: deploy watches only.
+    expect(ids(ctx({ branchBuilds }))).toEqual(['build:deploy:feature/DD-1'])
+    const trigger = vi.fn()
+    const c = ctx({ branchBuilds, trigger })
+    expect(ids(c)).toEqual([
+      `build:trigger:${job}`,
+      'build:trigger:web-app/PR-412',
+      'build:deploy:feature/DD-1',
+    ])
+    const all = buildCommands(c, VIEWS)
+    const t = all.find((x) => x.id === `build:trigger:${job}`)!
+    expect(t).toMatchObject({ title: 'Trigger a build of web-app › feature/DD-1…', inMain: true })
+    void t.run()
+    expect(trigger).toHaveBeenCalledWith(job)
+    const d = all.find((x) => x.id === 'build:deploy:feature/DD-1')!
+    expect(d.title).toBe('Watch the deploy of feature/DD-1')
+    void d.run()
+    expect(c.watchDeploy).toHaveBeenCalledWith('feature/DD-1')
+  })
+
+  it('commands with a dialog are marked to hand over from the palette window', () => {
+    const all = buildCommands(
+      ctx({
+        repos: [repo],
+        devServers: [{ repoId: 'r1', running: true }],
+        confirm: vi.fn(),
+        prActions: [{ key: 'k1', label: 'web-app #412', action: 'merge' }],
+        prAction: vi.fn(),
+        aiPrs: [{ key: 'k1', label: 'web-app #412' }],
+        ai: vi.fn(),
+      }),
+      VIEWS,
+    )
+    expect(all.filter((c) => c.inMain).map((c) => c.id)).toEqual([
+      'repo:r1:devserver',
+      'ai:standup',
+      'ai:pr-summary:k1',
+      'pr:merge:k1',
+    ])
   })
 
   it('AI actions: only where the dialog can show (and AI is available), per open PR', () => {

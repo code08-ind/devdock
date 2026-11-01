@@ -5,6 +5,7 @@ import { ISSUE_KEY } from '@shared/jira'
 import { refLabel } from '@shared/bitbucket'
 import { parseRunLink, ciRunLabel } from '@shared/ci'
 import { parseAnyPrLink } from '@shared/prlink'
+import type { ServerKind } from '@shared/devserver'
 import type { ActionRequest, OpenTarget } from '@shared/repos'
 import { THEMES, type SettingsPatch, type Theme } from '@shared/settings'
 import type { QuickLink } from '@shared/links'
@@ -38,6 +39,12 @@ export interface Command {
   shortcut?: string
   /** Why it can't run now (shown in the list; picking it does nothing). */
   disabled?: string
+  /**
+   * It opens a dialog or reports its result in a window (stop dev server, PR actions, AI,
+   * trigger build, watch deploy). The palette window can't show either: it hands these to the
+   * main window by id, which runs its own copy (`commands:request`).
+   */
+  inMain?: true
   run: () => unknown
 }
 
@@ -97,6 +104,8 @@ export interface CommandContext {
   openLink: (url: string) => unknown
   /** Each repo's dev server: running (or starting) or not, and whether it has a command. */
   devServers: readonly { repoId: string; running: boolean }[]
+  /** Repos with a baseline server (`scripts/baseline.mjs`, or one running), SPEC 6.2. */
+  baselines: readonly { repoId: string; running: boolean }[]
   /** Services set up (or demo mode): commands that need one say so when it isn't. */
   configured: { prs: boolean; jenkins: boolean; jira: boolean }
   /**
@@ -113,7 +122,23 @@ export interface CommandContext {
   finishedBuilds: boolean
   unwatchBuild: (key: string) => unknown
   clearFinishedBuilds: () => unknown
-  devServer: (repoId: string, start: boolean) => unknown
+  /** Starts or stops a repo's dev server (or, with `kind`, its baseline server). */
+  devServer: (repoId: string, start: boolean, kind?: ServerKind) => unknown
+  /**
+   * My branches' Jenkins jobs (when Jenkins is set up): `triggers` when the job may be
+   * triggered (allowed, not protected), `deploys` when a deploy job is set for branches.
+   */
+  branchBuilds: readonly {
+    job: string
+    label: string
+    branch: string
+    triggers: boolean
+    deploys: boolean
+  }[]
+  /** Opens the trigger dialog (parameters, confirmation); left out where it can't be shown. */
+  trigger?: (job: string) => unknown
+  /** Watches the deploy job's next build for a branch (SPEC 6.4). */
+  watchDeploy: (branch: string) => unknown
   /** My open Jira issues (when loaded): Start work on each. */
   issues: readonly { key: string; summary: string }[]
   /** Opens Start work for an issue key (preview first, then the user starts it). */
@@ -204,7 +229,8 @@ function repoCommands(ctx: CommandContext): Command[] {
       keywords: ['git', ...a.keywords],
       run: () => ctx.requestAction(r.id, a.request),
     })),
-    ...devServerCommands(ctx, r),
+    ...serverCommands(ctx, r, 'dev'),
+    ...serverCommands(ctx, r, 'baseline'),
     ...(['editor', 'terminal', 'files'] as const).map<Command>((target) => ({
       id: `repo:${r.id}:${target}`,
       title: `${ctx.openLabels[target]} — ${r.name}`,
@@ -232,6 +258,7 @@ function aiCommands(ctx: Pick<CommandContext, 'ai' | 'aiPrs'>): Command[] {
       id: 'ai:standup',
       title: 'Polish the standup with Claude…',
       group: 'Utilities',
+      inMain: true,
       keywords: ['ai', 'claude', 'standup', 'polish', 'daily'],
       run: () => ai({ feature: 'standup' }),
     },
@@ -240,6 +267,7 @@ function aiCommands(ctx: Pick<CommandContext, 'ai' | 'aiPrs'>): Command[] {
       title: `Draft a status note for ${p.label} with Claude…`,
       group: 'Pull requests',
       keywords: ['ai', 'claude', 'status', 'note', 'summary', 'pr'],
+      inMain: true,
       run: () => ai({ feature: 'pr-summary', key: p.key }),
     })),
   ]
@@ -278,24 +306,39 @@ const PR_ACTION_VERB: Record<PrAction, string> = {
 const noRepoReason = (ctx: Pick<CommandContext, 'repos'>) =>
   ctx.repos.length ? undefined : 'Add a repo first: Start work makes the branch there'
 
-/** Start or stop a repo's dev server (SPEC 7: every action from the palette). */
-function devServerCommands(ctx: CommandContext, r: { id: string; name: string }): Command[] {
-  const state = ctx.devServers.find((d) => d.repoId === r.id)
+const SERVER_NAMES: Record<ServerKind, string> = { dev: 'dev server', baseline: 'baseline server' }
+
+/** Start or stop a repo's dev or baseline server (SPEC 7: every action from the palette). */
+function serverCommands(
+  ctx: CommandContext,
+  r: { id: string; name: string },
+  kind: ServerKind,
+): Command[] {
+  const list = kind === 'dev' ? ctx.devServers : ctx.baselines
+  const state = list.find((d) => d.repoId === r.id)
+  // Baseline commands only for repos that have the script (or one running).
+  if (kind === 'baseline' && !state) return []
+  const id = kind === 'dev' ? `repo:${r.id}:devserver` : `repo:${r.id}:baseline`
+  const name = SERVER_NAMES[kind]
+  const keywords = kind === 'dev' ? ['dev', 'server', 'npm'] : ['baseline', 'server', 'node']
+  const call = (start: boolean) =>
+    kind === 'dev' ? ctx.devServer(r.id, start) : ctx.devServer(r.id, start, kind)
   const confirm = ctx.confirm
   if (state?.running) {
     return confirm
       ? [
           {
-            id: `repo:${r.id}:devserver`,
-            title: `Stop dev server — ${r.name}…`,
+            id,
+            title: `Stop ${name} — ${r.name}…`,
             group: 'Repos',
-            keywords: ['dev', 'server', 'npm', 'kill'],
+            keywords: [...keywords, 'kill'],
+            inMain: true,
             run: () =>
               confirm({
-                title: `Stop the dev server for ${r.name}?`,
-                body: 'DevDock stops the dev server and the processes it started.',
-                confirmLabel: 'Stop dev server',
-                run: () => ctx.devServer(r.id, false),
+                title: `Stop the ${name} for ${r.name}?`,
+                body: `DevDock stops the ${name} and the processes it started.`,
+                confirmLabel: `Stop ${name}`,
+                run: () => call(false),
               }),
           },
         ]
@@ -303,13 +346,41 @@ function devServerCommands(ctx: CommandContext, r: { id: string; name: string })
   }
   return [
     {
-      id: `repo:${r.id}:devserver`,
-      title: `Start dev server — ${r.name}`,
+      id,
+      title: `Start ${name} — ${r.name}`,
       group: 'Repos',
-      keywords: ['dev', 'server', 'npm', 'run', 'vite'],
-      run: () => ctx.devServer(r.id, true),
+      keywords: [...keywords, 'run', ...(kind === 'dev' ? ['vite'] : [])],
+      run: () => call(true),
     },
   ]
+}
+
+/** SPEC 6.4 from the palette: trigger a build (its dialog), watch a branch's deploy. */
+function branchBuildCommands(ctx: CommandContext): Command[] {
+  const trigger = ctx.trigger
+  const triggers = trigger
+    ? ctx.branchBuilds
+        .filter((b) => b.triggers)
+        .map<Command>((b) => ({
+          id: `build:trigger:${b.job}`,
+          title: `Trigger a build of ${b.label}…`,
+          group: 'Builds',
+          keywords: ['jenkins', 'build', 'run', 'parameters', 'queue'],
+          inMain: true,
+          run: () => trigger(b.job),
+        }))
+    : []
+  // The deploy watch is by branch: one command per branch, whichever job it came from.
+  const branches = [...new Set(ctx.branchBuilds.filter((b) => b.deploys).map((b) => b.branch))]
+  const deploys = branches.map<Command>((branch) => ({
+    id: `build:deploy:${branch}`,
+    title: `Watch the deploy of ${branch}`,
+    group: 'Builds',
+    keywords: ['jenkins', 'deploy', 'watch', 'release'],
+    inMain: true,
+    run: () => ctx.watchDeploy(branch),
+  }))
+  return [...triggers, ...deploys]
 }
 
 export function buildCommands(ctx: CommandContext, views: readonly View[]): Command[] {
@@ -363,9 +434,11 @@ export function buildCommands(ctx: CommandContext, views: readonly View[]): Comm
           title: `${PR_ACTION_VERB[p.action]} ${p.label}…`,
           group: 'Pull requests',
           keywords: ['bitbucket', 'github', 'gitlab', 'review', p.action.replace('_', ' ')],
+          inMain: true,
           run: () => ctx.prAction?.(p.key, p.action),
         }))
       : []),
+    ...branchBuildCommands(ctx),
     ...ctx.buildWatches.map<Command>((w) => ({
       id: `build:unwatch:${w.key}`,
       title: `Stop watching ${w.label}`,

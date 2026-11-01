@@ -83,6 +83,7 @@ export function PanelWindow() {
     confirm: commandDialogs.confirm,
     prAction: commandDialogs.prAction,
     ai: (request) => void commandDialogs.ai(request),
+    trigger: commandDialogs.trigger,
     goto,
     requestAction,
     watch,

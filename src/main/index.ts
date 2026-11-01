@@ -573,6 +573,12 @@ function start(): void {
         showView('tickets')
         mainWindow?.webContents.send('tickets:requested', { key })
       },
+      requestCommand: (id) => {
+        paletteWindow?.hide()
+        panelWindow?.hide()
+        showMain()
+        mainWindow?.webContents.send('commands:requested', { id })
+      },
       requestWatch: (link, pipeline) => {
         showView(pipeline ? 'builds' : 'prs')
         mainWindow?.webContents.send('watch:requested', { link, pipeline })

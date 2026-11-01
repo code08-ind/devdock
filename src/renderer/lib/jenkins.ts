@@ -12,10 +12,12 @@ export const jenkinsKeys = {
 }
 
 /** My branches: at the foreground interval while focused, and on focus (like the PR lists). */
-export function useBranches() {
+/** My branches' Jenkins jobs; `enabled: false` asks for nothing (e.g. Jenkins not set up). */
+export function useBranches(enabled = true) {
   const intervalMs = (useSettings().data?.polling.foregroundSec ?? 60) * 1000
   return useQuery({
     queryKey: jenkinsKeys.branches,
+    enabled,
     queryFn: () => unwrap(bridge.jenkins.branches()),
     staleTime: intervalMs,
     refetchInterval: intervalMs,

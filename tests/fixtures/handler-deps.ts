@@ -18,6 +18,7 @@ export type TestDeps = HandlerDeps & {
   emitOutput: Mock<(e: RepoOutputEvent) => void>
   writeClipboard: Mock<(text: string) => void>
   requestTerminal: Mock<HandlerDeps['requestTerminal']>
+  requestCommand: Mock<HandlerDeps['requestCommand']>
   agents: Mock<HandlerDeps['agents']>
 }
 
@@ -232,6 +233,7 @@ export async function handlerSetup(
     requestWatch: vi.fn(),
     requestUtility: vi.fn(),
     requestTicket: vi.fn(),
+    requestCommand: vi.fn(),
     devServers: new DevServerManager({ onChange: vi.fn(), onOutput: vi.fn() }),
     jira,
     bitbucket,

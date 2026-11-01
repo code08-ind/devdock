@@ -15,7 +15,7 @@ Contract docs: `docs/SPEC.md`, `docs/UI-THEMES.md`, `docs/BUILD-PROMPTS.md` (pha
 | Field        | Value                                                         |
 | ------------ | ------------------------------------------------------------- |
 | Phase        | **Phase 7 — final wrap-up day is 2026-10-31.** Everything planned is merged on `main` (29328bd, pushed): P7-A terminal, P7-B GitHub/GitLab, P7-C-A agent CLIs, P7-C-B AI with your own key (Claude), P7-D website v2, P7-E accessibility (automated part). |
-| Next step    | **T4 (palette gaps), then T5.** Paused 2026-11-01 by the owner; resume tomorrow. |
+| Next step    | **T5 (P6.13 workflow follow-ups).** T4 done 2026-11-01. |
 | Blockers     | None                                                          |
 | Last updated | 2026-11-01                                                    |
 
@@ -61,9 +61,11 @@ docs-only pushes.
   Done 2026-11-01: `ai:testConnection`, Diagnostics "Anthropic" row; integration "Test connection:
   GET /v1/models…" + "IPC Test connection in demo mode…", e2e `ai.spec.ts` Settings → AI and
   `diagnostics.spec.ts` (4 connected). lint 0; vitest 916 / 1 skipped; e2e 66 / 5 skipped; dist 0.
-- [ ] **T4** Remaining palette gaps (DECISIONS P6-B "Not palette commands yet"): trigger a build /
+- [x] **T4** Remaining palette gaps (DECISIONS P6-B "Not palette commands yet"): trigger a build /
   watch a deploy (via the parameters dialog), the baseline server, PR actions from the global
-  palette window.
+  palette window. Evidence: unit `palette.test.ts` (baseline, trigger/deploy, `inMain` marks),
+  `handlers.test.ts` (`commands:request` validated); e2e `palette.spec.ts` "T4: trigger a build
+  from the palette window…"; lint 0; vitest 920 / 1 skipped; e2e 67 / 5 skipped.
 - [ ] **T5** P6.13 workflow follow-ups not built yet (DECISIONS P6-F): watch the PR build after
   push, move the ticket when a PR opens, run a check command before push, start the dev server
   after a branch switch — each behind a Settings → Workflow checkbox, off by default.
@@ -743,3 +745,4 @@ Next step: owner review → merge `p7-providers` into `main`.
 | 2026-11-01 | T1 + T2 | CI blocked by Actions billing on the private repo → secrets scan → owner made the repo public; CI re-run started. T2: AI actions in the palette (standup polish, PR status notes). lint 0; vitest 914 / 1 skipped; e2e 66 / 5 skipped. |
 | 2026-11-01 | T1 + T3, pause | T1 green (run 41236243941, incl. Upload packages). T3: AI Test connection + Diagnostics Anthropic row. lint 0; vitest 916 / 1; e2e 66 / 5; dist exit 0 (arm64 108.8 MB, x64 111.9 MB). Owner paused; next T4. |
 | 2026-11-01 | Scope | Owner agreed: ship v0.1.0 without T6 (OpenAI/Gemini) and T7 (true PR summary); both follow after the release. |
+| 2026-11-01 | T4 | Palette: trigger build (parameters dialog), watch deploy, baseline server start/stop; the global palette window hands dialog commands (`inMain`) to the main window by id (`commands:request`). app.spec "jenkins" search updated for the deploy commands. lint 0; vitest 920 / 1 skipped; e2e 67 / 5 skipped. | T5 |

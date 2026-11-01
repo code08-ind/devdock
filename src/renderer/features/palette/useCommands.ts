@@ -1,17 +1,26 @@
+import { useQueries } from '@tanstack/react-query'
 import type { AgentLaunch } from '@shared/agents'
 import { usePreferredAgent } from '../../lib/agents'
 import { useAiAvailable } from '../../lib/ai'
 import { PROVIDER_ACTIONS, providerOf, type PrAction, type PullRequest } from '@shared/bitbucket'
 import { ciRunLabel } from '@shared/ci'
+import { isActive } from '@shared/devserver'
+import { jobLabel, triggerRefusal, type BranchBuild } from '@shared/jenkins'
 import { enabledProviders } from '@shared/settings'
 import { VIEWS, type View } from '@shared/channels'
 import type { ActionRequest } from '@shared/repos'
 import type { UtilityRequest } from '@shared/utilities'
 import { useNotificationActions, useUpdateSettingsAction } from '../../lib/actions'
 import { usePrList, useRemoveWatch, useWatches } from '../../lib/bitbucket'
-import { bridge, isSetUp, unwrap, usePauseState, useSettings } from '../../lib/devdock'
+import { bridge, isSetUp, keys, unwrap, usePauseState, useSettings } from '../../lib/devdock'
 import { useDevServers } from '../../lib/devservers'
-import { useBuildWatches, useClearFinished, useRemoveBuildWatch } from '../../lib/jenkins'
+import {
+  useAddBuildWatch,
+  useBranches,
+  useBuildWatches,
+  useClearFinished,
+  useRemoveBuildWatch,
+} from '../../lib/jenkins'
 import { useJiraList } from '../../lib/jira'
 import { useCiWatches, useClearFinishedRuns, useRemoveCiWatch } from '../../lib/providers'
 import { modLabel } from '../../lib/keyboard'
@@ -45,6 +54,8 @@ export interface CommandHandlers {
   prAction?: (pr: PullRequest, action: PrAction) => void
   /** The AI preview dialog (P7-C-B), in the same windows. */
   ai?: (request: AiCommandRequest) => void
+  /** The trigger-build dialog (parameters, confirmation), in the same windows. */
+  trigger?: (row: BranchBuild) => void
 }
 
 /**
@@ -104,6 +115,18 @@ export function useCommands(h: CommandHandlers): {
   const clearFinishedRuns = useClearFinishedRuns()
   const removeBuild = useRemoveBuildWatch()
   const clearFinished = useClearFinished()
+  const addBuildWatch = useAddBuildWatch()
+  // My branches' jobs, for Trigger build / Watch deploy: asked for only once Jenkins is set up.
+  const jenkinsOn = settings ? isSetUp(settings, 'jenkins') : false
+  const branchRows = useBranches(jenkinsOn).data?.builds ?? []
+  // Which repos have a baseline server script (repo status; shared with Repos' polled query).
+  const statuses = useQueries({
+    queries: repos.map((r) => ({
+      queryKey: keys.repoStatus(r.id),
+      queryFn: () => unwrap(bridge.repos.status({ id: r.id })),
+      staleTime: 60_000,
+    })),
+  })
 
   const quickLinks = settings?.quickLinks ?? []
   const openLink = (url: string) => run(unwrap(bridge.app.openExternal({ url })))
@@ -142,12 +165,41 @@ export function useCommands(h: CommandHandlers): {
           running: s?.status === 'running' || s?.status === 'starting',
         }
       }),
-      devServer: (id, start) =>
-        run(
+      baselines: repos.flatMap((r, i) => {
+        const s = servers.find((d) => d.repoId === r.id && d.kind === 'baseline')
+        const running = s ? isActive(s.status) : false
+        return running || statuses[i]?.data?.hasBaseline ? [{ repoId: r.id, running }] : []
+      }),
+      devServer: (id, start, kind = 'dev') => {
+        const label = kind === 'dev' ? 'Dev server' : 'Baseline server'
+        return run(
           start
-            ? unwrap(bridge.devserver.start({ id, kind: 'dev' }))
-            : unwrap(bridge.devserver.stop({ id, kind: 'dev' })),
-          start ? 'Dev server starting' : 'Dev server stopped',
+            ? unwrap(bridge.devserver.start({ id, kind }))
+            : unwrap(bridge.devserver.stop({ id, kind })),
+          start ? `${label} starting` : `${label} stopped`,
+        )
+      },
+      branchBuilds: jenkinsOn
+        ? branchRows.map((b) => ({
+            job: b.job,
+            label: jobLabel(b.job),
+            branch: b.branch,
+            triggers: triggerRefusal(b.job, settings) === null,
+            deploys:
+              b.kind === 'branch' &&
+              (settings.general.demoMode || settings.jenkins.deployJob !== ''),
+          }))
+        : [],
+      trigger: h.trigger
+        ? (job) => {
+            const row = branchRows.find((b) => b.job === job)
+            if (row) h.trigger?.(row)
+          }
+        : undefined,
+      watchDeploy: (branch) =>
+        run(
+          addBuildWatch.mutateAsync({ kind: 'deploy', branch }),
+          `Watching the deploy of ${branch}`,
         ),
       issues,
       configured,

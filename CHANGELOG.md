@@ -30,6 +30,10 @@ versions follow [Semantic Versioning](https://semver.org/).
   one notification when it finishes and the tray dot follows it.
 - **Settings → Actions**: PR actions (now for every provider) and **CI actions** (off by default): re-run / retry failed jobs and cancel, each
   confirmed. Settings → Detect reads your repos' remotes; Bitbucket can be turned off.
+- **More in the palette**: trigger a Jenkins build (opens the parameters dialog), watch a branch's
+  deploy, start / stop the baseline server. From the global-shortcut palette window, commands
+  that need a dialog (trigger build, stop a server, PR actions, the AI actions) open it in the
+  main window.
 
 ## [0.1.0] — 2026-10-25
 

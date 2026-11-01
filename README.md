@@ -134,6 +134,8 @@ on your computer.
 **Command palette** — every action, searchable: `⌘K` in the app, or the global shortcut from
 any app. It takes arguments: `watch <PR link>`, `pipeline <PR link>`, `branch NM-1234`,
 `kill 5173`, `open <link name>`, `terminal <repo>`. Recent commands come first; a command that can't run says why.
+Commands that need a dialog (trigger a build, PR actions, stop a server) open it in the main
+window when run from the global-shortcut palette.
 
 ![Command palette](docs/screenshots/readme-palette.png)
 

@@ -1,3 +1,5 @@
+import { mkdirSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 import type { Page } from '@playwright/test'
 import { makeRepos, type Repos } from '../fixtures/git-repos'
 import { callHook, expect, test, windowFor } from './fixtures'
@@ -101,4 +103,55 @@ test('a click outside the palette closes it; a click inside does not', async ({ 
   await expect(p).toBeHidden()
   // And it opens again normally.
   await palette(win)
+})
+
+test('T4: trigger a build from the palette window opens its dialog in the main window; watch a deploy; baseline server', async ({
+  launched,
+}) => {
+  const { app, win } = launched
+  repos = makeRepos()
+  mkdirSync(join(repos.clone, 'scripts'), { recursive: true })
+  writeFileSync(join(repos.clone, 'scripts', 'baseline.mjs'), '')
+  expect((await win.evaluate((p) => window.devdock.repos.add({ path: p }), repos.clone)).ok).toBe(
+    true,
+  )
+  await win.evaluate(() =>
+    window.devdock.settings.update({
+      features: { jobTriggers: true, allowedJobs: ['web-app/bugfix%2FDD-101-date-picker-focus'] },
+    }),
+  )
+
+  // The baseline server, for a repo with scripts/baseline.mjs.
+  let p = await palette(win)
+  await win.keyboard.type('baseline')
+  await expect(p.getByRole('option', { name: /Start baseline server — clone/ })).toBeVisible()
+  await win.keyboard.press('Escape')
+
+  // Watch a deploy: no dialog, reported here.
+  p = await palette(win)
+  await win.keyboard.type('watch the deploy of bugfix/DD-101')
+  await expect(p.getByRole('option').first()).toContainText(
+    'Watch the deploy of bugfix/DD-101-date-picker-focus',
+  )
+  await win.keyboard.press('Enter')
+  await expect(
+    win.getByText('Watching the deploy of bugfix/DD-101-date-picker-focus'),
+  ).toBeVisible()
+
+  // From the global-shortcut palette window: the trigger dialog opens in the main window.
+  await callHook(app, 'togglePalette')
+  const pw = await windowFor(app, 'palette.html')
+  await pw.getByRole('combobox', { name: 'Command' }).fill('trigger a build')
+  await expect(pw.getByRole('option').first()).toContainText(
+    'Trigger a build of web-app › bugfix/DD-101-date-picker-focus…',
+  )
+  await pw.keyboard.press('Enter')
+  await expect.poll(() => callHook(app, 'isPaletteVisible')).toBe(false)
+  const dialog = win.getByRole('dialog', {
+    name: 'Trigger a build of web-app › bugfix/DD-101-date-picker-focus?',
+  })
+  await expect(dialog).toBeVisible()
+  await expect(dialog).toContainText('web-app/bugfix%2FDD-101-date-picker-focus')
+  await dialog.getByRole('button', { name: 'Cancel' }).click()
+  await expect(dialog).toBeHidden()
 })

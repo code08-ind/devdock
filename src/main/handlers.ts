@@ -103,6 +103,8 @@ export interface HandlerDeps {
   requestUtility: (request: Req<'utilities:request'>) => void
   /** Shows the main window with Start work open for that issue. */
   requestTicket: (key: string) => void
+  /** Shows the main window and runs a palette command there that needs its dialog (by id). */
+  requestCommand: (id: string) => void
   /** Brings up the main window's action dialog (from the palette window). */
   requestRepoAction: (event: { id: string; request: ActionRequest }) => void
   /** P7-A: the in-app terminal's PTYs. */
@@ -565,6 +567,7 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
     'lessons:add': ({ repoId, lessons }) => withLessons(() => deps.lessons.add(repoId, lessons)),
     'utilities:request': (request) => deps.requestUtility(request),
     'tickets:request': ({ key }) => deps.requestTicket(key),
+    'commands:request': ({ id }) => deps.requestCommand(id),
     'startwork:plan': (request) => withStartWork(() => deps.startWork.plan(request)),
     'startwork:run': (request) =>
       withStartWork(() =>

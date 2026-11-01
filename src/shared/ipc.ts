@@ -354,6 +354,7 @@ export const contract = {
   'lessons:add': { req: LessonsAddSchema, res: LessonsAddResultSchema },
   'utilities:request': { req: UtilityRequestSchema, res: none },
   'tickets:request': { req: z.object({ key: IssueKeySchema }), res: none },
+  'commands:request': { req: z.object({ id: z.string().min(1).max(1000) }), res: none },
   /** Read-only: branch name, commands, brief path + .gitignore check, agent and message. */
   'startwork:plan': { req: StartWorkRequestSchema, res: StartWorkPlanSchema },
   'startwork:run': { req: StartWorkRunSchema, res: StartWorkResultSchema },
@@ -435,6 +436,7 @@ export interface EventPayloads {
   'ciwatch:changed': CiWatch[]
   'utilities:requested': z.infer<typeof UtilityRequestSchema>
   'tickets:requested': { key: string }
+  'commands:requested': { id: string }
   'terminal:output': TerminalOutputEvent
   'terminal:exit': TerminalExitEvent
   'terminal:requested': TerminalRequest

@@ -197,6 +197,7 @@ export function App() {
     confirm: commandDialogs.confirm,
     prAction: commandDialogs.prAction,
     ai: (request) => void commandDialogs.ai(request),
+    trigger: commandDialogs.trigger,
     goto: setView,
     requestAction,
     watch: watchLink,
@@ -218,6 +219,21 @@ export function App() {
     [watchLink],
   )
   useBridgeEvent('watch:requested', onWatchRequested)
+  // From the palette window: a command that needs this window's dialog, run from this
+  // window's own registry (only those marked `inMain`; the dialog still asks first).
+  const commandsRef = useRef(commands)
+  useEffect(() => {
+    commandsRef.current = commands
+  }, [commands])
+  const onCommandRequested = useCallback(
+    ({ id }: { id: string }) => {
+      const command = commandsRef.current.find((c) => c.id === id && c.inMain && !c.disabled)
+      if (command) void command.run()
+      else toast("That command isn't available any more. Open the palette to pick another.")
+    },
+    [toast],
+  )
+  useBridgeEvent('commands:requested', onCommandRequested)
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
