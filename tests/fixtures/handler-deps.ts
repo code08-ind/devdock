@@ -248,7 +248,7 @@ export async function handlerSetup(
       ),
     prWatcher: new PrWatcher({
       file: join(dir, 'watches.json'),
-      bitbucket: prs,
+      prs,
       notify: (n) => notifications.notify(n),
       onChange: vi.fn(),
     }),
@@ -274,7 +274,7 @@ export async function handlerSetup(
     buildWatcher: new BuildWatcher({
       file: join(dir, 'build-watches.json'),
       jenkins,
-      bitbucket: prs,
+      prs,
       notify: (n) => notifications.notify(n),
       onChange: vi.fn(),
     }),

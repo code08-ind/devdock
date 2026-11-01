@@ -47,6 +47,9 @@ export type CiState = (typeof CI_STATES)[number]
 export const isFinished = (s: CiState) =>
   s === 'success' || s === 'failed' || s === 'cancelled' || s === 'skipped'
 
+/** Doing work now (a log grows). Not `manual`: that waits for someone, but isn't finished. */
+export const isWorking = (s: CiState) => s === 'running' || s === 'queued'
+
 export const CiRunSchema = z.object({
   key: z.string(),
   ref: CiRunRefSchema,

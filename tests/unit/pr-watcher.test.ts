@@ -73,7 +73,7 @@ const votes = (priya: string, sam: string) => {
 function setup(dir = mkdtempSync(join(tmpdir(), 'devdock-watch-'))) {
   const answers: (PullRequest | Error)[] = []
   const notified: NotifyInput[] = []
-  const bitbucket = {
+  const prs = {
     site: vi.fn<() => string | null>(() => SITE),
     pr: vi.fn(async (_ref: PrRef) => {
       const next = answers.shift()
@@ -85,8 +85,8 @@ function setup(dir = mkdtempSync(join(tmpdir(), 'devdock-watch-'))) {
   const onChange = vi.fn()
   const file = join(dir, 'watches.json')
   const make = () =>
-    new PrWatcher({ file, bitbucket, notify: (n) => notified.push(n), onChange, now: () => 1000 })
-  return { dir, file, answers, notified, bitbucket, onChange, watcher: make(), restart: make }
+    new PrWatcher({ file, prs, notify: (n) => notified.push(n), onChange, now: () => 1000 })
+  return { dir, file, answers, notified, prs, onChange, watcher: make(), restart: make }
 }
 
 const titles = (ns: NotifyInput[]) => ns.map((n) => `${n.type}: ${n.title}`)
@@ -177,7 +177,7 @@ describe('PrWatcher (P3.D2)', () => {
     // Merged: no longer polled.
     t.notified.length = 0
     await t.watcher.poll()
-    expect(t.bitbucket.pr).toHaveBeenCalledTimes(steps.length + 1)
+    expect(t.prs.pr).toHaveBeenCalledTimes(steps.length + 1)
     expect(t.watcher.list()[0]!.pr.state).toBe('merged')
   })
 
@@ -235,7 +235,7 @@ describe('PrWatcher (P3.D2)', () => {
     const seen: string[] = []
     const watcher = new PrWatcher({
       file: t.file,
-      bitbucket: t.bitbucket,
+      prs: t.prs,
       onChange: vi.fn(),
       notify: () => {
         const saved = JSON.parse(readFileSync(t.file, 'utf8')) as {
@@ -269,14 +269,14 @@ describe('PrWatcher (P3.D2)', () => {
     await expect(t.watcher.poll()).rejects.toBe(auth)
     // #43 wasn't tried after the 401.
     expect(t.answers).toHaveLength(0)
-    expect(t.bitbucket.pr).toHaveBeenCalledTimes(5)
+    expect(t.prs.pr).toHaveBeenCalledTimes(5)
     expect(t.watcher.list()[0]!.error).toMatch(/401/)
   })
 
   it('makes no requests with nothing live to watch', async () => {
     const t = setup()
     await t.watcher.poll()
-    expect(t.bitbucket.pr).not.toHaveBeenCalled()
+    expect(t.prs.pr).not.toHaveBeenCalled()
   })
 
   it('refuses bad links, other sites and a full list before asking Bitbucket', async () => {
@@ -291,12 +291,12 @@ describe('PrWatcher (P3.D2)', () => {
     await expect(
       t.watcher.add('https://bitbucket.org/acme/web-app/pull-requests/1'),
     ).rejects.toMatchObject({ kind: 'other-site', message: expect.stringContaining(SITE) })
-    t.bitbucket.site.mockReturnValueOnce(null)
+    t.prs.site.mockReturnValueOnce(null)
     await expect(t.watcher.add(LINK)).rejects.toMatchObject({
       kind: 'other-site',
       message: expect.stringMatching(/server URL/),
     })
-    expect(t.bitbucket.pr).not.toHaveBeenCalled()
+    expect(t.prs.pr).not.toHaveBeenCalled()
 
     // Same PR spelled differently (user repo case, context path case): one watch.
     t.answers.push(pr())
@@ -305,7 +305,7 @@ describe('PrWatcher (P3.D2)', () => {
       `${SITE.toUpperCase().replace('HTTPS', 'https')}/projects/web/repos/WEB-APP/pull-requests/42`,
     )
     expect(again).toBe(first)
-    expect(t.bitbucket.pr).toHaveBeenCalledTimes(1)
+    expect(t.prs.pr).toHaveBeenCalledTimes(1)
 
     for (let id = 100; t.watcher.list().length < 50; id++) {
       t.answers.push(pr({}, { ...REF, id }))
@@ -320,9 +320,9 @@ describe('PrWatcher (P3.D2)', () => {
     const t = setup()
     t.answers.push(pr())
     await t.watcher.add(LINK)
-    t.bitbucket.site.mockReturnValue('https://bitbucket.org')
+    t.prs.site.mockReturnValue('https://bitbucket.org')
     await t.watcher.poll()
-    expect(t.bitbucket.pr).toHaveBeenCalledTimes(1)
+    expect(t.prs.pr).toHaveBeenCalledTimes(1)
     expect(t.watcher.list()[0]!.error).toMatch(/different Bitbucket site/)
   })
 
@@ -330,7 +330,7 @@ describe('PrWatcher (P3.D2)', () => {
     const t = setup()
     t.answers.push(pr())
     await t.watcher.add(LINK)
-    // I (Sam) marked needs work (bitbucket:action) — and meanwhile Priya approved and the
+    // I (Sam) marked needs work (prs:action) — and meanwhile Priya approved and the
     // build passed. Only my own vote is absorbed.
     const after = pr({
       ...votes('approved', 'needs_work'),
@@ -352,7 +352,7 @@ describe('PrWatcher (P3.D2)', () => {
     await t.watcher.add(LINK)
     // The poll's read is in flight (pre-approval copy) when the approval is acknowledged.
     let release: (p: PullRequest) => void = () => undefined
-    t.bitbucket.pr.mockImplementationOnce(() => new Promise((r) => (release = r)))
+    t.prs.pr.mockImplementationOnce(() => new Promise((r) => (release = r)))
     const polling = t.watcher.poll()
     const approved = pr(votes('unapproved', 'approved'))
     t.watcher.acknowledge({ pr: approved, actor: 'Sam Lead' })

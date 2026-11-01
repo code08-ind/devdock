@@ -83,7 +83,7 @@ function setup(file = join(mkdtempSync(join(tmpdir(), 'devdock-bw-')), 'build-wa
     new BuildWatcher({
       file,
       jenkins: j.jenkins,
-      bitbucket: { pr: vi.fn(), site: () => 'https://bitbucket.org' },
+      prs: { pr: vi.fn(), site: () => 'https://bitbucket.org' },
       notify: (n) => notes.push(n),
       onChange,
     })
@@ -282,7 +282,7 @@ describe('build watcher', () => {
     const watcher = new BuildWatcher({
       file: t.file,
       jenkins: t.j.jenkins,
-      bitbucket: { pr: pr as never, site: () => 'https://bitbucket.org' },
+      prs: { pr: pr as never, site: () => 'https://bitbucket.org' },
       notify: vi.fn(),
       onChange: vi.fn(),
     })
@@ -302,7 +302,7 @@ describe('build watcher', () => {
           ...t.j.jenkins,
           resolvePr: async () => ({ ok: true, job: 'web-app/PR-42', build, via: 'build-status' }),
         },
-        bitbucket: { pr: (async () => pr) as never, site: () => 'https://bitbucket.org' },
+        prs: { pr: (async () => pr) as never, site: () => 'https://bitbucket.org' },
         notify: vi.fn(),
         onChange: vi.fn(),
       })

@@ -169,6 +169,21 @@ function showView(view: View): void {
   mainWindow?.webContents.send('nav:goto', view)
 }
 
+/**
+ * From the palette window or the panel: bring up the main window (on `view`, if given) and
+ * send it `event`, so the request is handled where its dialog or tab lives.
+ */
+function handToMain<E extends EventChannel>(event: E, payload: EventPayload<E>, view?: View): void {
+  if (view) {
+    showView(view)
+  } else {
+    paletteWindow?.hide()
+    panelWindow?.hide()
+    showMain()
+  }
+  mainWindow?.webContents.send(event, payload)
+}
+
 function openPalette(): void {
   if (!paletteWindow || paletteWindow.isDestroyed()) return
   showPalette(paletteWindow)
@@ -403,7 +418,7 @@ function start(): void {
   const myPrs = () => prs.listAll(enabledProviders(store.get()), 'mine')
   const prWatcher = new PrWatcher({
     file: join(userData, 'watches.json'),
-    bitbucket: prs,
+    prs,
     notify: (n) => notifications.notify(n),
     onChange: () => {
       broadcast('watch:changed', prWatcher.list())
@@ -420,7 +435,7 @@ function start(): void {
   const buildWatcher = new BuildWatcher({
     file: join(userData, 'build-watches.json'),
     jenkins,
-    bitbucket: prs,
+    prs,
     notify: (n) => notifications.notify(n),
     onChange: () => {
       broadcast('buildwatch:changed', buildWatcher.list())
@@ -592,39 +607,18 @@ function start(): void {
         writeClipboard: (text) => clipboard.writeText(text),
         openEditor: (repo) => openRepo(repo, 'editor'),
       }),
-      requestUtility: (request) => {
-        showView('utilities')
-        mainWindow?.webContents.send('utilities:requested', request)
-      },
-      requestTicket: (key) => {
-        showView('tickets')
-        mainWindow?.webContents.send('tickets:requested', { key })
-      },
+      requestUtility: (request) => handToMain('utilities:requested', request, 'utilities'),
+      requestTicket: (key) => handToMain('tickets:requested', { key }, 'tickets'),
       ticketMoves,
-      requestCommand: (id) => {
-        paletteWindow?.hide()
-        panelWindow?.hide()
-        showMain()
-        mainWindow?.webContents.send('commands:requested', { id })
-      },
-      requestWatch: (link, pipeline) => {
-        showView(pipeline ? 'builds' : 'prs')
-        mainWindow?.webContents.send('watch:requested', { link, pipeline })
-      },
-      requestRepoAction: (event) => {
-        showView('repos')
-        mainWindow?.webContents.send('repos:actionRequested', event)
-      },
+      requestCommand: (id) => handToMain('commands:requested', { id }),
+      requestWatch: (link, pipeline) =>
+        handToMain('watch:requested', { link, pipeline }, pipeline ? 'builds' : 'prs'),
+      requestRepoAction: (event) => handToMain('repos:actionRequested', event, 'repos'),
       terminal,
       home: homedir(),
-      requestTerminal: (request) => {
-        // No separate `nav:goto`: the window switches view and opens the tab in one step, so its
-        // first visit doesn't open a Home tab as well (that raced on CI).
-        paletteWindow?.hide()
-        panelWindow?.hide()
-        showMain()
-        mainWindow?.webContents.send('terminal:requested', request)
-      },
+      // No `view` (no separate `nav:goto`): the window switches view and opens the tab in one
+      // step, so its first visit doesn't open a Home tab as well (that raced on CI).
+      requestTerminal: (request) => handToMain('terminal:requested', request),
       // After the login shell's PATH is merged in (where these CLIs usually live).
       agents: () =>
         envReady.then(() => detectAgents({ platform: process.platform, env: process.env })),

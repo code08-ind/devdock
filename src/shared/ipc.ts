@@ -249,10 +249,6 @@ export const contract = {
     res: BitbucketDetectionSchema,
   },
   'bitbucket:testConnection': { req: none, res: BitbucketConnectionSchema },
-  'bitbucket:list': { req: z.object({ list: z.enum(PR_LISTS) }), res: z.array(PullRequestSchema) },
-  'bitbucket:pr': { req: PrRefSchema, res: PullRequestSchema },
-  /** Returns the PR after the action. */
-  'bitbucket:action': { req: PrActionRequestSchema, res: PullRequestSchema },
   'watch:list': { req: none, res: z.array(WatchItemSchema) },
   'watch:add': { req: z.object({ link: z.string().min(1).max(2000) }), res: WatchItemSchema },
   'watch:remove': { req: z.object({ key: z.string().min(1).max(400) }), res: none },
@@ -266,6 +262,7 @@ export const contract = {
     res: z.array(PullRequestSchema),
   },
   'prs:pr': { req: PrRefSchema, res: PullRequestSchema },
+  /** Returns the PR after the action. */
   'prs:action': { req: PrActionRequestSchema, res: PullRequestSchema },
   'providers:detect': { req: none, res: z.array(RemoteHostSchema) },
   'github:testConnection': { req: none, res: HostConnectionSchema },
@@ -379,7 +376,7 @@ export const contract = {
   'terminal:resize': { req: TerminalResizeSchema, res: none },
   /** Closing a tab: the shell and what it started are stopped. */
   'terminal:kill': { req: TerminalRefSchema, res: none },
-  /** This window's sessions. */
+  /** Palette window / panel → main window: open a DevDock terminal tab there. */
   'terminal:request': { req: TerminalRequestSchema, res: none },
   'agents:detect': { req: none, res: z.array(AgentStatusSchema) },
   'ai:prepare': { req: AiPrepareSchema, res: AiPreviewSchema },

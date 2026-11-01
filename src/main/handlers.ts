@@ -342,6 +342,16 @@ function withSecrets<T>(fn: () => T): T {
 }
 
 export function createHandlers(deps: HandlerDeps): HandlerMap {
+  /** Remote-changing actions behind a Settings → Actions switch (off by default): checked here,
+   *  whatever the renderer showed or sent. */
+  const requireFeature = (flag: 'prActions' | 'ciActions', what: string) => {
+    if (!deps.settings.get().features[flag]) {
+      throw new IpcError(
+        'NOT_ALLOWED',
+        `${what} are turned off. Turn them on in Settings → Actions (only if your role permits).`,
+      )
+    }
+  }
   /** A Test connection, its outcome kept for the diagnostics report. */
   const recorded = async <T>(service: ServiceName, test: () => Promise<T>): Promise<T> => {
     try {
@@ -454,37 +464,12 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
     'jira:issue': ({ key }) => withService(() => deps.jira.issue(key)),
     'bitbucket:detect': ({ baseUrl }) => withService(() => deps.bitbucket.detect(baseUrl)),
     'bitbucket:testConnection': () => recorded('Bitbucket', () => deps.bitbucket.testConnection()),
-    'bitbucket:list': ({ list }) => withService(() => deps.bitbucket.list(list)),
-    'bitbucket:pr': (ref) => withService(() => deps.bitbucket.pr(ref)),
-    'bitbucket:action': (request) =>
-      withService(async () => {
-        // SPEC 6.3: off by default. Checked here, whatever the renderer showed or sent.
-        if (!deps.settings.get().features.prActions) {
-          throw new IpcError(
-            'NOT_ALLOWED',
-            'PR actions are turned off. Turn them on in Settings → Actions (only if your role permits).',
-          )
-        }
-        try {
-          const result = await deps.bitbucket.act(request)
-          deps.prWatcher.acknowledge(result)
-          return result.pr
-        } catch (err) {
-          if (err instanceof PrActionError) throw new IpcError('PRECONDITION_FAILED', err.message)
-          throw err
-        }
-      }),
     'prs:list': ({ provider, list }) => withService(() => deps.prs.list(provider, list)),
     'prs:pr': (ref) => withService(() => deps.prs.pr(ref)),
     'prs:action': (request) =>
       withService(async () => {
         // SPEC 6.3: one switch for every provider, checked here whatever the renderer sent.
-        if (!deps.settings.get().features.prActions) {
-          throw new IpcError(
-            'NOT_ALLOWED',
-            'PR actions are turned off. Turn them on in Settings → Actions (only if your role permits).',
-          )
-        }
+        requireFeature('prActions', 'PR actions')
         try {
           const result = await deps.prs.act(request)
           deps.prWatcher.acknowledge(result)
@@ -503,12 +488,7 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
     'ci:action': (request) =>
       withService(async () => {
         // Owner decision (P7): off by default and confirmed each time, like PR actions.
-        if (!deps.settings.get().features.ciActions) {
-          throw new IpcError(
-            'NOT_ALLOWED',
-            'CI actions are turned off. Turn them on in Settings → Actions (only if your role permits).',
-          )
-        }
+        requireFeature('ciActions', 'CI actions')
         try {
           const run = await deps.hosts[request.ref.provider].ciAct(request)
           deps.ciWatcher.restarted(run)

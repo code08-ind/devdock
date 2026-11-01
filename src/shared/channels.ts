@@ -54,10 +54,6 @@ export const INVOKE_CHANNELS = [
   'jira:issue',
   'bitbucket:detect',
   'bitbucket:testConnection',
-  'bitbucket:list',
-  'bitbucket:pr',
-  /** Approve / needs work / merge. Rejected unless `features.prActions` is on. */
-  'bitbucket:action',
   'watch:list',
   /** Watch the PR behind a pasted link (palette `watch <link>` or the Watch field). */
   'watch:add',

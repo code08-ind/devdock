@@ -161,12 +161,14 @@ describe('bitbucket:* IPC', () => {
       { owner: 'PROJ', repo: 'a/b', id: 1 },
       { owner: 'PROJ', repo: 'x', id: -1 },
     ]) {
-      expect(await dispatch('bitbucket:pr', bad, handlers)).toMatchObject({
+      expect(await dispatch('prs:pr', bad, handlers)).toMatchObject({
         ok: false,
         error: { code: 'INVALID_PAYLOAD' },
       })
     }
-    expect(await dispatch('bitbucket:list', { list: 'all' }, handlers)).toMatchObject({
+    expect(
+      await dispatch('prs:list', { provider: 'bitbucket', list: 'all' }, handlers),
+    ).toMatchObject({
       ok: false,
       error: { code: 'INVALID_PAYLOAD' },
     })
@@ -180,7 +182,7 @@ describe('bitbucket:* IPC', () => {
     const { dispatch } = await import('../../src/main/ipc/registry')
     const { handlerSetup } = await import('../fixtures/handler-deps')
     const { handlers } = await handlerSetup()
-    const r = await dispatch('bitbucket:list', { list: 'mine' }, handlers)
+    const r = await dispatch('prs:list', { provider: 'bitbucket', list: 'mine' }, handlers)
     if (!r.ok) throw new Error(r.error.message)
     expect(r.data).toHaveLength(4)
     expect(await dispatch('app:openExternal', { url: r.data[0]!.url }, handlers)).toMatchObject({

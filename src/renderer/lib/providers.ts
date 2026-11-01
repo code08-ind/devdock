@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
-import type { CiActionRequest, CiRunRef } from '@shared/ci'
+import { isFinished, type CiActionRequest, type CiRunRef } from '@shared/ci'
 import type { CiProvider } from '@shared/providers'
 import { bridge, keys, queryClient, unwrap, useSettings } from './devdock'
 
@@ -28,15 +28,16 @@ export function useCiRuns(provider: CiProvider) {
   })
 }
 
-const going = (state: string | undefined) =>
-  state === 'running' || state === 'queued' || state === 'manual'
-
 /** One run with its jobs; every 5 s while it is going. */
 export function useCiRun(ref: CiRunRef) {
   return useQuery({
     queryKey: ciKeys.run(ref),
     queryFn: () => unwrap(bridge.ci.run(ref)),
-    refetchInterval: (q) => (going(q.state.data?.run.state) ? 5_000 : false),
+    // Until it finishes: a run waiting on a manual step can still move on.
+    refetchInterval: (q) => {
+      const state = q.state.data?.run.state
+      return state && !isFinished(state) ? 5_000 : false
+    },
   })
 }
 

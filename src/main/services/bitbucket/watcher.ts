@@ -29,7 +29,8 @@ export interface PrWatcherDeps {
    * Where PRs are read: the provider hub (P7.04) — Bitbucket, GitHub or GitLab by the ref's
    * provider. `site(provider)` is where that provider's links must point.
    */
-  bitbucket: { pr(ref: PrRef): Promise<PullRequest>; site(provider: Provider): string | null }
+  /** Pull requests on every provider (the PR hub): one PR, and each provider's site. */
+  prs: { pr(ref: PrRef): Promise<PullRequest>; site(provider: Provider): string | null }
   notify: (n: NotifyInput) => void
   /** The list changed (added, removed, polled): tell the renderer. */
   onChange: () => void
@@ -58,7 +59,7 @@ export class PrWatcher {
    * later changes are measured against, and a wrong link or missing access fails here.
    */
   async add(link: string): Promise<WatchItem> {
-    const { ref, site } = prRefFromLink(link, (p) => this.deps.bitbucket.site(p))
+    const { ref, site } = prRefFromLink(link, (p) => this.deps.prs.site(p))
     const key = prKey(ref)
     const existing = this.find(key)
     if (existing) return existing
@@ -68,7 +69,7 @@ export class PrWatcher {
         `You can watch up to ${MAX_WATCHES} pull requests; remove one first.`,
       )
     }
-    const pr = await this.deps.bitbucket.pr(ref)
+    const pr = await this.deps.prs.pr(ref)
     // The same link may have been added while the PR was being read.
     const raced = this.find(key)
     if (raced) return raced
@@ -127,13 +128,13 @@ export class PrWatcher {
     let changed = false
     for (const watch of live) {
       const provider = providerOf(watch.ref)
-      if (watch.site !== this.deps.bitbucket.site(provider)) {
+      if (watch.site !== this.deps.prs.site(provider)) {
         changed = this.update(watch.key, { error: otherSite(provider) }) || changed
         continue
       }
       const acks = this.acks.get(watch.key)
       try {
-        const pr = await this.deps.bitbucket.pr(watch.ref)
+        const pr = await this.deps.prs.pr(watch.ref)
         const current = this.find(watch.key)
         if (!current) continue // removed while it was being read
         // The user acted while it was being read: this copy may predate that. Next poll.

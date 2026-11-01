@@ -50,7 +50,7 @@ describe('PR actions behind the Settings switch (P3.D3)', () => {
       { ref: DEMO(410), action: 'needs_work', confirmed: true },
       { ref: DEMO(412), action: 'merge', confirmed: true, targetBranch: 'develop' },
     ] as const) {
-      const r = await dispatch('bitbucket:action', request, handlers)
+      const r = await dispatch('prs:action', request, handlers)
       expect(r).toMatchObject({
         ok: false,
         error: { code: 'NOT_ALLOWED', message: expect.stringMatching(/turned off/) },
@@ -63,13 +63,13 @@ describe('PR actions behind the Settings switch (P3.D3)', () => {
   it('needs the confirmation flag, and merge needs a typed target branch', async () => {
     const { handlers } = await setup(true)
     const unconfirmed = await dispatch(
-      'bitbucket:action',
+      'prs:action',
       { ref: DEMO(410), action: 'approve', confirmed: false } as never,
       handlers,
     )
     expect(unconfirmed).toMatchObject({ ok: false, error: { code: 'INVALID_PAYLOAD' } })
     const untyped = await dispatch(
-      'bitbucket:action',
+      'prs:action',
       { ref: DEMO(412), action: 'merge', confirmed: true },
       handlers,
     )
@@ -80,7 +80,7 @@ describe('PR actions behind the Settings switch (P3.D3)', () => {
   it('on: approve and needs work send one vote as the signed-in user', async () => {
     const { handlers } = await setup(true)
     const approved = await dispatch(
-      'bitbucket:action',
+      'prs:action',
       { ref: DEMO(410), action: 'approve', confirmed: true },
       handlers,
     )
@@ -88,7 +88,7 @@ describe('PR actions behind the Settings switch (P3.D3)', () => {
     if (!approved.ok) return
     expect(approved.data.reviewers).toContainEqual({ name: 'Demo Developer', status: 'approved' })
     const needsWork = await dispatch(
-      'bitbucket:action',
+      'prs:action',
       { ref: DEMO(91, 'design-system'), action: 'needs_work', confirmed: true },
       handlers,
     )
@@ -103,7 +103,7 @@ describe('PR actions behind the Settings switch (P3.D3)', () => {
     const { handlers } = await setup(true)
     for (const typed of ['main', 'Develop', 'develop2']) {
       const r = await dispatch(
-        'bitbucket:action',
+        'prs:action',
         { ref: DEMO(412), action: 'merge', confirmed: true, targetBranch: typed },
         handlers,
       )
@@ -115,7 +115,7 @@ describe('PR actions behind the Settings switch (P3.D3)', () => {
     expect(writes()).toEqual([])
 
     const merged = await dispatch(
-      'bitbucket:action',
+      'prs:action',
       { ref: DEMO(412), action: 'merge', confirmed: true, targetBranch: ' develop ' },
       handlers,
     )
@@ -127,7 +127,7 @@ describe('PR actions behind the Settings switch (P3.D3)', () => {
 
     // Already merged: refused before anything is sent.
     const twice = await dispatch(
-      'bitbucket:action',
+      'prs:action',
       { ref: DEMO(412), action: 'merge', confirmed: true, targetBranch: 'develop' },
       handlers,
     )
@@ -141,7 +141,7 @@ describe('PR actions behind the Settings switch (P3.D3)', () => {
   it('shows the server’s reasons verbatim: merge vetoes and a refused vote', async () => {
     const { handlers } = await setup(true)
     const vetoed = await dispatch(
-      'bitbucket:action',
+      'prs:action',
       { ref: DEMO(415), action: 'merge', confirmed: true, targetBranch: 'develop' },
       handlers,
     )
@@ -155,7 +155,7 @@ describe('PR actions behind the Settings switch (P3.D3)', () => {
     )
 
     const own = await dispatch(
-      'bitbucket:action',
+      'prs:action',
       { ref: DEMO(412), action: 'approve', confirmed: true },
       handlers,
     )
@@ -174,11 +174,7 @@ describe('PR actions behind the Settings switch (P3.D3)', () => {
     const { deps, handlers } = await setup(true)
     const added = await dispatch('watch:add', { link: DEMO_LINK(410) }, handlers)
     expect(added).toMatchObject({ ok: true, data: { key: 'demo/web-app#410' } })
-    await dispatch(
-      'bitbucket:action',
-      { ref: DEMO(410), action: 'approve', confirmed: true },
-      handlers,
-    )
+    await dispatch('prs:action', { ref: DEMO(410), action: 'approve', confirmed: true }, handlers)
     await deps.prWatcher.poll()
     expect(deps.notifications.list()).toEqual([])
     expect(deps.prWatcher.list()[0]!.pr.reviewers).toContainEqual({

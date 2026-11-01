@@ -6,6 +6,7 @@ import {
   CI_ACTIONS,
   ciActionAllowed,
   ciRunLabel,
+  isWorking,
   type CiAction,
   type CiJob,
   type CiRun,
@@ -307,13 +308,11 @@ export function CiWatchedList({
   )
 }
 
-const going = (s: CiState) => s === 'running' || s === 'queued'
-
 /** The job whose log opens first: the first failed one, else the running one, else the last. */
 function firstJob(jobs: CiJob[]): number | null {
   return (
     jobs.find((j) => j.state === 'failed')?.id ??
-    jobs.find((j) => going(j.state))?.id ??
+    jobs.find((j) => isWorking(j.state))?.id ??
     jobs.at(-1)?.id ??
     null
   )
@@ -435,7 +434,7 @@ export function RunDialog({
             </Field>
           ) : null}
           {jobId !== null ? (
-            <JobLog runRef={runRef} jobId={jobId} running={job ? going(job.state) : false} />
+            <JobLog runRef={runRef} jobId={jobId} running={job ? isWorking(job.state) : false} />
           ) : null}
         </>
       ) : query.isPending ? (
