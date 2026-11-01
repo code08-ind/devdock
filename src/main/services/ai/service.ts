@@ -1,49 +1,50 @@
 /**
- * Claude calls with the user's own key (P7-C-B). Two steps, so nothing leaves the machine
- * unseen: `prepare` builds the exact request and keeps it under an id; the screen shows it with
- * the model and a cost estimate; `run(id)` sends that request, unchanged, once the user confirms.
- *
- * Requests go through the official SDK with DevDock's own HttpClient as its fetch: the system
- * proxy and certificate store apply as for every other service, and demo mode answers from an
- * in-process fixture with no key and no network.
+ * AI calls with the user's own key (P7-C-B; OpenAI and Google since T6). Two steps, so nothing
+ * leaves the machine unseen: `prepare` builds the exact request and keeps it under an id; the
+ * screen shows it with the provider, the model and a cost estimate; `run(id)` sends that request,
+ * unchanged, once the user confirms. Each provider is a small backend (`AiBackend`); this class
+ * owns the preview, its expiry, the demo-mode checks and the pricing, the same for all.
  */
 import { randomUUID } from 'node:crypto'
-import Anthropic from '@anthropic-ai/sdk'
 import {
   AI_MODEL_IDS,
+  AI_PROVIDER_INFO,
   aiCost,
+  aiModel,
   TYPICAL_OUTPUT_TOKENS,
   type AiConnection,
   type AiFeature,
   type AiModelId,
   type AiPreview,
+  type AiProvider,
   type AiResult,
 } from '@shared/ai'
 import type { HttpClient } from '../http'
 import { ServiceError } from '../service-error'
+import { AnthropicBackend } from './anthropic'
+import { MAX_TOKENS, type AiBackend } from './backend'
+import { GoogleBackend } from './google'
+import { OpenAiBackend } from './openai'
 import { SYSTEM } from './prompts'
 
-/** The answer's length cap (thinking counts towards it). A short note never gets near it. */
-export const MAX_TOKENS = 16_000
+export { MAX_TOKENS } from './backend'
+export { toServiceError } from './anthropic'
+
 /** How long a prepared call can wait for the user's confirmation. */
 const PREVIEW_TTL_MS = 10 * 60_000
-
-/** Short rewrites need little thought; the PR note weighs a few facts. */
-const EFFORT: Record<AiFeature, NonNullable<Anthropic.Beta.BetaOutputConfig['effort']>> = {
-  'pr-summary': 'medium',
-  lesson: 'low',
-  standup: 'low',
-}
 
 /** Models whose declined requests can be rescued by Anthropic's server-side fallback. */
 const FALLBACK_MODELS = new Set<AiModelId>(['claude-opus-5-5', 'claude-sonnet-5-5'])
 
 export interface AiServiceDeps {
   http: HttpClient
-  /** The user's Anthropic API key from the keychain; undefined when none is saved. */
-  key: () => string | undefined | Promise<string | undefined>
+  /** The user's API key for a provider, from the keychain; undefined when none is saved. */
+  key: (provider: AiProvider) => string | undefined | Promise<string | undefined>
+  /** The active provider's model (Settings → AI); the provider follows from it. */
   model: () => AiModelId
   now?: () => number
+  /** Tests may swap a provider's backend. */
+  backends?: Partial<Record<AiProvider, AiBackend>>
 }
 
 interface Pending {
@@ -53,8 +54,16 @@ interface Pending {
 
 export class AiService {
   private readonly pending = new Map<string, Pending>()
+  private readonly backends: Record<AiProvider, AiBackend>
 
-  constructor(private readonly deps: AiServiceDeps) {}
+  constructor(private readonly deps: AiServiceDeps) {
+    this.backends = {
+      anthropic: new AnthropicBackend(deps.http),
+      openai: new OpenAiBackend(deps.http),
+      google: new GoogleBackend(deps.http),
+      ...deps.backends,
+    }
+  }
 
   private now(): number {
     return (this.deps.now ?? Date.now)()
@@ -63,65 +72,50 @@ export class AiService {
   /** Builds the request for `feature` around `prompt` and holds it for confirmation. */
   async prepare(feature: AiFeature, prompt: string): Promise<AiPreview> {
     const demo = this.deps.http.demo
-    if (!demo && !(await this.deps.key())) {
+    const model = this.deps.model()
+    const provider = aiModel(model).provider
+    if (!demo && !(await this.deps.key(provider))) {
       throw new ServiceError(
         'not_configured',
-        'Add your Anthropic API key in Settings → AI to use this. DevDock sends nothing until you do.',
+        `Add your ${AI_PROVIDER_INFO[provider].name} API key in Settings → AI to use this. DevDock sends nothing until you do.`,
       )
     }
     this.sweep()
-    const model = this.deps.model()
     const system = SYSTEM[feature]
     const estimatedInputTokens = Math.ceil((system.length + prompt.length) / 4)
+    const now = this.now()
     const preview: AiPreview = {
       id: randomUUID(),
       feature,
+      provider,
       model,
       system,
       prompt,
       estimatedInputTokens,
-      estimatedCostUsd: aiCost(model, estimatedInputTokens, TYPICAL_OUTPUT_TOKENS),
-      maxCostUsd: aiCost(model, estimatedInputTokens, MAX_TOKENS),
+      estimatedCostUsd: aiCost(model, estimatedInputTokens, TYPICAL_OUTPUT_TOKENS, now),
+      maxCostUsd: aiCost(model, estimatedInputTokens, MAX_TOKENS, now),
       fallback: FALLBACK_MODELS.has(model),
       demo,
     }
-    this.pending.set(preview.id, { preview, expires: this.now() + PREVIEW_TTL_MS })
+    this.pending.set(preview.id, { preview, expires: now + PREVIEW_TTL_MS })
     return preview
   }
 
   /**
-   * Settings → AI and Diagnostics: checks the saved key with `GET /v1/models`, which is free
-   * (no tokens), and lists the models it can use.
+   * Settings → AI and Diagnostics: checks the active provider's saved key with its models list,
+   * which is free (no tokens), and lists the models it can use.
    */
   async testConnection(): Promise<AiConnection> {
     const demo = this.deps.http.demo
-    const key = demo ? 'demo' : await this.deps.key()
+    const provider = aiModel(this.deps.model()).provider
+    const key = demo ? 'demo' : await this.deps.key(provider)
     if (!key) {
-      throw new ServiceError('not_configured', 'Add your Anthropic API key in Settings → AI first.')
+      throw new ServiceError(
+        'not_configured',
+        `Add your ${AI_PROVIDER_INFO[provider].name} API key in Settings → AI first.`,
+      )
     }
-    try {
-      const { data: page, response } = await this.client(key)
-        .models.list({ limit: 100 })
-        .withResponse()
-      return { status: response.status, models: page.data.map((m) => m.id) }
-    } catch (err) {
-      throw toServiceError(err)
-    }
-  }
-
-  private client(key: string): Anthropic {
-    const http = this.deps.http
-    return new Anthropic({
-      // Pinned: ANTHROPIC_BASE_URL in the user's environment must never redirect their key.
-      baseURL: 'https://api.anthropic.com',
-      // Sent as `Authorization: Bearer`; passing it also stops the SDK reading credentials
-      // from the environment or a CLI profile.
-      apiKey: key,
-      // A failed attempt (429, 5xx, network) is retried twice; failed attempts aren't billed.
-      maxRetries: 2,
-      timeout: 120_000,
-      fetch: (input, init) => http.fetch(new Request(input, init)),
-    })
+    return { provider, ...(await this.backends[provider].models(key)) }
   }
 
   /** Sends a prepared request exactly as it was shown. Each preview can be sent once. */
@@ -136,63 +130,39 @@ export class AiService {
     }
     this.pending.delete(id)
     const { preview } = held
-    const http = this.deps.http
     // The preview promised "demo: nothing is sent" (or a real send): demo mode must not have
     // been switched in between, or a demo preview would go to the real API.
-    if (http.demo !== preview.demo) {
+    if (this.deps.http.demo !== preview.demo) {
       throw new ServiceError(
         'conflict',
         'Demo mode changed since this request was prepared. Prepare it again to see what will happen.',
       )
     }
-    const key = preview.demo ? 'demo' : await this.deps.key()
-    if (!key) throw new ServiceError('not_configured', 'Your Anthropic API key was removed.')
-    const client = this.client(key)
-    const fallback = FALLBACK_MODELS.has(preview.model)
-    let message: Anthropic.Beta.BetaMessage
-    try {
-      message = await client.beta.messages.create({
-        model: preview.model,
-        max_tokens: MAX_TOKENS,
-        system: preview.system,
-        messages: [{ role: 'user', content: preview.prompt }],
-        output_config: { effort: EFFORT[preview.feature] },
-        ...(fallback
-          ? { betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default' as const }
-          : {}),
-      })
-    } catch (err) {
-      throw toServiceError(err)
-    }
-    if (message.stop_reason === 'refusal') {
+    const key = preview.demo ? 'demo' : await this.deps.key(preview.provider)
+    if (!key) {
       throw new ServiceError(
-        'forbidden',
-        'Claude declined this request. Nothing was changed; you can edit the text and try again.',
-        { details: message.stop_details?.explanation ?? undefined },
+        'not_configured',
+        `Your ${AI_PROVIDER_INFO[preview.provider].name} API key was removed.`,
       )
     }
-    const text = message.content
-      .flatMap((b) => (b.type === 'text' ? [b.text] : []))
-      .join('')
-      .trim()
-    if (!text) {
-      throw new ServiceError(
-        'bad_response',
-        message.stop_reason === 'max_tokens'
-          ? 'Claude used up its length limit before writing an answer. Try again, or shorten the text.'
-          : 'Claude sent back no text. Try again.',
-      )
-    }
-    const { input_tokens: inputTokens, output_tokens: outputTokens } = message.usage
+    const reply = await this.backends[preview.provider].send({
+      key,
+      model: preview.model,
+      feature: preview.feature,
+      system: preview.system,
+      prompt: preview.prompt,
+      maxTokens: MAX_TOKENS,
+      fallback: preview.fallback,
+    })
     // A fallback model bills at its own price; an unknown one is priced as the chosen model.
-    const priced = AI_MODEL_IDS.find((m) => m === message.model) ?? preview.model
+    const priced = AI_MODEL_IDS.find((m) => m === reply.model) ?? preview.model
     return {
-      text,
-      model: message.model,
-      inputTokens,
-      outputTokens,
-      costUsd: aiCost(priced, inputTokens, outputTokens),
-      truncated: message.stop_reason === 'max_tokens',
+      text: reply.text,
+      model: reply.model,
+      inputTokens: reply.inputTokens,
+      outputTokens: reply.outputTokens,
+      costUsd: aiCost(priced, reply.inputTokens, reply.outputTokens, this.now()),
+      truncated: reply.truncated,
     }
   }
 
@@ -200,52 +170,4 @@ export class AiService {
     const now = this.now()
     for (const [id, p] of this.pending) if (p.expires <= now) this.pending.delete(id)
   }
-}
-
-/** The SDK's typed errors in DevDock's service-error kinds (most specific first). */
-export function toServiceError(err: unknown): ServiceError {
-  if (err instanceof ServiceError) return err
-  if (err instanceof Anthropic.AuthenticationError) {
-    return new ServiceError(
-      'auth',
-      'Anthropic rejected the API key. Check it in Settings → AI (it may have been revoked).',
-      { status: 401, details: err.message },
-    )
-  }
-  if (err instanceof Anthropic.PermissionDeniedError) {
-    return new ServiceError(
-      'forbidden',
-      "This API key isn't allowed to use that model. Pick another in Settings → AI.",
-      { status: 403, details: err.message },
-    )
-  }
-  if (err instanceof Anthropic.RateLimitError) {
-    const retry = Number(err.headers?.get('retry-after'))
-    return new ServiceError(
-      'rate_limited',
-      'Anthropic is rate-limiting this key. Wait a moment and try again.',
-      { status: 429, retryAfterSec: Number.isFinite(retry) ? retry : undefined },
-    )
-  }
-  if (err instanceof Anthropic.APIConnectionTimeoutError) {
-    return new ServiceError('timeout', 'Claude took too long to answer. Try again.')
-  }
-  if (err instanceof Anthropic.APIConnectionError) {
-    // HttpClient failures (proxy, certificate, offline) arrive wrapped as the cause.
-    const cause = (err as { cause?: unknown }).cause
-    if (cause instanceof ServiceError) return cause
-    return new ServiceError('network', "DevDock couldn't reach Anthropic. Check your connection.", {
-      details: err.message,
-    })
-  }
-  if (err instanceof Anthropic.APIError) {
-    return new ServiceError(
-      err.status !== undefined && err.status >= 500 ? 'server' : 'bad_response',
-      `Anthropic returned an error${err.status ? ` (HTTP ${err.status})` : ''}. Try again.`,
-      { status: err.status, details: err.message },
-    )
-  }
-  return new ServiceError('network', "DevDock couldn't reach Anthropic.", {
-    details: err instanceof Error ? err.message : String(err),
-  })
 }

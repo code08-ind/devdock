@@ -74,10 +74,10 @@ test('packaged app: demo mode, a real shell in the terminal, the AI preview; qui
   // The AI preview (demo answers, nothing sent).
   await nav('Pull requests')
   await win
-    .getByRole('button', { name: /^Draft a status note for .* with Claude$/ })
+    .getByRole('button', { name: /^Summarise .* with Claude$/ })
     .first()
     .click()
-  const ai = win.getByRole('dialog', { name: 'Draft a status note' })
+  const ai = win.getByRole('dialog', { name: 'Summarise this pull request' })
   await expect(ai.getByText('Demo mode: a sample answer is made on this computer.')).toBeVisible()
   await ai.getByRole('button', { name: 'Send to Claude' }).click()
   await expect(ai.getByRole('status')).toContainText('Demo answer:', { timeout: 15_000 })

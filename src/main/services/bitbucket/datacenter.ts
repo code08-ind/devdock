@@ -5,6 +5,10 @@ import {
   type PrAction,
   type PrList,
   type PrRef,
+  boundChanges,
+  MAX_PR_FILES,
+  type PrChanges,
+  type PrFileChange,
 } from '@shared/bitbucket'
 import { obj, text, type JsonObject } from '../json'
 import { ServiceError, type ServiceHints } from '../service-error'
@@ -28,6 +32,14 @@ export const dcHints: ServiceHints = {
   auth: "Check the HTTP access token in Settings → Credentials, and that it hasn't expired or been revoked.",
   forbidden:
     'Bitbucket Data Center needs an HTTP access token (sent as Bearer) with at least repository read permission (write for PR actions).',
+}
+
+/** Change types (Data Center); COPY and the rest count as modified. */
+const DC_STATUS: Record<string, PrFileChange['status']> = {
+  ADD: 'added',
+  DELETE: 'removed',
+  MOVE: 'renamed',
+  MODIFY: 'modified',
 }
 
 /** Pages: `{ values, isLastPage, nextPageStart }`; the next page repeats the URL with `start`. */
@@ -115,6 +127,25 @@ export class DataCenterAdapter implements BitbucketAdapter {
       collect(this.call, activitiesUrl, pager(activitiesUrl), obj, 5),
     ])
     return { ...normalise(body), unresolvedComments: unresolved(activities) }
+  }
+
+  /** Data Center lists changed paths without line counts (those need the whole diff). */
+  async changes(ref: PrRef): Promise<PrChanges> {
+    const url = this.prUrl(ref)
+    const [{ body }, list] = await Promise.all([
+      this.call(url),
+      this.call(`${url}/changes?limit=${MAX_PR_FILES}`),
+    ])
+    const page = obj(list.body)
+    const values = (Array.isArray(page.values) ? page.values : []).map(obj)
+    const files = values.map((v) => ({
+      path: text(obj(v.path).toString) ?? '(unknown)',
+      status: DC_STATUS[String(v.type)] ?? ('modified' as const),
+      added: null,
+      removed: null,
+    }))
+    const total = page.isLastPage === true ? values.length : null
+    return boundChanges(text(obj(body).description) ?? '', files, total)
   }
 
   async comments(ref: PrRef): Promise<PrComment[]> {

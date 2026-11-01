@@ -6,6 +6,7 @@ import {
   type PrList,
   type PrRef,
   type PullRequest,
+  type PrChanges,
 } from '@shared/bitbucket'
 import {
   ciActionAllowed,
@@ -29,6 +30,8 @@ export interface HostClient {
   testConnection(): Promise<HostConnection>
   list(list: PrList, now?: number): Promise<PullRequest[]>
   pr(ref: PrRef): Promise<PullRequest>
+  /** T7: the PR's description and changed files (bounded), for the AI summary. */
+  changes(ref: PrRef): Promise<PrChanges>
   /** Checked against the PR as it is now (open; merge names its target), then sent. */
   act(ref: PrRef, action: PrAction, typedTarget: string | undefined): Promise<ActionResult>
   /** My recent runs on the registered repos hosted there. */

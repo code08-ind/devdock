@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { AI_PROVIDER_INFO, AI_PROVIDERS, type AiProvider } from './ai'
 
 /** Diagnostics (SPEC 6.7 / P6.04): what's running, through which proxy. */
 
@@ -10,13 +11,26 @@ export const SERVICES = [
   ['GitHub', 'github'],
   ['GitLab', 'gitlab'],
   ['Anthropic', 'anthropic'],
+  ['OpenAI', 'openai'],
+  ['Google Gemini', 'google'],
 ] as const
 export type ServiceName = (typeof SERVICES)[number][0]
 export type ServiceKey = (typeof SERVICES)[number][1]
 
 /** The keychain entry each service's credential is saved under. */
 export const credentialOf = (key: ServiceKey) =>
-  key === 'anthropic' ? 'anthropic.key' : `${key}.token`
+  isAiKey(key) ? AI_PROVIDER_INFO[key].secret : `${key}.token`
+
+/** The AI providers' rows (T6): tested through the active provider only. */
+export const isAiKey = (key: ServiceKey): key is AiProvider =>
+  (AI_PROVIDERS as readonly string[]).includes(key)
+
+/** Each AI provider's diagnostics row. */
+export const AI_SERVICE_NAME = {
+  anthropic: 'Anthropic',
+  openai: 'OpenAI',
+  google: 'Google Gemini',
+} as const satisfies Record<AiProvider, ServiceName>
 
 export const ProxyRouteSchema = z.object({
   service: z.enum(SERVICES.map(([name]) => name) as [ServiceName, ...ServiceName[]]),

@@ -6,6 +6,7 @@ import {
   type BuildStatus,
   type PrAction,
   type PrList,
+  type PrChanges,
   type PrRef,
   type PullRequest,
 } from '@shared/bitbucket'
@@ -51,6 +52,8 @@ export interface BitbucketAdapter {
   list(list: PrList, me: Me, since: Date): Promise<PrBase[]>
   /** One PR, with its unresolved comment count where the API exposes it. */
   pr(ref: PrRef): Promise<PrBase>
+  /** T7: description and up to MAX_PR_FILES changed files. */
+  changes(ref: PrRef): Promise<PrChanges>
   /** Build statuses posted against the PR's head commit (by Jenkins and friends). */
   builds(pr: PrBase): Promise<BuildStatus[]>
   /** Comments on a PR (not deleted), replies included, oldest first as the API gives them. */

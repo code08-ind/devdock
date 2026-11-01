@@ -153,10 +153,8 @@ test('screenshots: README AI and agent', async () => {
     await shot('settings-ai')
 
     await nav('Pull requests')
-    await win
-      .getByRole('button', { name: /^Draft a status note for web-app #412 with Claude$/ })
-      .click()
-    const ai = win.getByRole('dialog', { name: 'Draft a status note' })
+    await win.getByRole('button', { name: /^Summarise web-app #412 with Claude$/ }).click()
+    const ai = win.getByRole('dialog', { name: 'Summarise this pull request' })
     await expect(ai.getByRole('button', { name: 'Send to Claude' })).toBeVisible()
     await shot('ai')
     await ai.getByRole('button', { name: 'Cancel' }).click()

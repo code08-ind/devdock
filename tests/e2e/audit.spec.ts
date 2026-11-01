@@ -173,7 +173,7 @@ const SCREENS: Screen[] = [
       await nav(w, 'Pull requests')
       await tab(w, 'My PRs')
       await w
-        .getByRole('button', { name: /^Draft a status note for .* with Claude$/ })
+        .getByRole('button', { name: /^Summarise .* with Claude$/ })
         .first()
         .click()
       await w.getByRole('dialog').waitFor()

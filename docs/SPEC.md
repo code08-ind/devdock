@@ -334,16 +334,22 @@ Place this file at `docs/SPEC.md` in the new repository. Every build phase refer
 - DevDock holds no keys for these CLIs; each signs in its own way.
 
 ### 6.10 AI with your own key (Phase 7, P7-C-B)
-- Optional: Settings → AI takes the user's own Anthropic API key (OS keychain, like other
-  tokens) and a model (Claude Opus 5.5 default; Sonnet 5.5, Haiku 5.5). DevDock ships no key;
-  without one the AI buttons are hidden (demo mode answers with local samples).
-- Features: a status note for a pull request (from the PR facts DevDock shows), a reviewer's
+- Optional: Settings → AI picks one provider — Anthropic, OpenAI or Google (T6) — and takes the
+  user's own API key for it (OS keychain, like other tokens; one entry per provider) and a model:
+  Claude Opus 5.5 (default), Sonnet 5.5, Haiku 5.5; GPT-6.1 Sol (default), GPT-6 Astra, GPT-6
+  Luna; Gemini 3.8 Flash (default), Gemini 4 Argon, Gemini 3.1 Flash-Lite. DevDock ships no key;
+  without one for the active provider the AI buttons are hidden (demo mode answers with local
+  samples). Costs use each model's price on the day (announced changes are known).
+- Features: a summary of a pull request (T7: its description — up to 4,000 characters — and up
+  to 100 changed files with their line counts where the API gives them, plus the PR facts DevDock
+  shows; without them it still summarises where the PR stands), a reviewer's
   comment worded as a lesson (Utilities → Lessons, "Use as the lesson" fills it in), and a
   polished standup (from the user's edited draft).
 - Every request is prepared in main and shown first — the exact text and instructions, the
-  model, an estimated and a maximum cost, and that another Claude model may answer if Claude
-  declines — and sent only when the user presses Send. Each prepared request can be sent once
-  (a failed attempt is retried up to twice; failed attempts aren't billed) and expires after ten
+  provider and model, an estimated and a maximum cost, and (Anthropic) that another Claude model
+  may answer if Claude declines — and sent only when the user presses Send. Each prepared request can be sent once
+  (a failed attempt is retried up to twice when nothing can have been billed — Anthropic's SDK
+  rules; for OpenAI and Google a 503 or a short 429) and expires after ten
   minutes; it is refused if demo mode was switched since. The renderer can't change what is sent.
 - Refusals, a cut-off answer, a rejected key, rate limits and network failures each say so in
   plain words; the answer shows the tokens used and the cost.

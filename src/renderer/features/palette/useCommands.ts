@@ -1,7 +1,7 @@
 import { useQueries } from '@tanstack/react-query'
 import type { AgentLaunch } from '@shared/agents'
 import { usePreferredAgent } from '../../lib/agents'
-import { useAiAvailable } from '../../lib/ai'
+import { useAiAssistant, useAiAvailable } from '../../lib/ai'
 import { PROVIDER_ACTIONS, providerOf, type PrAction, type PullRequest } from '@shared/bitbucket'
 import {
   CI_ACTION_COPY,
@@ -101,8 +101,9 @@ export function useCommands(h: CommandHandlers): {
   // PR actions once turned on in Settings: merge mine, approve / needs work on the ones I review.
   const prsOn = settings ? enabledProviders(settings).length > 0 : false
   const prActionsOn = Boolean(settings?.features.prActions && prsOn)
-  // AI status notes need the same lists (only where the AI dialog can show).
+  // AI PR summaries need the same lists (only where the AI dialog can show).
   const aiOn = useAiAvailable() && Boolean(h.ai)
+  const aiName = useAiAssistant()
   const listsOn = prActionsOn || (aiOn && prsOn)
   const mine = usePrList('mine', listsOn).data ?? []
   const reviewing = usePrList('reviewing', listsOn).data ?? []
@@ -266,6 +267,7 @@ export function useCommands(h: CommandHandlers): {
           'Cleared finished build watches',
         ),
       aiPrs: aiPrs.map((pr) => ({ key: pr.key, label: prLabel(pr) })),
+      aiName,
       ai:
         aiOn && h.ai
           ? (request) => {

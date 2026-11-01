@@ -1,7 +1,7 @@
 /** One handler per IPC channel in @shared/ipc `contract`. Electron-free: adapters are injected. */
 import { stat } from 'node:fs/promises'
 import type { IpcMainInvokeEvent } from 'electron'
-import type { ServiceName } from '@shared/diagnostics'
+import { AI_SERVICE_NAME, type ServiceName } from '@shared/diagnostics'
 import type { DiagnosticsService } from './services/diagnostics'
 import { LessonsError, type LessonsService } from './services/lessons'
 import type { View } from '@shared/channels'
@@ -40,6 +40,7 @@ import { EnvProfileError, type EnvProfiles } from './services/envprofiles'
 import type { StandupDraft } from '@shared/standup'
 import { RepoNotFoundError, type RepoService } from './services/repos'
 import { SecretsUnavailableError, type SecretStore } from './services/secrets'
+import { log } from './services/logger'
 import { ServiceError, type ServiceErrorKind } from './services/service-error'
 import type { SettingsStore } from './services/settings'
 import type { ShortcutService } from './services/shortcut'
@@ -341,6 +342,15 @@ function withSecrets<T>(fn: () => T): T {
   }
 }
 
+/** Why a PR's description and files couldn't be read, in a few words for the AI request. */
+function changesUnreadable(err: unknown): string {
+  const kind = err instanceof ServiceError ? err.kind : null
+  if (kind === 'auth' || kind === 'forbidden') return 'no access with this token'
+  if (kind === 'not_found') return 'not offered by this server'
+  if (kind === 'timeout') return 'timed out'
+  return 'the server returned an error'
+}
+
 export function createHandlers(deps: HandlerDeps): HandlerMap {
   /** Remote-changing actions behind a Settings → Actions switch (off by default): checked here,
    *  whatever the renderer showed or sent. */
@@ -627,12 +637,24 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
     'ai:prepare': (req) =>
       withService(async () => {
         if (req.feature === 'pr-summary') {
-          return deps.ai.prepare('pr-summary', prPrompt(await deps.prs.pr(req.ref)))
+          // T7: with its description and changed files when they can be read; the summary still
+          // works without them, and the preview says why (no access, timed out…). A rate limit
+          // is a real answer, though. Logged, so a token missing a permission shows in the log.
+          const [pr, changes] = await Promise.all([
+            deps.prs.pr(req.ref),
+            deps.prs.changes(req.ref).catch((err: unknown) => {
+              if (err instanceof ServiceError && err.kind === 'rate_limited') throw err
+              log.warn('PR description / changed files not read for the summary', err)
+              return changesUnreadable(err)
+            }),
+          ])
+          return deps.ai.prepare('pr-summary', prPrompt(pr, changes))
         }
         if (req.feature === 'standup') return deps.ai.prepare('standup', standupPrompt(req.draft))
         return deps.ai.prepare('lesson', lessonPrompt(req.comment, req.where))
       }),
     'ai:run': ({ id }) => withService(() => deps.ai.run(id)),
-    'ai:testConnection': () => recorded('Anthropic', () => deps.ai.testConnection()),
+    'ai:testConnection': () =>
+      recorded(AI_SERVICE_NAME[deps.settings.get().ai.provider], () => deps.ai.testConnection()),
   }
 }

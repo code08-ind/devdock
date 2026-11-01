@@ -67,6 +67,8 @@ const input = (over: Partial<ReportInput> = {}): ReportInput => ({
     GitHub: false,
     GitLab: false,
     Anthropic: false,
+    OpenAI: false,
+    'Google Gemini': false,
   },
   identity: { home: '/Users/aryan', user: 'aryan' },
   now: new Date('2026-10-25T12:00:00Z'),
@@ -100,6 +102,8 @@ describe('diagnostics (P6.04)', () => {
       GitHub: false,
       GitLab: false,
       Anthropic: false,
+      OpenAI: false,
+      'Google Gemini': false,
     })
     expect(report.log).toHaveLength(3)
     for (const leaked of ['abc123', 'priya', 'aryan']) {
@@ -183,6 +187,12 @@ describe('diagnostics (P6.04)', () => {
       { service: 'GitLab', origin: null, route: null },
       // P7-C-B: the AI endpoint is fixed, so its route always shows.
       { service: 'Anthropic', origin: 'https://api.anthropic.com', route: 'DIRECT' },
+      { service: 'OpenAI', origin: 'https://api.openai.com', route: 'DIRECT' },
+      {
+        service: 'Google Gemini',
+        origin: 'https://generativelanguage.googleapis.com',
+        route: 'DIRECT',
+      },
     ])
     svc.recordTest('Jira', false, 'SERVICE_AUTH')
     svc.recordTest('Bitbucket', true, null)
@@ -199,6 +209,8 @@ describe('diagnostics (P6.04)', () => {
       GitLab: false,
       // The AI key is saved as `anthropic.key`, not `.token`.
       Anthropic: true,
+      OpenAI: false,
+      'Google Gemini': false,
     })
     // A missing log file still exports.
     expect(report.log).toEqual([])

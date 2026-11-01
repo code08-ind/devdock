@@ -9,7 +9,7 @@ import { Button, IconButton } from '../../ui/Button'
 import { AgeOf, BuildPill, ReviewState, StatePill, prLabel } from './PrBits'
 import { ACTION_COPY } from './actions'
 import { PrActionDialog } from './PrActionDialog'
-import { useAiAvailable } from '../../lib/ai'
+import { useAiAssistant, useAiAvailable } from '../../lib/ai'
 import { AiDialog } from '../ai/AiDialog'
 
 /**
@@ -36,6 +36,7 @@ export function PrRow({
   const removeWatch = useRemoveWatch()
   const [acting, setActing] = useState<PrAction | null>(null)
   const aiAvailable = useAiAvailable()
+  const assistant = useAiAssistant()
   const [noting, setNoting] = useState(false)
   const label = prLabel(pr)
   const provider = PROVIDER_NAMES[providerOf(pr.ref)]
@@ -70,7 +71,7 @@ export function PrRow({
           />
           {aiAvailable ? (
             <IconButton
-              label={`Draft a status note for ${label} with Claude`}
+              label={`Summarise ${label} with ${assistant}`}
               icon={<Sparkles size={16} aria-hidden="true" />}
               onClick={() => setNoting(true)}
             />

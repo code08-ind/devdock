@@ -7,7 +7,7 @@ import { Button, IconButton } from '../../ui/Button'
 import { ErrorNotice, useToast } from '../../ui/Feedback'
 import { Field, Textarea } from '../../ui/Field'
 import { fromLines, toLines } from './pure'
-import { useAiAvailable } from '../../lib/ai'
+import { useAiAssistant, useAiAvailable } from '../../lib/ai'
 import { AiDialog } from '../ai/AiDialog'
 
 type Section = 'yesterday' | 'today' | 'blockers'
@@ -53,6 +53,7 @@ function DraftEditor({
 }) {
   const toast = useToast()
   const aiAvailable = useAiAvailable()
+  const assistant = useAiAssistant()
   const [polishing, setPolishing] = useState(false)
   const [text, setText] = useState<Record<Section, string>>({
     yesterday: toLines(draft.yesterday),
@@ -122,7 +123,7 @@ function DraftEditor({
             icon={<Sparkles size={16} aria-hidden="true" />}
             onClick={() => setPolishing(true)}
           >
-            Polish with Claude
+            Polish with {assistant}
           </Button>
         ) : null}
       </div>

@@ -1,4 +1,4 @@
-import type { PrActionRequest, PrList, PrRef, PullRequest } from '@shared/bitbucket'
+import type { PrActionRequest, PrChanges, PrList, PrRef, PullRequest } from '@shared/bitbucket'
 import type { CiActionRequest, CiLog, CiRun, CiRunDetail, CiRunRef, CiRunsResult } from '@shared/ci'
 import type { HostConnection } from '@shared/hosting'
 import { PROVIDER_NAMES, remoteProject, type CiProvider } from '@shared/providers'
@@ -56,6 +56,10 @@ export class HostService implements PrSource {
 
   pr(ref: PrRef): Promise<PullRequest> {
     return this.client().pr(ref)
+  }
+
+  changes(ref: PrRef): Promise<PrChanges> {
+    return this.client().changes(ref)
   }
 
   /** The handler has already checked `features.prActions` and the confirmation. */

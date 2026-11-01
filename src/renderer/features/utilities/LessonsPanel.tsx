@@ -7,7 +7,7 @@ import { Button } from '../../ui/Button'
 import { ErrorNotice, useToast } from '../../ui/Feedback'
 import { Checkbox, Field, Input, SegmentedControl } from '../../ui/Field'
 import { SetUp } from '../today/TodayPage'
-import { useAiAvailable } from '../../lib/ai'
+import { useAiAssistant, useAiAvailable } from '../../lib/ai'
 import { AiDialog } from '../ai/AiDialog'
 
 interface Candidate {
@@ -44,6 +44,7 @@ export function LessonsPanel({ repoId, onView }: { repoId: string; onView: (v: V
   const [draft, setDraft] = useState('')
   const [scope, setScope] = useState<Scope | null>(null)
   const aiAvailable = useAiAvailable()
+  const assistant = useAiAssistant()
   const [wording, setWording] = useState<Candidate | null>(null)
 
   const path = state.data?.path ?? 'the lessons file'
@@ -208,10 +209,10 @@ export function LessonsPanel({ repoId, onView }: { repoId: string; onView: (v: V
                 <Button
                   variant="ghost"
                   icon={<Sparkles size={16} aria-hidden="true" />}
-                  aria-label={`Word the lesson from ${c.source} with Claude`}
+                  aria-label={`Word the lesson from ${c.source} with ${assistant}`}
                   onClick={() => setWording(c)}
                 >
-                  Word with Claude
+                  Word with {assistant}
                 </Button>
               ) : null}
             </li>

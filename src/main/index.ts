@@ -2,6 +2,7 @@
  * App lifecycle: single instance, services, windows, tray, global shortcut and IPC.
  * Services are plain classes with injected Electron adapters (see ./services).
  */
+import { activeModel, AI_PROVIDER_INFO } from '@shared/ai'
 import { writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { homedir, userInfo } from 'node:os'
@@ -625,8 +626,8 @@ function start(): void {
       platform: process.platform,
       ai: new AiService({
         http,
-        key: () => secrets.get('anthropic.key'),
-        model: () => store.get().ai.model,
+        key: (provider) => secrets.get(AI_PROVIDER_INFO[provider].secret),
+        model: () => activeModel(store.get().ai),
       }),
       emitOutput: (event) => {
         // The window may close while git is still running.

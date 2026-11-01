@@ -51,6 +51,7 @@ const ctx = (over: Partial<CommandContext> = {}): CommandContext => ({
   openTerminal: vi.fn(),
   agent: null,
   aiPrs: [],
+  aiName: 'Claude',
   ...over,
 })
 
@@ -469,7 +470,7 @@ describe('palette completeness (P6.01)', () => {
     void standup.run()
     expect(ai).toHaveBeenCalledWith({ feature: 'standup' })
     const note = all.find((x) => x.id === 'ai:pr-summary:k1')!
-    expect(note.title).toBe('Draft a status note for web-app #412 with Claude…')
+    expect(note.title).toBe('Summarise web-app #412 with Claude…')
     void note.run()
     expect(ai).toHaveBeenCalledWith({ feature: 'pr-summary', key: 'k1' })
     expect(filterCommands(all, 'claude standup').map((c) => c.id)).toContain('ai:standup')

@@ -4,15 +4,15 @@
  * is included; never tokens, paths outside the repo, or environment values.
  */
 import type { AiFeature } from '@shared/ai'
-import type { PullRequest } from '@shared/bitbucket'
+import { MAX_PR_DESCRIPTION, type PrChanges, type PullRequest } from '@shared/bitbucket'
 import type { StandupDraft } from '@shared/standup'
 
 export const SYSTEM: Record<AiFeature, string> = {
   'pr-summary':
-    'You write short status notes about a pull request for the author to paste into a team chat. ' +
-    'Use only the facts given. Say what the change is (from its title and branches), where it ' +
-    'stands (reviews, build, conflicts, open threads) and the one next step that unblocks it. ' +
-    'Three to five plain sentences, no headings, no greeting, no emoji.',
+    'You summarise a pull request for its author to paste into a team chat. Use only the facts ' +
+    'given. Say what the change does (from its description and changed files, else its title ' +
+    'and branches), where it stands (reviews, build, conflicts, open threads) and the one next ' +
+    'step that unblocks it. Four to six plain sentences, no headings, no greeting, no emoji.',
   lesson:
     "You turn a code reviewer's comment into one reusable lesson for a coding agent's lessons " +
     'file. Write a single imperative line under 25 words that states the general rule behind the ' +
@@ -23,7 +23,46 @@ export const SYSTEM: Record<AiFeature, string> = {
     'Blockers (write "None" when there are none). Do not invent work. Markdown, nothing else.',
 }
 
-export function prPrompt(pr: PullRequest): string {
+/** T7: the description and changed files, or why they're missing. */
+function changesLines(changes: PrChanges | string | null): string[] {
+  if (changes === null) return ['Description and changed files: could not be read.']
+  if (typeof changes === 'string') {
+    return [`Description and changed files: could not be read (${changes}).`]
+  }
+  const description = changes.description
+    ? `${changes.description}${changes.descriptionCut ? `\n[… cut at ${MAX_PR_DESCRIPTION} characters]` : ''}`
+    : '(none)'
+  const listed = changes.files.length
+  const known = changes.files.filter((f) => f.added !== null && f.removed !== null)
+  const sum = (k: 'added' | 'removed') => known.reduce((n, f) => n + (f[k] ?? 0), 0)
+  const complete = changes.filesTotalExact && changes.filesTotal === listed
+  // Line totals only when every listed file has counts; for a cut list they cover those files.
+  const lines =
+    known.length === listed && listed > 0 ? `+${sum('added')} −${sum('removed')} lines` : ''
+  const totals = !lines ? '' : complete ? ` (${lines})` : ` (the ${listed} listed: ${lines})`
+  const count = changes.filesTotalExact
+    ? String(changes.filesTotal)
+    : `at least ${changes.filesTotal}`
+  const files = changes.files.map(
+    (f) =>
+      `- ${f.status} ${f.path}${f.added !== null && f.removed !== null ? ` (+${f.added} −${f.removed})` : ''}`,
+  )
+  const more = changes.filesTotal - listed
+  return [
+    'Description:',
+    description,
+    `Changed files: ${count}${totals}`,
+    ...files,
+    ...(more > 0
+      ? [`(and ${changes.filesTotalExact ? '' : 'at least '}${more} more files)`]
+      : !changes.filesTotalExact
+        ? ['(the list may go on)']
+        : []),
+  ]
+}
+
+/** `changes`: what was read, or why it couldn't be (a short reason), or null. */
+export function prPrompt(pr: PullRequest, changes: PrChanges | string | null = null): string {
   const reviewers = pr.reviewers.length
     ? pr.reviewers.map((r) => `${r.name} (${r.status.replace(/_/g, ' ')})`).join(', ')
     : 'none yet'
@@ -38,6 +77,7 @@ export function prPrompt(pr: PullRequest): string {
     `Merge conflicts: ${pr.conflicts === null ? 'unknown' : pr.conflicts ? 'yes' : 'no'}`,
     `Build: ${pr.build.state}${failing.length ? ` (failing: ${failing.join(', ')})` : ''}`,
     `Opened: ${pr.createdAt}; last updated: ${pr.updatedAt}`,
+    ...changesLines(changes),
   ].join('\n')
 }
 

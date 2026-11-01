@@ -4,6 +4,7 @@ import { Download, PlugZap, Save } from 'lucide-react'
 import {
   ProxyServerSchema,
   SERVICES,
+  isAiKey,
   type Diagnostics,
   type ServiceKey,
   type ServiceName,
@@ -22,6 +23,11 @@ import { Section } from './Section'
 
 type Result = { ok: true; who: string } | { ok: false; error: unknown } | 'skipped' | 'testing'
 
+async function testAiKey(): Promise<string> {
+  await unwrap(bridge.ai.testConnection())
+  return 'your API key'
+}
+
 /** Each service's Test connection, answering who it connected as. */
 const TEST: Record<ServiceName, () => Promise<string>> = {
   Jira: async () => (await unwrap(bridge.jira.testConnection())).user.displayName,
@@ -29,11 +35,10 @@ const TEST: Record<ServiceName, () => Promise<string>> = {
   Jenkins: async () => (await unwrap(bridge.jenkins.testConnection())).user.fullName,
   GitHub: async () => (await unwrap(bridge.github.testConnection())).user.displayName,
   GitLab: async () => (await unwrap(bridge.gitlab.testConnection())).user.displayName,
-  // GET /v1/models (free): the key has no user name, so the pill says whose it is.
-  Anthropic: async () => {
-    await unwrap(bridge.ai.testConnection())
-    return 'your API key'
-  },
+  // The provider's models list (free): a key has no user name, so the pill says whose it is.
+  Anthropic: testAiKey,
+  OpenAI: testAiKey,
+  'Google Gemini': testAiKey,
 }
 
 /**
@@ -51,7 +56,9 @@ export function DiagnosticsSection({ settings }: { settings: Settings }) {
   const { run, pending } = useAction()
   const toast = useToast()
   const aiAvailable = useAiAvailable()
-  const setUp = (key: ServiceKey) => (key === 'anthropic' ? aiAvailable : isSetUp(settings, key))
+  // AI: only the active provider is tested (its key is the one in use).
+  const setUp = (key: ServiceKey) =>
+    isAiKey(key) ? key === settings.ai.provider && aiAvailable : isSetUp(settings, key)
 
   const testAll = () => {
     for (const [name, key] of SERVICES) {

@@ -46,7 +46,8 @@ DevDock isn't code-signed yet, so your system warns you the first time:
 (MDM, Intune, AppLocker). Then the options above aren't offered, and your IT team needs to
 approve DevDock — point them to this repository: the source is here, they can build it themselves
 with `npm run dist`, it needs no admin rights, and it only talks to the Jira, Bitbucket, Jenkins,
-GitHub and GitLab addresses you enter (and Anthropic, only if you add your own key).
+GitHub and GitLab addresses you enter (and Anthropic, OpenAI or Google, only if you add your own
+key).
 
 ## First run: demo mode
 
@@ -129,16 +130,17 @@ it (a dev server, an agent), DevDock asks first; quitting DevDock stops them all
 
 ![Terminal](docs/screenshots/readme-terminal.png)
 
-**AI with your own key** (optional, Settings → AI) — add your own Anthropic API key and DevDock
-can draft a status note for a pull request, word a reviewer's comment as a lesson, and tidy your
-standup. Each request is shown before it goes — the exact text, the model (Claude Opus 5.5 by
-default; Sonnet 5.5 and Haiku 5.5 in Settings) and about what it costs — and is sent only when
-you press Send. You pay Anthropic directly; DevDock ships no key. Demo mode answers with samples
-on your computer.
+**AI with your own key** (optional, Settings → AI) — pick a provider (**Anthropic**, **OpenAI**
+or **Google**), add your own API key for it and DevDock can summarise a pull request
+(its description, changed files and where it stands), word a reviewer's comment as a lesson, and tidy your standup. Each request is shown
+before it goes — the exact text, the model and about what it costs — and is sent only when you
+press Send. Models: Claude Opus 5.5 (default), Sonnet 5.5, Haiku 5.5; GPT-6.1 Sol (default),
+GPT-6 Astra, GPT-6 Luna; Gemini 3.8 Flash (default), Gemini 4 Argon, Gemini 3.1 Flash-Lite. You pay
+the provider directly; DevDock ships no key. Demo mode answers with samples on your computer.
 
 ![Settings → AI](docs/screenshots/readme-settings-ai.png)
 
-![A status note, shown before it is sent](docs/screenshots/readme-ai.png)
+![A PR summary, shown before it is sent](docs/screenshots/readme-ai.png)
 
 **Command palette** — every action, searchable: `⌘K` in the app, or the global shortcut from
 any app. It takes arguments: `watch <PR link>`, `pipeline <PR link>`, `branch NM-1234`,
@@ -223,7 +225,8 @@ company needs a specific one, set it in **Settings → Diagnostics → Proxy**.
   commands are shown before they run, and protected branches and jobs are refused.
 - **Only your services.** DevDock talks to the Jira, Bitbucket, GitHub, GitLab and Jenkins addresses you enter,
   and opens links only on hosts you allow (Settings → Links). There's no telemetry, no account,
-  and no AI service unless you add your own Anthropic key (Settings → AI); then each request is
+  and no AI service unless you add your own key (Anthropic, OpenAI or Google — Settings → AI);
+  then each request is
   shown first and sent only when you press Send. Demo mode makes no network calls at all.
 - **The terminal is your shell.** It runs with your permissions, like Terminal.app; the screens
   only send keystrokes to it, and only to their own terminals. It starts in a repo you added or
