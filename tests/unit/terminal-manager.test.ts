@@ -240,6 +240,17 @@ describe('TerminalManager', () => {
     expect(m.busy(1, agent.id)).toEqual({ busy: true, process: 'Claude Code' })
   })
 
+  it('busy on Windows: a shell tab never asks (node-pty reports the terminal type there); an agent tab does', async () => {
+    const { m, pty } = manager({ platform: 'win32' })
+    const shell = await m.create(req())
+    pty.ptys[0]!.process = 'xterm-256color'
+    expect(m.busy(1, shell.id)).toEqual({ busy: false, process: null })
+    const agent = await m.create(
+      req(1, { program: { file: 'C:\\b\\claude.exe', args: [], name: 'Claude Code', note: null } }),
+    )
+    expect(m.busy(1, agent.id)).toEqual({ busy: true, process: 'Claude Code' })
+  })
+
   it('creates still starting count towards the limit', async () => {
     // The DevDock prompt makes each create wait before it spawns, so they all overlap.
     const { m, pty } = manager({ settings: { devdockPrompt: true } })

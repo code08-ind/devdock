@@ -325,6 +325,9 @@ export class TerminalManager {
     const s = this.own(owner, id)
     if (s.info.status === 'exited') return { busy: false, process: null }
     if (s.program) return { busy: true, process: s.info.shell }
+    // On Windows node-pty's `process` is the terminal type (`xterm-256color`), not the program
+    // in front: there is nothing to tell, so a shell tab closes without asking (DECISIONS T11).
+    if (this.platform === 'win32') return { busy: false, process: null }
     const name = (p: string) =>
       (p.replace(/^-/, '').split(/[\\/]/).pop() ?? '').replace(/\.exe$/i, '')
     const foreground = name(s.pty.process ?? '')

@@ -7,7 +7,7 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 Nothing yet.
 
-## [0.1.0] — not released yet (the date is set when it is tagged, T18)
+## [0.1.0] — 2026-11-01
 
 The first release: everything in [`docs/SPEC.md`](docs/SPEC.md), plus the owner's additions
 recorded in [`docs/DECISIONS.md`](docs/DECISIONS.md). Phase 7 (terminal, GitHub and GitLab, agent

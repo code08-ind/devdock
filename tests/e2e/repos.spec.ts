@@ -138,6 +138,8 @@ test('the global-shortcut palette window hands repo actions to the main window',
   await callHook(app, 'togglePalette')
   const palette = await windowFor(app, 'palette.html')
   await palette.getByRole('combobox', { name: 'Command' }).fill('push branch clone')
+  // Enter only once the repo's command is listed first (else it runs whatever was first).
+  await expect(palette.getByRole('option').first()).toContainText('Push branch — clone')
   await palette.keyboard.press('Enter')
   const dialog = win.getByRole('dialog', { name: 'Push branch — clone' })
   // On develop (the base): refused in the plan step, before anything could be pushed.
