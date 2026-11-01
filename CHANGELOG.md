@@ -5,7 +5,12 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+
+- **AI with your own key: OpenAI and Google Gemini** (T6) besides Anthropic. Settings → AI picks
+  the provider, its key (each in the OS keychain) and model — GPT-6.1 Sol / Astra / Luna,
+  Gemini 3.8 Flash / 4 Argon / 3.1 Flash-Lite — with the same preview before anything is sent and
+  the cost at the day's price. Demo mode answers for every provider.
 
 ## [0.1.0] — not released yet (the date is set when it is tagged, T18)
 
