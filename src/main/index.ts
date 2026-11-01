@@ -82,6 +82,8 @@ import {
   createPaletteWindow,
   createPanelWindow,
   DEV_RENDERER_URL,
+  QUIET_E2E,
+  reveal,
   showPalette,
   showPanel,
 } from './windows'
@@ -157,8 +159,7 @@ function broadcast<E extends EventChannel>(event: E, payload: EventPayload<E>): 
 function showMain(): void {
   if (!mainWindow || mainWindow.isDestroyed()) return
   if (mainWindow.isMinimized()) mainWindow.restore()
-  mainWindow.show()
-  mainWindow.focus()
+  reveal(mainWindow)
 }
 
 function showView(view: View): void {
@@ -232,7 +233,8 @@ function electronNotifier(): NativeNotifier {
   const live = new Set<Notification>()
   return {
     show(n, { silent, onClick }) {
-      if (!Notification.isSupported()) return
+      // Quiet e2e runs: recorded in DevDock's history only (what the tests read).
+      if (QUIET_E2E || !Notification.isSupported()) return
       const native = new Notification({ title: n.title, body: n.body, silent })
       live.add(native)
       native.on('click', () => {
@@ -793,5 +795,7 @@ if (!app.requestSingleInstanceLock()) {
   })
   // The hidden palette window keeps the app alive; quitting is explicit (tray, menu, close).
   app.on('window-all-closed', () => undefined)
+  // Quiet e2e runs: no Dock icon, so the app never comes forward (windows.ts QUIET_E2E).
+  if (QUIET_E2E && process.platform === 'darwin') app.dock?.hide()
   void app.whenReady().then(start)
 }

@@ -1,6 +1,6 @@
 /** Main window, command-palette window and menu-bar panel, all with the hardened WEB_PREFERENCES. */
 import { join } from 'node:path'
-import { BrowserWindow, screen, type Rectangle } from 'electron'
+import { app, BrowserWindow, screen, type Rectangle } from 'electron'
 import { panelPosition } from './panelPosition'
 import { WEB_PREFERENCES } from './security'
 
@@ -14,6 +14,28 @@ const PALETTE = { width: 640, height: 420 }
 export const PANEL = { width: 400, height: 600 }
 
 const preload = join(import.meta.dirname, '../preload/index.cjs')
+
+/**
+ * e2e runs stay out of the way of whoever is at the computer: windows are fully transparent and
+ * never take focus, there is no Dock icon and no system notification (the tests read
+ * DevDock's own history). `DEVDOCK_E2E_VISIBLE=1` shows them as usual, to watch a run.
+ * Never in a packaged app.
+ */
+export const QUIET_E2E =
+  !app.isPackaged &&
+  process.env.DEVDOCK_E2E === '1' &&
+  process.env.DEVDOCK_E2E_VISIBLE !== '1'
+
+/** Shows a window and gives it focus — or, in a quiet e2e run, shows it without either. */
+export function reveal(win: BrowserWindow): void {
+  if (QUIET_E2E) {
+    win.setOpacity(0)
+    win.showInactive()
+    return
+  }
+  win.show()
+  win.focus()
+}
 
 /** `e2e`: the page gets `?e2e=1` and exposes its test hook (never in a packaged app). */
 function load(win: BrowserWindow, page: Page, e2e = false): Promise<void> {
@@ -35,7 +57,7 @@ export function createMainWindow({ e2e = false }: { e2e?: boolean } = {}): Brows
     show: false,
     webPreferences: { ...WEB_PREFERENCES, preload },
   })
-  win.once('ready-to-show', () => win.show())
+  win.once('ready-to-show', () => (QUIET_E2E ? reveal(win) : win.show()))
   void load(win, 'index', e2e)
   return win
 }
@@ -72,8 +94,7 @@ export function showPalette(win: BrowserWindow): void {
     Math.round(workArea.x + (workArea.width - w) / 2),
     Math.round(workArea.y + (workArea.height - h) / 3),
   )
-  win.show()
-  win.focus()
+  reveal(win)
 }
 
 /** The menu-bar / tray panel (P6-E): one-click actions without opening the main window. */
@@ -105,6 +126,5 @@ export function showPanel(win: BrowserWindow, icon: Rectangle): void {
   const { workArea } = screen.getDisplayNearestPoint(point)
   const { x, y } = panelPosition(icon, workArea, PANEL)
   win.setPosition(x, y)
-  win.show()
-  win.focus()
+  reveal(win)
 }
