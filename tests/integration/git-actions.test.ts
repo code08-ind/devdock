@@ -4,6 +4,7 @@ import { afterAll, afterEach, describe, expect, it } from 'vitest'
 import { DEFAULT_PROTECTED, DEFAULT_TEMPLATES, type RepoConfig } from '../../src/shared/settings'
 import { GitActions, type ActionOutcome } from '../../src/main/services/git/actions'
 import { GitError } from '../../src/main/services/git/errors'
+import { makeCheckRunner } from '../../src/main/services/process/check'
 import { GitRunner, unsafeReason, type CommandRecord } from '../../src/main/services/git/exec'
 import { inspectRepo, repoStatus } from '../../src/main/services/git/repo'
 import { makeRepos, otherClone, type Repos } from '../fixtures/git-repos'
@@ -30,8 +31,14 @@ function setup(opts: { upstream?: boolean } = {}) {
     protectedPatterns: [...DEFAULT_PROTECTED],
     branchTemplates: { ...DEFAULT_TEMPLATES },
     devCommand: 'npm run dev',
+    checkCommand: '',
   }
-  return { repos, repo, actions: new GitActions(runner), git: repos.git }
+  return {
+    repos,
+    repo,
+    actions: new GitActions(runner, makeCheckRunner({ timeoutMs: 3000 })),
+    git: repos.git,
+  }
 }
 
 /** Someone else pushes a commit to `branch` on `remote`. */
@@ -334,6 +341,67 @@ describe('git actions on real repositories', { timeout: 30_000 }, () => {
       expect(runner.log().some((c) => c.args.includes('push'))).toBe(false)
     },
   )
+
+  describe('push branch with the check first (T5)', () => {
+    const withCheck = (script: string) => {
+      const ctx = setup()
+      ctx.git(ctx.repos.clone, 'checkout', '-q', '-b', 'feature/checked')
+      ctx.repos.commit(ctx.repos.clone, 'check.mjs', script)
+      return { ...ctx, repo: { ...ctx.repo, checkCommand: 'node check.mjs' } }
+    }
+
+    it('plans the check before the push, and refuses without a check command', async () => {
+      const { repo, actions } = withCheck('')
+      expect(await actions.plan(repo, { action: 'pushBranch', check: true })).toEqual([
+        { program: 'node', args: ['check.mjs'], note: expect.stringMatching(/only if it passes/) },
+        { args: ['push', '-u', 'origin', 'feature/checked'] },
+      ])
+      expect(await actions.plan(repo, { action: 'pushBranch' })).toHaveLength(1)
+      const none = { ...repo, checkCommand: '' }
+      const e = await gitError(actions.plan(none, { action: 'pushBranch', check: true }))
+      expect(e.message).toMatch(/no check command/)
+      const shell = { ...repo, checkCommand: 'npm test && rm -rf /' }
+      expect(
+        (await gitError(actions.plan(shell, { action: 'pushBranch', check: true }))).message,
+      ).toMatch(/not allowed/)
+    })
+
+    it('a passing check: its output is streamed, then the branch is pushed', async () => {
+      const { repos: r, repo, actions, git } = withCheck("console.log('all 12 tests passed')\n")
+      const out: string[] = []
+      const result = done(
+        await actions.run(repo, { action: 'pushBranch', check: true }, (c) => out.push(c)),
+      )
+      expect(result.summary).toBe(
+        'Pushed feature/checked to origin. The check "node check.mjs" passed.',
+      )
+      expect(out.join('')).toContain('all 12 tests passed')
+      expect(git(r.origin, 'rev-parse', 'feature/checked').trim()).toBe(head(r))
+    })
+
+    it('a failing check stops the push: nothing reaches origin', async () => {
+      const {
+        repos: r,
+        repo,
+        actions,
+        git,
+      } = withCheck("console.error('1 test failed'); process.exit(3)\n")
+      const e = await gitError(actions.run(repo, { action: 'pushBranch', check: true }))
+      expect(e.kind).toBe('failed')
+      expect(e.message).toBe('The check "node check.mjs" failed (exit code 3). Nothing was pushed.')
+      expect(e.details).toContain('1 test failed')
+      expect(runner.log().some((c) => c.args.includes('push'))).toBe(false)
+      expect(() => git(r.origin, 'rev-parse', '--verify', '-q', 'feature/checked')).toThrow()
+    })
+
+    it('a check that hangs is stopped at the timeout, and nothing is pushed', async () => {
+      const { repo, actions } = withCheck('setInterval(() => {}, 1000)\n')
+      const e = await gitError(actions.run(repo, { action: 'pushBranch', check: true }))
+      expect(e.kind).toBe('timeout')
+      expect(e.message).toMatch(/was stopped\. Nothing was pushed\./)
+      expect(runner.log().some((c) => c.args.includes('push'))).toBe(false)
+    }, 20_000)
+  })
 
   it('sync fork end to end: upstream → local base → (confirmed) push to origin', async () => {
     const { repos: r, repo, actions, git } = setup({ upstream: true })

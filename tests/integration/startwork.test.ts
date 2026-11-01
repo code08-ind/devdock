@@ -57,6 +57,7 @@ function setup(features: Partial<Settings['features']> = {}) {
     protectedPatterns: [...DEFAULT_PROTECTED],
     branchTemplates: { ...DEFAULT_TEMPLATES },
     devCommand: 'npm run dev',
+    checkCommand: '',
   }
   const http = new SpyHttp()
   const git = new GitRunner()

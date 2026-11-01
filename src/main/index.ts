@@ -52,6 +52,7 @@ import { BuildWatcher } from './services/jenkins/watcher'
 import { JiraService } from './services/jira/service'
 import { StartWorkService } from './services/startwork'
 import { DevServerManager } from './services/process/devserver'
+import { makeCheckRunner } from './services/process/check'
 import { PortService, runCommand } from './services/process/ports'
 import { EnvProfiles } from './services/envprofiles'
 import { LessonsService } from './services/lessons'
@@ -350,7 +351,7 @@ function start(): void {
     })
   })
 
-  const actions = new GitActions(git)
+  const actions = new GitActions(git, makeCheckRunner({ envReady }))
   const jira = new JiraService({
     http,
     settings: () => store.get(),

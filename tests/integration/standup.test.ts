@@ -80,6 +80,7 @@ describe('standup: git log across repos by author (real repo)', () => {
           protectedPatterns: [],
           branchTemplates: { feature: 'f/{slug}', bugfix: 'b/{slug}' },
           devCommand: 'npm run dev',
+          checkCommand: '',
         },
       ],
       'me.dev@example.com',

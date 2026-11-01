@@ -63,6 +63,14 @@ export const RepoFields = {
       (c) => parseDevCommand(c) !== null,
       'Start with npm, pnpm, yarn, bun, npx, node or ./script — no shell syntax',
     ),
+  /** T5: run before Push branch when ticked (empty = none). Same rules as the dev command. */
+  checkCommand: z
+    .string()
+    .trim()
+    .refine(
+      (c) => c === '' || parseDevCommand(c) !== null,
+      'Start with npm, pnpm, yarn, bun, npx, node or ./script — no shell syntax',
+    ),
 }
 
 /** One registered local repo. Managed through the repos:* IPC channels, not settings:update. */
@@ -76,6 +84,7 @@ export const RepoConfigSchema = z.object({
   // Lenient when stored: P1-C saved any command, and one rejected value must not reset every
   // setting on load. New values go through RepoFields (patch); start re-checks with parseDevCommand.
   devCommand: z.string().trim().max(500).default('npm run dev'),
+  checkCommand: z.string().trim().max(500).default(''),
 })
 export type RepoConfig = z.infer<typeof RepoConfigSchema>
 
@@ -298,6 +307,16 @@ export const SettingsSchema = z.object({
       startDevServerAfterStart: z.boolean().default(false),
       /** The agent CLI Start work offers to start in DevDock's terminal (P7-C). */
       agentCli: AgentPreferenceSchema.default('auto'),
+      /** T5: Push branch starts with "Run the check command first" ticked. */
+      checkBeforePush: z.boolean().default(false),
+      /** T5: after Push branch, watch the next build of the branch's Jenkins jobs. */
+      watchBuildAfterPush: z.boolean().default(false),
+      /** T5: when a repo's branch changes, start its dev server if it isn't running. */
+      devServerAfterSwitch: z.boolean().default(false),
+      /** T5: when a PR of mine opens for a Jira key, offer to move the ticket (confirmed). */
+      moveTicketOnPr: z.boolean().default(false),
+      /** The Jira status (or transition name) that offer moves the ticket to. */
+      prOpenedStatus: z.string().trim().min(1).max(100).default('In Review'),
     })
     .prefault({}),
   /** P7-A in-app terminal. */

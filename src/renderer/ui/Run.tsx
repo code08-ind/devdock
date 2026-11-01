@@ -14,7 +14,7 @@ export function CommandList({ commands }: { commands: PlannedCommand[] }) {
       <ol className="mono">
         {commands.map((c, i) => (
           <li key={i}>
-            git {c.args.map(shellArg).join(' ')}
+            {c.program ?? 'git'} {c.args.map(shellArg).join(' ')}
             {c.note ? <span className="muted"> — {c.note}</span> : null}
           </li>
         ))}

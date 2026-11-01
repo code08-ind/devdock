@@ -10,7 +10,7 @@ import { TextSetting } from './ServiceBits'
 
 type Workflow = Settings['workflow']
 /** The on/off options (everything but the path). */
-type Option = Exclude<keyof Workflow, 'lessonsPath' | 'agentCli'>
+type Option = Exclude<keyof Workflow, 'lessonsPath' | 'agentCli' | 'prOpenedStatus'>
 
 /**
  * Workflow options (P6-F, owner request): the agent lessons file and what Start work does around
@@ -100,6 +100,16 @@ export function WorkflowSection({ settings }: { settings: Settings }) {
         'startDevServerAfterStart',
         'Start the dev server after Start work',
         "Runs the repo's dev command once the branch exists.",
+      )}
+      {toggle(
+        'checkBeforePush',
+        'Run the check command before Push branch',
+        'Push branch starts with this ticked for repos with a check command (repo settings); it pushes only if the check passes.',
+      )}
+      {toggle(
+        'watchBuildAfterPush',
+        'Watch the Jenkins build after Push branch',
+        "Push branch starts with this ticked; DevDock watches the branch's Jenkins build and notifies you when it ends.",
       )}
       {update.error ? <ErrorNotice error={update.error} /> : null}
     </Section>

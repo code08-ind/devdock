@@ -26,6 +26,7 @@ export function RepoSettingsDialog({ repo, onClose }: { repo: RepoConfig; onClos
     bugfix: repo.branchTemplates.bugfix,
     protectedPatterns: repo.protectedPatterns.join('\n'),
     devCommand: repo.devCommand,
+    checkCommand: repo.checkCommand,
   })
   const [confirmRemove, setConfirmRemove] = useState(false)
   const set = (k: keyof typeof draft) => (e: { target: { value: string } }) =>
@@ -46,6 +47,7 @@ export function RepoSettingsDialog({ repo, onClose }: { repo: RepoConfig; onClos
       branchTemplates: { feature: draft.feature, bugfix: draft.bugfix },
       protectedPatterns: lines(draft.protectedPatterns),
       devCommand: draft.devCommand,
+      checkCommand: draft.checkCommand,
     })
 
   return (
@@ -125,6 +127,21 @@ export function RepoSettingsDialog({ repo, onClose }: { repo: RepoConfig; onClos
             className="mono"
             value={draft.devCommand}
             onChange={set('devCommand')}
+          />
+        )}
+      </Field>
+      <Field
+        label="Check command"
+        hint="Optional, e.g. npm test. Push branch can run it first and pushes only if it passes (Settings → Workflow)."
+      >
+        {({ id, describedBy }) => (
+          <Input
+            id={id}
+            aria-describedby={describedBy}
+            className="mono"
+            value={draft.checkCommand}
+            placeholder="npm test"
+            onChange={set('checkCommand')}
           />
         )}
       </Field>

@@ -15,7 +15,7 @@ Contract docs: `docs/SPEC.md`, `docs/UI-THEMES.md`, `docs/BUILD-PROMPTS.md` (pha
 | Field        | Value                                                         |
 | ------------ | ------------------------------------------------------------- |
 | Phase        | **Phase 7 — final wrap-up day is 2026-10-31.** Everything planned is merged on `main` (29328bd, pushed): P7-A terminal, P7-B GitHub/GitLab, P7-C-A agent CLIs, P7-C-B AI with your own key (Claude), P7-D website v2, P7-E accessibility (automated part). |
-| Next step    | **T5 (P6.13 workflow follow-ups).** T4 done 2026-11-01. |
+| Next step    | **T5c (dev server after a branch switch), then T5d (move the ticket when a PR opens).** T5a + T5b done 2026-11-01. |
 | Blockers     | None                                                          |
 | Last updated | 2026-11-01                                                    |
 
@@ -69,6 +69,14 @@ docs-only pushes.
 - [ ] **T5** P6.13 workflow follow-ups not built yet (DECISIONS P6-F): watch the PR build after
   push, move the ticket when a PR opens, run a check command before push, start the dev server
   after a branch switch — each behind a Settings → Workflow checkbox, off by default.
+  Split (owner answers in DECISIONS "T5 owner answers"):
+  - [x] **T5a** check command before push. Evidence: `git-actions.test.ts` "push branch with the
+    check first (T5)" (plan, pass, fail → nothing pushed, timeout); e2e `repos.spec.ts` "T5: push
+    runs the check first…".
+  - [x] **T5b** watch the Jenkins build after push (Jenkins only for v0.1.0). Evidence: same e2e
+    (job watch added for the pushed branch).
+  - [ ] **T5c** start the dev server after a branch switch (only if not running).
+  - [ ] **T5d** move the ticket when a PR opens (configurable status, default In Review; confirmed).
 
 ### C. Deferred features (now in scope)
 - [ ] **T6** **OpenAI and Google Gemini** for "AI with your own key" (rest of P7.09): same
@@ -746,3 +754,4 @@ Next step: owner review → merge `p7-providers` into `main`.
 | 2026-11-01 | T1 + T3, pause | T1 green (run 41236243941, incl. Upload packages). T3: AI Test connection + Diagnostics Anthropic row. lint 0; vitest 916 / 1; e2e 66 / 5; dist exit 0 (arm64 108.8 MB, x64 111.9 MB). Owner paused; next T4. |
 | 2026-11-01 | Scope | Owner agreed: ship v0.1.0 without T6 (OpenAI/Gemini) and T7 (true PR summary); both follow after the release. |
 | 2026-11-01 | T4 | Palette: trigger build (parameters dialog), watch deploy, baseline server start/stop; the global palette window hands dialog commands (`inMain`) to the main window by id (`commands:request`). app.spec "jenkins" search updated for the deploy commands. lint 0; vitest 920 / 1 skipped; e2e 67 / 5 skipped. | T5 |
+| 2026-11-01 | T5a + T5b | Check command per repo, run before Push branch when ticked (no shell, 15 min timeout, failure pushes nothing); "Watch the Jenkins build after pushing" (job watch per branch job, retried 15 s / 45 s for new branches). Owner answered the T5 scope questions. lint 0; vitest 924 / 1 skipped; e2e repos.spec T5 passed. | T5c |

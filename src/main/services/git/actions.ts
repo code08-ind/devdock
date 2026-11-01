@@ -7,6 +7,7 @@ import {
   slugify,
   uniqueBranchName,
 } from './branches'
+import { checkArgv, type CheckRunner } from '../process/check'
 import { GitError } from './errors'
 import type { GitRunner } from './exec'
 import { parseRemotes, parseStashList, parseStatusV2 } from './parse'
@@ -48,7 +49,11 @@ export class GitActions {
   /** Stash commit DevDock created per repo, so Abort re-applies that stash and no other. */
   private readonly ourStash = new Map<string, string>()
 
-  constructor(private readonly git: GitRunner) {}
+  /** `check` runs a repo's check command before a push (T5); without it, a checked push is refused. */
+  constructor(
+    private readonly git: GitRunner,
+    private readonly runCheck?: CheckRunner,
+  ) {}
 
   private async context(repo: RepoConfig): Promise<Context> {
     const cwd = repo.path
@@ -101,6 +106,16 @@ export class GitActions {
             '',
             [],
             `Pushing ${ctx.branch} is blocked: it is the base branch or matches a protected pattern.`,
+          )
+        }
+        if (req.check && (!this.runCheck || !repo.checkCommand)) {
+          refuse(
+            "This repo has no check command. Add one in the repo's settings, or untick the check.",
+          )
+        }
+        if (req.check && !checkArgv(repo)) {
+          refuse(
+            `The check command "${repo.checkCommand}" is not allowed. Change it in the repo's settings.`,
           )
         }
         return
@@ -172,8 +187,21 @@ export class GitActions {
           { args: ['fetch', 'origin', base] },
           { args: ['checkout', '-b', name, '--no-track', `origin/${base}`] },
         ]
-      case 'pushBranch':
-        return [{ args: ['push', '-u', 'origin', ctx.branch ?? ''] }]
+      case 'pushBranch': {
+        const check = req.check ? checkArgv(repo) : null
+        return [
+          ...(check
+            ? [
+                {
+                  program: check[0],
+                  args: check.slice(1),
+                  note: 'the check: the push runs only if it passes',
+                },
+              ]
+            : []),
+          { args: ['push', '-u', 'origin', ctx.branch ?? ''] },
+        ]
+      }
     }
   }
 
@@ -274,9 +302,17 @@ export class GitActions {
         return { status: 'done', summary: `Created ${name} from origin/${base}.`, branch: name }
       }
 
-      case 'pushBranch':
-        await runAll(this.commands(repo, ctx, req))
-        return { status: 'done', summary: `Pushed ${ctx.branch} to origin.`, branch: ctx.branch! }
+      case 'pushBranch': {
+        // The check first (throws on failure, so nothing is pushed), then git.
+        if (req.check) await this.runCheck!(repo, onOutput)
+        await git(this.commands(repo, ctx, req).at(-1)!.args)
+        const passed = req.check ? ` The check "${repo.checkCommand}" passed.` : ''
+        return {
+          status: 'done',
+          summary: `Pushed ${ctx.branch} to origin.${passed}`,
+          branch: ctx.branch!,
+        }
+      }
     }
   }
 

@@ -1,5 +1,11 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
-import type { BuildRef, BuildWatch, BuildWatchRequest, TriggerRequest } from '@shared/jenkins'
+import {
+  jobLabel,
+  type BuildRef,
+  type BuildWatch,
+  type BuildWatchRequest,
+  type TriggerRequest,
+} from '@shared/jenkins'
 import { bridge, keys, queryClient, unwrap, useSettings } from './devdock'
 
 /** Jenkins data (SPEC 6.4). Everything comes from the main process; the token never gets here. */
@@ -50,6 +56,36 @@ export function useBuildWatches() {
 }
 
 const refreshWatches = () => void queryClient.invalidateQueries({ queryKey: keys.buildWatches })
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
+/** How long after a push to look again for a new branch's job (Jenkins creates it on a scan). */
+export const PUSH_WATCH_RETRIES_MS = [0, 15_000, 45_000]
+
+/**
+ * T5 "watch the build after push": watches the running or next build of every My branches job
+ * for `branch`. A branch pushed for the first time has no job until Jenkins scans it, so the
+ * list is read again a few times. Resolves with the watched jobs' labels (none found → []).
+ */
+export async function watchBranchBuilds(
+  branch: string,
+  retries: readonly number[] = PUSH_WATCH_RETRIES_MS,
+): Promise<string[]> {
+  for (const delay of retries) {
+    if (delay) await sleep(delay)
+    const { builds } = await queryClient.fetchQuery({
+      queryKey: jenkinsKeys.branches,
+      queryFn: () => unwrap(bridge.jenkins.branches()),
+      staleTime: 0,
+    })
+    const jobs = builds.filter((b) => b.branch === branch).map((b) => b.job)
+    if (jobs.length === 0) continue
+    for (const job of jobs) await unwrap(bridge.buildwatch.add({ kind: 'job', job }))
+    refreshWatches()
+    return jobs.map(jobLabel)
+  }
+  return []
+}
 
 export function useAddBuildWatch() {
   return useMutation({

@@ -3,12 +3,13 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Code, TriangleAlert } from 'lucide-react'
 import type { ActionOutcome, ActionRequest, PlannedCommand } from '@shared/repos'
 import type { RepoConfig, UpdateStrategy } from '@shared/settings'
-import { bridge, DevDockError, keys, unwrap, useSettings } from '../../lib/devdock'
+import { bridge, DevDockError, isSetUp, keys, unwrap, useSettings } from '../../lib/devdock'
+import { watchBranchBuilds } from '../../lib/jenkins'
 import { ACTION_LABELS, forgetRuns, startRun, useOpenRepo, useRunOutput } from '../../lib/repos'
 import { Button } from '../../ui/Button'
 import { Dialog } from '../../ui/Dialog'
 import { ErrorNotice, StatusPill, useToast } from '../../ui/Feedback'
-import { Field, Input, SegmentedControl } from '../../ui/Field'
+import { Checkbox, Field, Input, SegmentedControl } from '../../ui/Field'
 import { ActivityLog, CommandList } from '../../ui/Run'
 
 type Stage =
@@ -63,10 +64,19 @@ export function ActionDialog({
   const qc = useQueryClient()
   const toast = useToast()
   const openRepo = useOpenRepo()
-  const savedStrategy = useSettings().data?.git.updateStrategy ?? 'merge'
+  const settings = useSettings().data
+  const savedStrategy = settings?.git.updateStrategy ?? 'merge'
+  const workflow = settings?.workflow
+  // T5: the push follow-ups start ticked as set in Settings → Workflow; changed here per push.
   const [request, setRequest] = useState<ActionRequest>(() =>
-    initial.action === 'updateBranch' ? { ...initial, strategy: savedStrategy } : initial,
+    initial.action === 'updateBranch'
+      ? { ...initial, strategy: savedStrategy }
+      : initial.action === 'pushBranch' && workflow?.checkBeforePush && repo.checkCommand
+        ? { ...initial, check: true }
+        : initial,
   )
+  const jenkinsOn = settings ? isSetUp(settings, 'jenkins') : false
+  const [watchAfter, setWatchAfter] = useState(() => Boolean(workflow?.watchBuildAfterPush))
   /** What the dialog is doing; while planning, the plan query supplies the details. */
   const [stage, setStage] = useState<Stage>(
     initial.action === 'newBranch' ? { kind: 'form' } : { kind: 'plan' },
@@ -117,6 +127,9 @@ export function ActionDialog({
       } else {
         setStage({ kind: 'done', outcome })
         toast(outcome.summary)
+        if (request.action === 'pushBranch' && watchAfter && jenkinsOn && outcome.branch) {
+          watchAfterPush(outcome.branch)
+        }
       }
     } catch (err) {
       const dirty = err instanceof DevDockError && err.code === 'DIRTY_TREE'
@@ -134,6 +147,19 @@ export function ActionDialog({
       void qc.invalidateQueries({ queryKey: keys.repoStatus(repo.id) })
     }
   }
+
+  /** Runs on after the dialog closes: a new branch's Jenkins job can take a scan to appear. */
+  const watchAfterPush = (branch: string) =>
+    void watchBranchBuilds(branch).then(
+      (labels) =>
+        labels.length
+          ? toast(`Watching ${labels.join(', ')}: you'll be notified when the build finishes`)
+          : toast(
+              `Jenkins has no job for ${branch} yet. Watch it from Builds once Jenkins has picked the branch up.`,
+              'warning',
+            ),
+      (err: unknown) => toast(err instanceof Error ? err.message : String(err), 'danger'),
+    )
 
   const running = phase.kind === 'running' || phase.kind === 'planning'
   const label = ACTION_LABELS[request.action]
@@ -187,6 +213,18 @@ export function ActionDialog({
         />
       ) : null}
 
+      {request.action === 'pushBranch' && phase.kind === 'ready' ? (
+        <PushOptions
+          request={request}
+          checkCommand={repo.checkCommand}
+          checkWanted={Boolean(workflow?.checkBeforePush)}
+          onCheck={(check) => plan({ ...request, check })}
+          jenkinsOn={jenkinsOn}
+          watchAfter={watchAfter}
+          onWatchAfter={setWatchAfter}
+        />
+      ) : null}
+
       {phase.kind === 'ready' ? <CommandList commands={phase.commands} /> : null}
       {phase.kind === 'ready' && request.action === 'pushBase' ? (
         <div className="notice notice-warning">
@@ -229,6 +267,48 @@ export function ActionDialog({
 
       {runIds.length > 0 || running ? <ActivityLog text={output} /> : null}
     </Dialog>
+  )
+}
+
+/** T5: run the check first; watch the branch's Jenkins build afterwards. */
+function PushOptions({
+  request,
+  checkCommand,
+  checkWanted,
+  onCheck,
+  jenkinsOn,
+  watchAfter,
+  onWatchAfter,
+}: {
+  request: Extract<ActionRequest, { action: 'pushBranch' }>
+  checkCommand: string
+  checkWanted: boolean
+  onCheck: (check: boolean) => void
+  jenkinsOn: boolean
+  watchAfter: boolean
+  onWatchAfter: (watch: boolean) => void
+}) {
+  return (
+    <div className="stack">
+      {checkCommand ? (
+        <Checkbox
+          label={`Run the check first (${checkCommand}): push only if it passes`}
+          checked={Boolean(request.check)}
+          onChecked={onCheck}
+        />
+      ) : checkWanted ? (
+        <p className="muted">
+          This repo has no check command yet: add one in its settings to run it before pushing.
+        </p>
+      ) : null}
+      {jenkinsOn ? (
+        <Checkbox
+          label="Watch the Jenkins build after pushing"
+          checked={watchAfter}
+          onChecked={onWatchAfter}
+        />
+      ) : null}
+    </div>
   )
 }
 

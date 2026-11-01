@@ -35,6 +35,7 @@ function setup(devCommand = 'npm run dev') {
     protectedPatterns: [...DEFAULT_PROTECTED],
     branchTemplates: { ...DEFAULT_TEMPLATES },
     devCommand,
+    checkCommand: '',
   }
   return { manager, repo, states, output }
 }

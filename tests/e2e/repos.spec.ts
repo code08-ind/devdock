@@ -153,3 +153,67 @@ test('Today shows repo status', async ({ launched }) => {
   await expect(list).toContainText('develop')
   await expect(list).toContainText('clean')
 })
+
+test('T5: push runs the check first (a failing check pushes nothing), then watches the Jenkins build', async ({
+  launched,
+}) => {
+  const { win } = launched
+  repos = makeRepos()
+  const branch = 'bugfix/DD-101-date-picker-focus'
+  repos.git(repos.clone, 'checkout', '-q', '-b', branch)
+  repos.commit(repos.clone, 'check.mjs', "console.error('1 test failed'); process.exit(1)\n")
+  const added = await win.evaluate((path) => window.devdock.repos.add({ path }), repos.clone)
+  if (!added.ok) throw new Error(added.error.message)
+  const id = added.data.id
+  expect(
+    (
+      await win.evaluate(
+        (id) => window.devdock.repos.update({ id, patch: { checkCommand: 'node check.mjs' } }),
+        id,
+      )
+    ).ok,
+  ).toBe(true)
+  await win.evaluate(() =>
+    window.devdock.settings.update({
+      workflow: { checkBeforePush: true, watchBuildAfterPush: true },
+    }),
+  )
+  await win.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Repos' }).click()
+  const card = win.getByRole('article', { name: 'clone' })
+
+  // Failing check: the push never runs.
+  await card.getByRole('button', { name: 'Push branch' }).click()
+  let dialog = win.getByRole('dialog', { name: 'Push branch — clone' })
+  const check = dialog.getByRole('checkbox', { name: /Run the check first \(node check\.mjs\)/ })
+  await expect(check).toBeChecked()
+  await expect(
+    dialog.getByRole('checkbox', { name: 'Watch the Jenkins build after pushing' }),
+  ).toBeChecked()
+  await expect(dialog.locator('.commands')).toContainText('node check.mjs')
+  await expect(dialog.locator('.commands')).toContainText(`git push -u origin ${branch}`)
+  await dialog.getByRole('button', { name: 'Push branch', exact: true }).click()
+  await expect(
+    dialog.getByText('The check "node check.mjs" failed (exit code 1). Nothing was pushed.'),
+  ).toBeVisible()
+  await expect(dialog.getByRole('log', { name: 'Git output' })).toContainText('1 test failed')
+  expect(() => repos!.git(repos!.origin, 'rev-parse', '--verify', '-q', branch)).toThrow()
+  await dialog.getByRole('button', { name: 'Close' }).click()
+
+  // Passing check: pushed, then the branch's Jenkins job is watched.
+  repos.commit(repos.clone, 'check.mjs', "console.log('ok')\n")
+  await card.getByRole('button', { name: 'Push branch' }).click()
+  dialog = win.getByRole('dialog', { name: 'Push branch — clone' })
+  await dialog.getByRole('button', { name: 'Push branch', exact: true }).click()
+  await expect(
+    dialog.getByText(`Pushed ${branch} to origin. The check "node check.mjs" passed.`),
+  ).toBeVisible()
+  expect(repos.git(repos.origin, 'rev-parse', branch).trim()).toBe(
+    repos.git(repos.clone, 'rev-parse', 'HEAD').trim(),
+  )
+  await expect(win.getByText(`Watching web-app › ${branch}: you'll be notified`)).toBeVisible()
+  const watched = await win.evaluate(() => window.devdock.buildwatch.list())
+  expect(watched).toMatchObject({
+    ok: true,
+    data: [{ kind: 'job', job: 'web-app/bugfix%2FDD-101-date-picker-focus' }],
+  })
+})

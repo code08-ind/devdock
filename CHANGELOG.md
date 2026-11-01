@@ -34,6 +34,9 @@ versions follow [Semantic Versioning](https://semver.org/).
   deploy, start / stop the baseline server. From the global-shortcut palette window, commands
   that need a dialog (trigger build, stop a server, PR actions, the AI actions) open it in the
   main window.
+- **Workflow follow-ups** (Settings → Workflow, each off by default): run the repo's check command
+  (e.g. `npm test`, set in the repo's settings) before Push branch — nothing is pushed if it
+  fails; watch the branch's Jenkins build after a push.
 
 ## [0.1.0] — 2026-10-25
 

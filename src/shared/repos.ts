@@ -21,7 +21,11 @@ export const ActionRequestSchema = z.discriminatedUnion('action', [
     key: z.string().trim().max(50).optional(),
     title: z.string().max(300),
   }),
-  z.object({ action: z.literal('pushBranch') }),
+  z.object({
+    action: z.literal('pushBranch'),
+    /** T5: run the repo's check command first; the push happens only if it passes. */
+    check: z.boolean().optional(),
+  }),
 ])
 export type ActionRequest = z.infer<typeof ActionRequestSchema>
 export type ActionName = ActionRequest['action']
@@ -48,6 +52,8 @@ export type ActionOutcome = z.infer<typeof ActionOutcomeSchema>
 
 /** One command in the "commands that will run" disclosure. */
 export const PlannedCommandSchema = z.object({
+  /** The program, when it isn't git (the check command before a push). */
+  program: z.string().optional(),
   args: z.array(z.string()),
   note: z.string().optional(),
 })
@@ -78,6 +84,7 @@ export const RepoPatchSchema = z.object({
   protectedPatterns: RepoFields.protectedPatterns.optional(),
   branchTemplates: RepoFields.branchTemplates.optional(),
   devCommand: RepoFields.devCommand.optional(),
+  checkCommand: RepoFields.checkCommand.optional(),
 })
 export type RepoPatch = z.infer<typeof RepoPatchSchema>
 

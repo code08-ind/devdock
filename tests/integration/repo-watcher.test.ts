@@ -19,6 +19,7 @@ const config = (r: Repos, id = 'r1'): RepoConfig => ({
   protectedPatterns: [...DEFAULT_PROTECTED],
   branchTemplates: { ...DEFAULT_TEMPLATES },
   devCommand: 'npm run dev',
+  checkCommand: '',
 })
 
 describe('RepoWatcher (.git/HEAD)', { timeout: 15_000 }, () => {
