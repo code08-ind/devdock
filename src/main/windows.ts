@@ -16,20 +16,22 @@ export const PANEL = { width: 400, height: 600 }
 const preload = join(import.meta.dirname, '../preload/index.cjs')
 
 /**
- * e2e runs stay out of the way of whoever is at the computer: windows are fully transparent and
- * never take focus, there is no Dock icon and no system notification (the tests read
+ * e2e runs stay out of the way of whoever is at the computer: windows are fully transparent,
+ * let clicks through and never take focus, there is no Dock icon and no system notification (the tests read
  * DevDock's own history). `DEVDOCK_E2E_VISIBLE=1` shows them as usual, to watch a run.
  * Never in a packaged app.
  */
 export const QUIET_E2E =
-  !app.isPackaged &&
-  process.env.DEVDOCK_E2E === '1' &&
-  process.env.DEVDOCK_E2E_VISIBLE !== '1'
+  !app.isPackaged && process.env.DEVDOCK_E2E === '1' && process.env.DEVDOCK_E2E_VISIBLE !== '1'
 
 /** Shows a window and gives it focus — or, in a quiet e2e run, shows it without either. */
 export function reveal(win: BrowserWindow): void {
   if (QUIET_E2E) {
     win.setOpacity(0)
+    // An invisible window would still catch the clicks of whoever is at the computer (and
+    // could be closed or blurred by them): clicks go through to what is underneath. The tests
+    // drive the page through the DevTools protocol, which doesn't need the mouse.
+    win.setIgnoreMouseEvents(true)
     win.showInactive()
     return
   }

@@ -2,7 +2,7 @@ import { cpSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { makeRepos, type Repos } from '../fixtures/git-repos'
 import { isListening } from '../fixtures/ports'
-import { expect, launch, test } from './fixtures'
+import { callHook, expect, launch, test } from './fixtures'
 
 /** P1.D3: start a fixture dev script, detect its port, stop it, the port is free afterwards. */
 let repos: Repos | undefined
@@ -73,15 +73,18 @@ test('quitting DevDock kills running dev server trees', async () => {
 test('T5: a branch switch outside DevDock starts the dev server (Settings → Workflow)', async ({
   launched,
 }) => {
-  const { win } = launched
+  const { app, win } = launched
   repos = fixtureRepo()
   await win.evaluate(() =>
     window.devdock.settings.update({ workflow: { devServerAfterSwitch: true } }),
   )
-  await win.evaluate((path) => window.devdock.repos.add({ path }), repos.clone)
+  const added = await win.evaluate((path) => window.devdock.repos.add({ path }), repos.clone)
+  if (!added.ok) throw new Error(added.error.message)
   await win.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Repos' }).click()
   const panel = win.getByRole('region', { name: 'Dev server for clone' })
   await expect(panel.getByRole('button', { name: 'Start dev server' })).toBeVisible()
+  // DevDock notices switches once it watches the repo's HEAD.
+  await expect.poll(() => callHook(app, 'watchedRepos')).toContain(added.data.id)
 
   // As if switched in a terminal: the HEAD watcher sees it, the dev server starts.
   repos.git(repos.clone, 'checkout', '-q', '-b', 'feature/switched')

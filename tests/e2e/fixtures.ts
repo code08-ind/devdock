@@ -109,6 +109,7 @@ interface TestHook {
   pollRuns(): Promise<void>
   pollTicketMoves(): Promise<void>
   forgetSeenPrs(): void
+  watchedRepos(): string[]
 }
 
 export function callHook<K extends keyof TestHook>(

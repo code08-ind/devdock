@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test'
+import { makeRepos } from '../fixtures/git-repos'
 import { VIEWS, THEMES, callHook, expect, pickSegment, showView, test, windowFor } from './fixtures'
 
 /**
@@ -267,3 +268,67 @@ test('Settings → Accessibility: each switch changes the app', async ({ launche
 /** Sends a test notification (Settings → Notifications → Test), the same path as real ones. */
 const testNotification = (win: Page) =>
   win.evaluate(() => window.devdock.notifications.test({ type: 'build-finished' }))
+
+test('keyboard only (T5): the push options and the Today ticket offers, with their dialogs', async ({
+  launched,
+}) => {
+  test.setTimeout(90_000)
+  const { app, win } = launched
+  const repos = makeRepos()
+  try {
+    repos.git(repos.clone, 'checkout', '-q', '-b', 'feature/keys')
+    const added = await win.evaluate((p) => window.devdock.repos.add({ path: p }), repos.clone)
+    if (!added.ok) throw new Error(added.error.message)
+    await win.evaluate(
+      (id) => window.devdock.repos.update({ id, patch: { checkCommand: 'npm test' } }),
+      added.data.id,
+    )
+    await win.evaluate(() =>
+      window.devdock.settings.update({
+        workflow: { checkBeforePush: true, watchBuildAfterPush: true, moveTicketOnPr: true },
+      }),
+    )
+    await callHook(app, 'pollTicketMoves')
+    await callHook(app, 'forgetSeenPrs')
+    await callHook(app, 'pollTicketMoves')
+
+    // Push branch: both ticks are Tab stops inside the dialog; Space toggles one.
+    await show(win, 'Repos')
+    // A new view moves focus to its heading; let that happen before focusing the button.
+    await expect(win.locator('main h1')).toBeFocused()
+    const push = win
+      .getByRole('article', { name: 'clone' })
+      .getByRole('button', { name: 'Push branch' })
+    // Repo actions are enabled once the repo's status has loaded (slower on a busy machine).
+    await expect(push).toBeEnabled()
+    await push.focus()
+    await expect(push).toBeFocused()
+    await win.keyboard.press('Enter')
+    const check = win.getByRole('checkbox', { name: /^Run the check first/ })
+    await expect(check).toBeChecked()
+    const stops = await tabRound(win, 'push dialog', 'dialog')
+    expect(stops.some((s) => s.includes('Run the check first'))).toBe(true)
+    expect(stops.some((s) => s.includes('Watch the Jenkins build'))).toBe(true)
+    await check.focus()
+    await win.keyboard.press('Space')
+    await expect(win.getByRole('checkbox', { name: /^Run the check first/ })).not.toBeChecked()
+    await win.keyboard.press('Escape')
+    await expect(push).toBeFocused()
+
+    // Today: the offers' buttons are in the round; Enter opens the confirmation, Escape returns.
+    await show(win, 'Today')
+    await win.locator('main h1').focus()
+    const round = await tabRound(win, 'Today with offers')
+    expect(round.some((s) => s.includes('Move to In Review'))).toBe(true)
+    expect(round.some((s) => s.includes('Dismiss: leave DD-'))).toBe(true)
+    const move = win.getByRole('button', { name: 'Move to In Review…' }).first()
+    await move.focus()
+    await win.keyboard.press('Enter')
+    await expect(win.getByRole('dialog', { name: /^Move DD-\d+ to In Review\?$/ })).toBeVisible()
+    await tabRound(win, 'move confirmation', 'dialog')
+    await win.keyboard.press('Escape')
+    await expect(win.getByRole('dialog')).toHaveCount(0)
+  } finally {
+    repos.cleanup()
+  }
+})

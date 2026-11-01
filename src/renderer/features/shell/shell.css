@@ -625,6 +625,10 @@
   display: grid;
   gap: var(--space-2);
 }
+/* Room for a whole PR / run link next to "Watch pipeline" at 18px (T10 QA); shrinks to fit. */
+.watch-field .inline-form {
+  max-width: 44rem;
+}
 .watch-field .inline-form .input {
   flex: 1;
 }

@@ -332,8 +332,10 @@ function start(): void {
     },
   })
   const branchSwitch = new BranchSwitchFollower({ git, settings: () => store.get(), devServers })
-  void watcher.sync(store.get().repos)
-  void branchSwitch.sync(store.get().repos)
+  // The follower knows each branch before HEAD events can arrive (else a switch is only learnt).
+  const syncRepos = (repos: Settings['repos']) =>
+    branchSwitch.sync(repos).then(() => watcher.sync(repos))
+  void syncRepos(store.get().repos)
 
   /** Sends to one window, if it is still there (terminal output goes only to its owner). */
   const sendTo = <E extends EventChannel>(id: number, event: E, payload: EventPayload<E>) => {
@@ -670,8 +672,7 @@ function start(): void {
       else poller.reschedule()
     })
     lastSignatures = next
-    void watcher.sync(s.repos)
-    void branchSwitch.sync(s.repos)
+    void syncRepos(s.repos)
     applyLoginItem(s)
     applyProxy(s)
     // settings:update/import/reset can name a shortcut that is taken or reserved. Keep the
@@ -750,6 +751,8 @@ function start(): void {
         terminalPids: () => terminal.pids(),
         pollRuns: () => ciPolling.runNow(),
         pollTicketMoves: () => ticketMovePolling.runNow(),
+        /** Repos whose HEAD is watched (a branch switch is noticed only from then on). */
+        watchedRepos: () => watcher.watchedIds(),
         /** As if every open PR of mine had just opened (demo PRs never change). */
         forgetSeenPrs: () => ticketMoves.forgetSeen(),
       },
@@ -795,6 +798,11 @@ if (!app.requestSingleInstanceLock()) {
   })
   // The hidden palette window keeps the app alive; quitting is explicit (tray, menu, close).
   app.on('window-all-closed', () => undefined)
+  // A renderer or helper process that dies is logged, so a report can say what happened.
+  app.on('render-process-gone', (_e, wc, details) =>
+    log.error(`renderer gone (${wc.getURL().split('?')[0]?.split('/').pop()})`, details),
+  )
+  app.on('child-process-gone', (_e, details) => log.error('child process gone', details))
   // Quiet e2e runs: no Dock icon, so the app never comes forward (windows.ts QUIET_E2E).
   if (QUIET_E2E && process.platform === 'darwin') app.dock?.hide()
   void app.whenReady().then(start)

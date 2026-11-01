@@ -15,7 +15,7 @@ Contract docs: `docs/SPEC.md`, `docs/UI-THEMES.md`, `docs/BUILD-PROMPTS.md` (pha
 | Field        | Value                                                         |
 | ------------ | ------------------------------------------------------------- |
 | Phase        | **Phase 7 — final wrap-up day is 2026-10-31.** Everything planned is merged on `main` (29328bd, pushed): P7-A terminal, P7-B GitHub/GitLab, P7-C-A agent CLIs, P7-C-B AI with your own key (Claude), P7-D website v2, P7-E accessibility (automated part). |
-| Next step    | **T10 (whole-product QA in demo mode)**, then T11 code review, T12 screen readers (owner). T4 + T5 done 2026-11-01. |
+| Next step    | **T11 (code review of Phase 7)**, then T12 screen readers (owner). T4, T5, T10 done 2026-11-01. |
 | Blockers     | None                                                          |
 | Last updated | 2026-11-01                                                    |
 
@@ -99,10 +99,42 @@ docs-only pushes.
   Releases (smoothest once macOS builds are signed).
 
 ### D. Quality pass
-- [ ] **T10** Whole-product QA in demo mode (as P6 D3/D4): every view, menu-bar panel, palette
+- [x] **T10** Whole-product QA in demo mode (as P6 D3/D4): every view, menu-bar panel, palette
   (both windows), terminal (tabs, find, copy/paste, exit, quit stops shells), agent launcher (fake
   CLI), AI dialog (all features, every provider after T6), GitHub/GitLab lists + CI runs, every
   Settings section, all five themes, 12/18 px, keyboard only. Pass/Fail table; fix every Fail.
+  **T10 QA results (2026-11-01, demo mode, quiet e2e runs):** evidence = e2e tests (names in
+  `tests/e2e/`) + the extended UI audit (`DEVDOCK_AUDIT_DIR=… npx playwright test audit`: every
+  view, panel tab, both palettes, terminal, GitHub/GitLab, dialogs and Settings sections, 5 themes
+  at 14 px + Light 18 px + Dark 12 px compact; screenshots reviewed).
+
+  | Area | Result | Evidence / fix |
+  | --- | --- | --- |
+  | Home, every view, nav, shortcuts | Pass | app.spec "opens on Home…", "opens each nav item"; audit |
+  | Builds tile copy on Home | Fail → fixed | said Jenkins only; now names Actions and GitLab pipelines |
+  | Today (PRs, watched, tickets, repos, ticket offers) | Pass | prs.spec P3.D4; tickets.spec T5; audit |
+  | Repos actions, conflict/abort, push options | Pass | repos.spec (incl. T5 check + watch) |
+  | Dev / baseline server, branch-switch start | Pass after fix | devserver.spec; follower now learns branches before the HEAD watcher starts (a switch right after adding a repo was missed under load) |
+  | Pull requests (3 lists, watch, actions, AI note) | Pass | prs.spec, ai.spec; audit |
+  | Builds (Jenkins, trigger, deploy, GitHub Actions, GitLab) | Pass | builds.spec, providers.spec, palette.spec T4; audit |
+  | Builds watch field at 18 px | Fail → fixed | placeholder cut off beside "Watch pipeline"; watch rows may now be 44rem |
+  | Tickets, Start work, agent CLI (fake) | Pass | tickets.spec, agents.spec; audit (agent offered with a fake `claude` on PATH) |
+  | Utilities (ports, caches, env, links, standup, lessons) | Pass | utilities.spec, lessons.spec; audit |
+  | Terminal (tabs, prompt, exit, quit stops shells) | Pass | terminal.spec (6) |
+  | AI dialog (status note, lesson, standup; palette) | Pass | ai.spec (4) |
+  | AI key field placeholder | Fail → fixed | said "Paste token" for an API key; now "Paste key" |
+  | Palette (main + global window, T4 hand-over) | Pass | palette.spec, app.spec, prs/utilities palette tests |
+  | Menu-bar panel (4 tabs, actions, Escape) | Pass | panel.spec (2); audit |
+  | Settings (every section, Workflow T5) | Pass | audit (16 sections × 4 looks); diagnostics.spec; terminal/jenkins/bitbucket/AI settings tests |
+  | Themes × 12/18 px, no sideways overflow | Pass | a11y.spec "12px and 18px in every theme", app.spec window never scrolls |
+  | Keyboard only (screens, dialogs, panel, T5 UI) | Pass | a11y.spec (incl. new "keyboard only (T5)") |
+  | axe WCAG 2.2 AA (views, panel, palettes, dialogs, T4/T5 UI) | Pass | axe.spec (incl. new T4/T5 test, every theme) |
+  | Security baseline | Pass | security.spec (6) |
+  | Renderer crash diagnostics | Added | `render-process-gone` / `child-process-gone` are now logged (no crash was found) |
+| Quiet e2e: invisible windows caught real clicks | Fail → fixed | windows closed/blurred mid-run (audit, panel axe); quiet windows now let clicks through (`setIgnoreMouseEvents`) — audit 263 screenshots, all passed |
+| Terminal e2e flake (Delete on a tab) | Fail → fixed (test) | a new terminal takes focus once its shell is up; the test now waits for that. terminal.spec × 5: 30/30 |
+| Keyboard T5 test flake | Fail → fixed (test) | under full-suite load Push branch was still disabled (repo status loading) when focused, so Enter did nothing; the test now waits for it to be enabled and focused (and for the view's heading focus first) |
+
 - [ ] **T11** Code review of all of Phase 7 (`code-review` skill, Standards + Spec, since the P6
   close `2b8cfff`), after T2–T7; fix findings.
 - [ ] **T12** 🧑 VoiceOver (macOS) and NVDA (Windows) listening pass — the manual half of P7.12;
@@ -764,3 +796,4 @@ Next step: owner review → merge `p7-providers` into `main`.
 | 2026-11-01 | T5c | Dev server starts after a branch switch (HEAD watcher → BranchSwitchFollower; only if not running; detached HEAD ignored); `devserver:start` `ifStopped`. vitest branch-switch 5 + devserver; e2e devserver.spec 3/3. | T5d |
 | 2026-11-01 | T5d | Offer to move the ticket when a PR of mine opens (TicketMoves poller, Today card, notification, palette command; confirmed; status from Settings → Workflow, default In Review). lint 0; vitest 938 / 1 skipped; e2e 70 / 5 skipped. T5 complete. | T10 |
 | 2026-11-01 | Quiet e2e | Owner: test windows disturbed other work. e2e runs now invisible (opacity 0, never focused, no Dock icon, no system notifications); `DEVDOCK_E2E_VISIBLE=1` to watch. Full e2e in quiet mode, run in the background: 70 / 5 skipped (same as visible). | T10 |
+| 2026-11-01 | T10 | Whole-product QA in demo mode: audit extended (GitHub/GitLab, terminal, dialogs, 16 Settings sections, both palettes; 263 screenshots reviewed), new axe + keyboard tests for the T4/T5 UI. Fixed: Home Builds copy, Builds watch field at 18 px, "Paste key" for the API key, quiet e2e windows let clicks through, branch-switch follower ordering, crash logging, two test races. lint 0; vitest 938 / 1 skipped; e2e 72 / 5 skipped; audit passed. | T11 |

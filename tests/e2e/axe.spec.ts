@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright'
 import type { Page } from '@playwright/test'
+import { makeRepos } from '../fixtures/git-repos'
 import { THEMES, VIEWS, callHook, expect, pickSegment, showView, test, windowFor } from './fixtures'
 
 /**
@@ -163,4 +164,59 @@ test('axe: GitHub and GitLab (P7-B) — lists, runs, the run dialog and CI actio
     found.push(...(await violations(win, `${theme} Settings with GitHub / GitLab on`)))
   }
   expect(found).toEqual([])
+})
+
+test('axe: T4/T5 — Today ticket offers and the move confirmation, the push options, Workflow settings, every theme', async ({
+  launched,
+}) => {
+  test.setTimeout(120_000)
+  const { app, win } = launched
+  const repos = makeRepos()
+  try {
+    repos.git(repos.clone, 'checkout', '-q', '-b', 'feature/axe')
+    const added = await win.evaluate((p) => window.devdock.repos.add({ path: p }), repos.clone)
+    if (!added.ok) throw new Error(added.error.message)
+    await win.evaluate(
+      (id) => window.devdock.repos.update({ id, patch: { checkCommand: 'npm test' } }),
+      added.data.id,
+    )
+    await win.evaluate(() =>
+      window.devdock.settings.update({
+        workflow: { checkBeforePush: true, watchBuildAfterPush: true, moveTicketOnPr: true },
+      }),
+    )
+    await callHook(app, 'pollTicketMoves')
+    await callHook(app, 'forgetSeenPrs')
+    await callHook(app, 'pollTicketMoves')
+    const found: string[] = []
+    for (const theme of THEMES) {
+      await setTheme(win, theme)
+      await show(win, 'Today')
+      await win.getByRole('list', { name: 'Tickets to move' }).waitFor()
+      found.push(...(await violations(win, `${theme} Today offers`)))
+      await win
+        .getByRole('button', { name: /^Move to In Review…$/ })
+        .first()
+        .click()
+      await win.getByRole('dialog', { name: /^Move DD-\d+ to In Review\?$/ }).waitFor()
+      found.push(...(await violations(win, `${theme} move confirmation`)))
+      await win.keyboard.press('Escape')
+
+      await show(win, 'Repos')
+      await win
+        .getByRole('article', { name: 'clone' })
+        .getByRole('button', { name: 'Push branch' })
+        .click()
+      await win.getByRole('checkbox', { name: /^Run the check first/ }).waitFor()
+      found.push(...(await violations(win, `${theme} push options`)))
+      await win.keyboard.press('Escape')
+
+      await show(win, 'Settings')
+      await win.locator('#workflow-title').scrollIntoViewIfNeeded()
+      found.push(...(await violations(win, `${theme} Settings › Workflow`)))
+    }
+    expect(found).toEqual([])
+  } finally {
+    repos.cleanup()
+  }
 })

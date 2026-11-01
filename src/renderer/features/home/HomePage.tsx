@@ -101,7 +101,7 @@ export function HomePage({
         viewTool(
           'builds',
           'Builds',
-          'Jenkins builds of your branches, PR pipelines, stages and the live console',
+          'Jenkins builds, GitHub Actions runs and GitLab pipelines: stages, jobs and the live log',
           Hammer,
         ),
         viewTool(

@@ -82,7 +82,14 @@ test('terminal: runs a command in the login shell; closing the tab stops the she
   await win.getByRole('button', { name: 'New terminal' }).click()
   await win.getByRole('button', { name: 'New terminal' }).click()
   await expect(tabs.getByRole('tab')).toHaveCount(3)
+  // A new terminal takes focus once its shell is up: wait for that, so it can't take it back
+  // from the tab after we focus it (Delete would then go to the shell).
+  await expect.poll(() => callHook(app, 'terminalPids'), { timeout: 15_000 }).toHaveLength(3)
+  await expect
+    .poll(() => win.evaluate(() => document.activeElement?.closest('.terminal-screen') != null))
+    .toBe(true)
   await tabs.getByRole('tab', { selected: true }).focus()
+  await expect(tabs.getByRole('tab', { selected: true })).toBeFocused()
   await win.keyboard.press('Delete')
   await expect(tabs.getByRole('tab')).toHaveCount(2)
   await tabs.locator('.terminal-tab-close').last().click()

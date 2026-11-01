@@ -63,7 +63,9 @@ export function SecretRow({
               type="password"
               autoComplete="off"
               spellCheck={false}
-              placeholder={saved ? '••••••••' : 'Paste token'}
+              placeholder={
+                saved ? '••••••••' : secretKey.endsWith('.key') ? 'Paste key' : 'Paste token'
+              }
               value={value}
               disabled={disabled}
               onChange={(e) => setValue(e.target.value)}
