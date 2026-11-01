@@ -11,6 +11,8 @@
 export const REPO = 'code08-ind/devdock'
 export const REPO_URL = `https://github.com/${REPO}`
 export const RELEASES_URL = `${REPO_URL}/releases`
+/** The Downloads page (downloads.html; Vercel serves it at /downloads with clean URLs). */
+export const DOWNLOADS_PAGE = 'downloads'
 
 export type AssetId = 'mac-arm64' | 'mac-x64' | 'win-setup' | 'win-portable'
 

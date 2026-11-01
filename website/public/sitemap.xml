@@ -4,4 +4,8 @@
     <loc>https://devdock.aryangarg.com/</loc>
     <changefreq>weekly</changefreq>
   </url>
+  <url>
+    <loc>https://devdock.aryangarg.com/downloads</loc>
+    <changefreq>weekly</changefreq>
+  </url>
 </urlset>

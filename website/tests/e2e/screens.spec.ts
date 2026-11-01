@@ -45,8 +45,14 @@ for (const scheme of ['light', 'dark'] as const) {
         await page
           .locator('#download')
           .screenshot({ path: `${dir}/${scheme}-${size.name}-${label}-download.png` })
+        await page.goto('/downloads')
+        await page.locator('#download-root .card').first().waitFor()
+        await page.screenshot({
+          path: `${dir}/${scheme}-${size.name}-${label}-downloads-page.png`,
+          fullPage: true,
+        })
         if (label === 'windows' || (label === 'mac' && size.name === 'mobile')) {
-          await page.locator('#download a[data-asset]').first().click()
+          await page.locator('#latest a[data-asset]').first().click()
           await page.getByRole('dialog').waitFor()
           await page.screenshot({ path: `${dir}/${scheme}-${size.name}-${label}-dialog.png` })
         }

@@ -4,6 +4,7 @@
   "installCommand": "npm ci",
   "buildCommand": "npm run build:site",
   "outputDirectory": "dist",
+  "cleanUrls": true,
   "headers": [
     {
       "source": "/(.*)",

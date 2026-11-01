@@ -7,15 +7,17 @@ import { expect, test } from '@playwright/test'
  */
 const TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']
 
-test('the built page loads with no console errors', async ({ page }) => {
-  const errors: string[] = []
-  page.on('console', (m) => {
-    if (m.type() === 'error') errors.push(m.text())
+for (const path of ['/', '/downloads']) {
+  test(`the built page ${path} loads with no console errors`, async ({ page }) => {
+    const errors: string[] = []
+    page.on('console', (m) => {
+      if (m.type() === 'error') errors.push(m.text())
+    })
+    await page.goto(path)
+    await page.waitForLoadState('networkidle')
+    expect(errors).toEqual([])
   })
-  await page.goto('/')
-  await page.waitForLoadState('networkidle')
-  expect(errors).toEqual([])
-})
+}
 
 for (const colorScheme of ['light', 'dark'] as const) {
   test(`404 page (${colorScheme}): a way home and no axe violations`, async ({ page }) => {

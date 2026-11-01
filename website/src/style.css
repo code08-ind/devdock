@@ -1021,6 +1021,7 @@ h3 {
   box-shadow: var(--glass-shadow);
 }
 
+.card h2,
 .card h3 {
   margin-bottom: 8px;
 }
@@ -1080,6 +1081,7 @@ h3 {
   fill: currentColor;
 }
 
+.platform-head h2,
 .platform-head h3 {
   margin: 0;
   font-size: 1.25rem;
@@ -1439,4 +1441,72 @@ dialog::backdrop {
     transition: none !important;
     animation: none !important;
   }
+}
+
+/* ------------------------------------------------------------------ Downloads page */
+
+.page-head {
+  margin-bottom: 32px;
+  padding-top: 24px;
+}
+
+.crumbs {
+  margin-bottom: 12px;
+  color: var(--muted-foreground);
+  font-size: 14px;
+}
+
+.page-head h1 {
+  margin-bottom: 16px;
+  font-size: clamp(2rem, 1.4rem + 2.6vw, 3rem);
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+}
+
+/* The platform picked on the home page comes into view below the sticky header. */
+.platform {
+  scroll-margin-top: 96px;
+}
+
+.versions {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.versions > * {
+  min-width: 0;
+}
+
+.version-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 12px;
+  margin-bottom: 12px;
+}
+
+.version-head h3 {
+  margin-bottom: 0;
+}
+
+.version-head .tag {
+  margin-left: 0;
+}
+
+.version-date {
+  margin-left: auto;
+  color: var(--muted-foreground);
+  font-size: 14px;
+}
+
+.version-links {
+  margin-top: 12px;
+}
+
+/* Home page: the download section links to the Downloads page. */
+.download-cta .hero-actions {
+  margin-top: 0;
+  margin-bottom: 16px;
 }

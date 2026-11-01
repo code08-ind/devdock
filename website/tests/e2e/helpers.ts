@@ -8,14 +8,27 @@ export const UA = {
     'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36',
 }
 
+const ASSETS = {
+  'mac-arm64': { name: 'DevDock-arm64.dmg', size: 103_500_000 },
+  'mac-x64': { name: 'DevDock-x64.dmg', size: 106_200_000 },
+  'win-setup': { name: 'DevDock-Setup.exe', size: 98_200_000 },
+  'win-portable': { name: 'DevDock-Portable.exe', size: 98_000_000 },
+}
+
+/** As scripts/releases-json.mjs writes it: the latest release, then every version. */
 export const MANIFEST = {
   version: '0.1.0',
-  assets: {
-    'mac-arm64': { name: 'DevDock-arm64.dmg', size: 103_500_000 },
-    'mac-x64': { name: 'DevDock-x64.dmg', size: 106_200_000 },
-    'win-setup': { name: 'DevDock-Setup.exe', size: 98_200_000 },
-    'win-portable': { name: 'DevDock-Portable.exe', size: 98_000_000 },
-  },
+  assets: ASSETS,
+  releases: [
+    { version: '0.1.0', tag: 'v0.1.0', date: '2026-11-01', assets: ASSETS, checksums: true },
+    {
+      version: '0.0.9',
+      tag: 'v0.0.9',
+      date: '2026-10-01',
+      assets: { 'mac-arm64': ASSETS['mac-arm64'], 'win-setup': ASSETS['win-setup'] },
+      checksums: false,
+    },
+  ],
 }
 
 /**

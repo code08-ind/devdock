@@ -1,4 +1,4 @@
-import { RELEASE_CONFIG, REPO_URL, type AssetId, type ReleaseConfig } from './config'
+import { RELEASE_CONFIG, RELEASES_URL, REPO_URL, type AssetId, type ReleaseConfig } from './config'
 
 export interface Installer {
   id: AssetId
@@ -88,21 +88,114 @@ export function releaseFromManifest(data: unknown): Release | null {
   return { available: true, version, installers }
 }
 
+/** One published version for the Downloads page's "All versions" list. */
+export interface Version {
+  version: string
+  /** ISO day it was published (from the manifest; unknown for the config fallback). */
+  date?: string
+  latest: boolean
+  /** That version's own files: `/releases/download/<tag>/<file>`. */
+  installers: Installer[]
+  notesUrl: string
+  checksumsUrl?: string
+}
+
+const tagOf = (version: string) => `v${version}`
+
+function versionEntry(
+  version: string,
+  tag: string,
+  sizes: Partial<Record<AssetId, number | undefined>>,
+  latest: boolean,
+  date?: string,
+  checksums = true,
+): Version {
+  const base = `${RELEASES_URL}/download/${encodeURIComponent(tag)}`
+  return {
+    version,
+    date,
+    latest,
+    installers: ASSET_IDS.filter((id) => id in sizes).map((id) => ({
+      ...installer(id, sizes[id]),
+      url: `${base}/${FILE_NAMES[id]}`,
+    })),
+    notesUrl: `${RELEASES_URL}/tag/${encodeURIComponent(tag)}`,
+    checksumsUrl: checksums ? `${base}/SHA256SUMS.txt` : undefined,
+  }
+}
+
+/**
+ * The manifest's `releases` list (newest first, written by scripts/releases-json.mjs). Without it
+ * (local preview, older manifest, or no manifest) the one release the page knows is listed.
+ * Only known file names are used; anything else in an entry is ignored.
+ */
+export function versionsFromManifest(data: unknown, release: Release): Version[] {
+  const list = (data as { releases?: unknown } | null)?.releases
+  const out: Version[] = []
+  if (Array.isArray(list)) {
+    for (const raw of list as Record<string, unknown>[]) {
+      if (!raw || typeof raw.version !== 'string' || typeof raw.tag !== 'string') continue
+      if (!/^[\w.+-]+$/.test(raw.tag)) continue
+      const assets = (raw.assets ?? {}) as Record<string, { name?: unknown; size?: unknown }>
+      const sizes: Partial<Record<AssetId, number | undefined>> = {}
+      for (const id of ASSET_IDS) {
+        const a = assets[id]
+        if (a && a.name === FILE_NAMES[id])
+          sizes[id] = typeof a.size === 'number' ? a.size : undefined
+      }
+      if (Object.keys(sizes).length === 0) continue
+      const date =
+        typeof raw.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.date) ? raw.date : undefined
+      out.push(
+        versionEntry(
+          raw.version,
+          raw.tag,
+          sizes,
+          raw.version === release.version,
+          date,
+          raw.checksums === true,
+        ),
+      )
+    }
+  }
+  if (out.length === 0 && release.available) {
+    const sizes = Object.fromEntries(release.installers.map((i) => [i.id, i.size]))
+    out.push(versionEntry(release.version, tagOf(release.version), sizes, true))
+  }
+  return out
+}
+
+export interface Downloads {
+  release: Release
+  versions: Version[]
+}
+
+async function fetchManifest(fetchFn: typeof fetch, path: string): Promise<unknown> {
+  try {
+    const res = await fetchFn(path, { cache: 'no-cache' })
+    if (res.ok) return await res.json()
+  } catch {
+    // No manifest (local preview, or no release yet): the config applies.
+  }
+  return null
+}
+
+/** The latest release and every version, from the manifest if the deploy wrote one. Never throws. */
+export async function loadDownloads(
+  fetchFn: typeof fetch = fetch,
+  config: ReleaseConfig = RELEASE_CONFIG,
+): Promise<Downloads> {
+  const data = await fetchManifest(fetchFn, config.manifestPath)
+  const release = releaseFromManifest(data) ?? releaseFromConfig(config)
+  return { release, versions: versionsFromManifest(data, release) }
+}
+
 /** The manifest if the deploy wrote one, else the config. Never throws. */
 export async function loadRelease(
   fetchFn: typeof fetch = fetch,
   config: ReleaseConfig = RELEASE_CONFIG,
 ): Promise<Release> {
-  try {
-    const res = await fetchFn(config.manifestPath, { cache: 'no-cache' })
-    if (res.ok) {
-      const fromManifest = releaseFromManifest(await res.json())
-      if (fromManifest) return fromManifest
-    }
-  } catch {
-    // No manifest (local preview, or no release yet): fall back to the config.
-  }
-  return releaseFromConfig(config)
+  return (await loadDownloads(fetchFn, config)).release
 }
 
 export function formatSize(bytes: number | undefined): string {

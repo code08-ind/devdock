@@ -47,6 +47,13 @@ so nothing is downloaded from GitHub.
 
 ## How downloads work
 
+The home page (`index.html`) has no installer links: its **Download for Mac / Windows** buttons
+open the **Downloads page** (`downloads.html`, served at `/downloads` thanks to `cleanUrls` in
+`vercel.json`) at `downloads#mac` or `downloads#windows`, which shows that platform first. The
+Downloads page has a card per platform (the visitor's own, or the one they picked, first), and
+**All versions**: every published release, newest first, with its own installers, release notes
+and SHA-256 checksums.
+
 Installers are named without the version — `DevDock-arm64.dmg`, `DevDock-x64.dmg`,
 `DevDock-Setup.exe`, `DevDock-Portable.exe` (`artifactName` in `../electron-builder.yml`) — so
 every download link is `https://github.com/code08-ind/devdock/releases/latest/download/<name>`,
@@ -55,12 +62,18 @@ which GitHub redirects to the newest **published** release. The links never chan
 - **`releases.json`**: the Vercel build (`npm run build:site`) first runs
   `scripts/releases-json.mjs`, which asks the GitHub API for the latest published release and,
   if all four installers are attached, writes `public/releases.json` with the version and
-  exact sizes. When it's present the page shows downloads with that version. It never fails
+  exact sizes, plus `releases`: every published release (drafts and pre-releases left out)
+  with the installers it has under the known names. When it's present the pages show that
+  version, and "All versions" links each release's own files
+  (`/releases/download/<tag>/<name>`). **Redeploy on Vercel after publishing a release** so the
+  list and sizes update (the `latest` links work either way). It never fails
   the build: no release, a missing installer, no network or a rate limit just means no file
   (set `GITHUB_TOKEN` in Vercel to raise the API limit if it ever matters).
-- **`src/config.ts`** applies without `releases.json`. Shipped with `available: false`: the
-  page says **Downloads coming soon** and links to no installer. Never point the page at a
-  release that doesn't exist.
+- **`src/config.ts`** applies without `releases.json` (local preview, or the API was
+  unreachable at build time): the version and sizes written there, and "All versions" lists
+  that one version. With `available: false` the page says **Downloads coming soon** and links
+  to no installer (used before the first release). Never point the page at a release that
+  doesn't exist.
 
 The visitor's system is detected in `src/detect.ts`: `navigator.userAgentData` with the
 `architecture` client hint where the browser offers it (Chrome, Edge), the user agent otherwise.
@@ -128,7 +141,9 @@ subdomain.
 
 | Path                                                   | What                                                               |
 | ------------------------------------------------------ | ------------------------------------------------------------------ |
-| `index.html`                                           | All content (works without JavaScript; JS adds detection and tabs) |
+| `index.html`                                           | Home page (works without JavaScript; JS adds detection and tabs)   |
+| `downloads.html`                                       | Downloads page: latest installers and all versions (`/downloads`)  |
+| `src/main.ts`, `src/downloads-page.ts`                 | Each page's script; shared parts in `src/ui.ts`, `download-ui.ts`  |
 | `src/style.css`                                        | aryangarg.com palette (Light/Dark), fonts, layout                  |
 | `public/fonts/`                                        | Geist, Geist Mono, Doto (latin WOFF2, OFL; `LICENSE.txt`)          |
 | `src/config.ts`                                        | Where installers live; the "coming soon" switch                    |
@@ -138,13 +153,13 @@ subdomain.
 | `src/steps.ts`                                         | Install steps per installer, for the dialog                        |
 | `public/theme.js`                                      | Applies the saved theme before first paint                         |
 | `public/img/`                                          | WebP copies of `docs/screenshots` (`sh website/scripts/images.sh`) |
-| `scripts/releases-json.mjs`                            | Latest GitHub release → `releases.json` (run by `build:site`)      |
+| `scripts/releases-json.mjs`                            | GitHub releases → `releases.json` (run by `build:site`)            |
 | `scripts/og-image.mjs`                                 | Renders `scripts/og-card.html` → `public/og.png` (link previews)   |
 | `public/404.html`                                      | Page for unknown paths (Vercel serves it), styled by `404.css`     |
 | `public/robots.txt`, `sitemap.xml`, `site.webmanifest` | Search engines and "add to home screen"                            |
 | `public/favicon.*`, `apple-touch-icon.png`             | Icons, made from `build/icon.png` / `icon.ico`                     |
 
-The site's URL (`https://devdock.aryangarg.com/`) is written in `index.html` (canonical, Open
-Graph, JSON-LD), `public/robots.txt` and `public/sitemap.xml`; `tests/unit/seo.test.ts` checks
+The site's URL (`https://devdock.aryangarg.com/`) is written in `index.html` and
+`downloads.html` (canonical, Open Graph; JSON-LD on the home page), `public/robots.txt` and `public/sitemap.xml`; `tests/unit/seo.test.ts` checks
 they agree. If the domain changes, change all of them and re-run `node scripts/og-image.mjs`
 (the card shows the domain).

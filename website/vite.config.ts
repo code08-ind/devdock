@@ -1,4 +1,5 @@
 /// <reference types="vitest/config" />
+import { resolve } from 'node:path'
 import { defineConfig, type Plugin } from 'vite'
 
 /**
@@ -32,6 +33,16 @@ export default defineConfig({
   // Relative URLs: the same build works at a domain root or under a sub-path.
   base: './',
   plugins: [csp()],
-  build: { target: 'es2022', assetsInlineLimit: 0 },
+  build: {
+    target: 'es2022',
+    assetsInlineLimit: 0,
+    // Two pages: the home page and the Downloads page (served at /downloads, see vercel.json).
+    rollupOptions: {
+      input: {
+        main: resolve(import.meta.dirname, 'index.html'),
+        downloads: resolve(import.meta.dirname, 'downloads.html'),
+      },
+    },
+  },
   test: { include: ['tests/unit/**/*.test.ts'], environment: 'node' },
 })

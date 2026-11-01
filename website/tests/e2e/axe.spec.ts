@@ -19,29 +19,32 @@ async function violations(page: Page): Promise<string[]> {
 test.use({ userAgent: UA.mac })
 
 for (const theme of THEMES) {
-  test(`no axe violations in the ${theme} theme`, async ({ page }) => {
-    // Saved before load (as a returning visitor's choice): switching live would scan mid-transition.
-    await page.addInitScript((t) => localStorage.setItem('devdock-site-theme', t), theme)
-    await setup(page, { manifest: true })
-    await page.goto('/')
-    await expect(page.locator('html')).toHaveAttribute('data-theme', theme)
-    expect(await violations(page)).toEqual([])
-  })
+  for (const path of ['/', '/downloads']) {
+    test(`no axe violations on ${path} in the ${theme} theme`, async ({ page }) => {
+      // Saved before load (as a returning visitor's choice): switching live would scan mid-transition.
+      await page.addInitScript((t) => localStorage.setItem('devdock-site-theme', t), theme)
+      await setup(page, { manifest: true })
+      await page.goto(path)
+      await expect(page.locator('html')).toHaveAttribute('data-theme', theme)
+      await page.locator('#download-root .card').first().waitFor()
+      expect(await violations(page)).toEqual([])
+    })
+  }
 }
 
 test('no axe violations without releases.json (the shipped config)', async ({ page }) => {
   await setup(page)
-  await page.goto('/')
+  await page.goto('/downloads')
   await page.locator('#download-root .platform').first().waitFor()
   expect(await violations(page)).toEqual([])
 })
 
 test('no axe violations with the install dialog open', async ({ page }) => {
   await setup(page, { manifest: true })
-  await page.goto('/')
+  await page.goto('/downloads')
   const downloading = page.waitForEvent('download')
   await page
-    .locator('#download')
+    .locator('#latest')
     .getByRole('link', { name: 'Download for macOS (Apple silicon)' })
     .click()
   await downloading

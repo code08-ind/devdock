@@ -58,3 +58,22 @@ describe('SEO and link previews', () => {
     })
   })
 })
+
+describe('the Downloads page', () => {
+  const page = readFileSync(join(root, 'downloads.html'), 'utf8')
+
+  it('has its own canonical URL, title and description, and is in the sitemap', () => {
+    expect(/<link rel="canonical" href="([^"]+)"/.exec(page)?.[1]).toBe(`${SITE}downloads`)
+    expect(/<title>([^<]+)<\/title>/.exec(page)?.[1]).toBe('Download DevDock for macOS and Windows')
+    const description = /name="description"\s+content="([^"]+)"/.exec(page)![1]!
+    expect(description.length).toBeGreaterThan(70)
+    expect(description.length).toBeLessThanOrEqual(220)
+    expect(readFileSync(pub('sitemap.xml'), 'utf8')).toContain(`<loc>${SITE}downloads</loc>`)
+  })
+
+  it('the home page sends every download button there', () => {
+    expect(html).toContain('href="downloads#mac"')
+    expect(html).toContain('href="downloads#windows"')
+    expect(html).not.toContain('id="thanks"')
+  })
+})

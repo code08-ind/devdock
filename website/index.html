@@ -138,7 +138,7 @@
               <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z" />
             </svg>
           </button>
-          <a class="btn btn-primary btn-sm nav-cta" href="#download">Download</a>
+          <a class="btn btn-primary btn-sm nav-cta" href="downloads">Download</a>
         </div>
       </div>
     </header>
@@ -158,11 +158,11 @@
               five tabs.
             </p>
             <div class="hero-actions" id="hero-download">
-              <a class="btn btn-platform btn-primary" href="#download">
+              <a class="btn btn-platform btn-primary" href="downloads#mac">
                 <svg aria-hidden="true"><use href="#i-apple" /></svg>
                 <span>Download for Mac</span>
               </a>
-              <a class="btn btn-platform btn-outline" href="#download">
+              <a class="btn btn-platform btn-outline" href="downloads#windows">
                 <svg aria-hidden="true"><use href="#i-windows" /></svg>
                 <span>Download for Windows</span>
               </a>
@@ -616,9 +616,8 @@
           <div class="download" id="download-root" aria-live="polite">
             <div class="card download-primary">
               <p>
-                Get the installers from the
-                <a href="https://github.com/code08-ind/devdock/releases">releases page on GitHub</a
-                >.
+                Get the installers for macOS and Windows, and every earlier version, on the
+                <a href="downloads">Downloads page</a>.
               </p>
             </div>
           </div>
@@ -814,7 +813,7 @@
           <p>
             Install it, open the demo and click around. Connect your services when you’re ready.
           </p>
-          <a class="btn btn-primary" href="#download">Get DevDock</a>
+          <a class="btn btn-primary" href="downloads">Get DevDock</a>
         </section>
       </div>
     </main>
@@ -833,28 +832,13 @@
           </p>
         </div>
         <nav aria-label="Project" class="footer-links">
+          <a href="downloads">Downloads and all versions</a>
           <a href="https://github.com/code08-ind/devdock">Source on GitHub</a>
-          <a href="https://github.com/code08-ind/devdock/releases">Releases</a>
           <a href="https://github.com/code08-ind/devdock/blob/main/CHANGELOG.md">Changelog</a>
           <a href="https://github.com/code08-ind/devdock/issues">Report a problem</a>
         </nav>
         <p class="footer-copy">© 2026 Aryan Garg</p>
       </div>
     </footer>
-
-    <dialog id="thanks" aria-labelledby="thanks-title">
-      <div class="dialog-head">
-        <h2 id="thanks-title">Thanks for downloading DevDock</h2>
-        <button type="button" class="icon-btn" data-close aria-label="Close">
-          <svg viewBox="0 0 16 16" aria-hidden="true">
-            <path d="M4 4l8 8M12 4l-8 8" />
-          </svg>
-        </button>
-      </div>
-      <div class="dialog-body" id="thanks-body"></div>
-      <div class="dialog-foot">
-        <button type="button" class="btn btn-primary" data-close>Done</button>
-      </div>
-    </dialog>
   </body>
 </html>
