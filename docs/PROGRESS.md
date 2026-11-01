@@ -15,7 +15,7 @@ Contract docs: `docs/SPEC.md`, `docs/UI-THEMES.md`, `docs/BUILD-PROMPTS.md` (pha
 | Field        | Value                                                         |
 | ------------ | ------------------------------------------------------------- |
 | Phase        | **Phase 7 — final wrap-up day is 2026-10-31.** Everything planned is merged on `main` (29328bd, pushed): P7-A terminal, P7-B GitHub/GitLab, P7-C-A agent CLIs, P7-C-B AI with your own key (Claude), P7-D website v2, P7-E accessibility (automated part). |
-| Next step    | **OWNER: publish the v0.1.0 draft release** (tag v0.1.0 @ 32a26c9; Release run 41336945958 green; 4 installers + SHA256SUMS). Then **T19**: connect Vercel (Root Directory `website`, `npm run build:site`), deploy, check the live download links. |
+| Next step    | **T19 (owner):** connect Vercel (import repo, Root Directory `website`, build `npm run build:site`), deploy; then agent checks the live page + download links. v0.1.0 is PUBLISHED (latest, not pre-release). |
 | Blockers     | None                                                          |
 | Last updated | 2026-11-01                                                    |
 
@@ -879,3 +879,4 @@ Next step: owner review → merge `p7-providers` into `main`.
 | 2026-11-01 | Website v0.2.0 (W1/W2) | Clips reviewed; palette + panel re-recorded with a repo, Start work poster = its dialog (marks `<name>:poster`). Website Vitest 31; build; Playwright (Chrome) 22 passed / 4 skipped incl. new demo-clip + reduced-motion tests and axe; Lighthouse mobile 98/100/100/100, desktop 100 ×4; root lint 0. Docs: DECISIONS "Website for v0.2.0", website/README "Demo clips", README opt-in list. | W3 release v0.2.0 |
 | 2026-11-01 | First release = v0.1.0 | Owner chose 0.1.0 over 0.2.0; owner deleted the old v0.1.0 draft + tag. CHANGELOG Unreleased folded into 0.1.0; website config 0.1.0. lint 0; vitest 966 / 1 skipped; e2e 76 / 16 skipped; website Vitest 31, Playwright 22 / 4 skipped. | CI green → tag v0.1.0 |
 | 2026-11-02 | v0.1.0 draft | CI green on 32a26c9 (macOS, Windows, website); tagged v0.1.0 → Release run green, draft has DevDock-arm64.dmg 108.8 MB, DevDock-x64.dmg 112.0 MB, DevDock-Setup.exe 105.7 MB, DevDock-Portable.exe 105.5 MB, SHA256SUMS.txt (sizes match the website config). | owner publishes → T19 |
+| 2026-11-02 | v0.1.0 published | Owner published v0.1.0 (latest, not pre-release). /releases/latest/download/ → 200 for all four installers. | T19 Vercel |
