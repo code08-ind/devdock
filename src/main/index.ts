@@ -94,6 +94,11 @@ import {
 const E2E = !app.isPackaged && process.env.DEVDOCK_E2E === '1'
 // e2e runs each test against a throwaway profile. Only honoured in e2e mode.
 if (E2E && process.env.DEVDOCK_USER_DATA) app.setPath('userData', process.env.DEVDOCK_USER_DATA)
+// Playwright starts Electron with `--use-mock-keychain`: keys saved by the real app can't be
+// read. The opt-in live AI check (T17, on a copy of a real profile) asks for the real one.
+if (E2E && process.env.DEVDOCK_REAL_KEYCHAIN === '1') {
+  app.commandLine.removeSwitch('use-mock-keychain')
+}
 
 const userData = app.getPath('userData')
 const logsDir = join(userData, 'logs')

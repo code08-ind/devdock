@@ -269,7 +269,10 @@ npm run dist         # installers: dmg (arm64 + x64) on macOS, NSIS + portable o
 npm run screenshots  # regenerates docs/screenshots (demo mode)
 ```
 
-Opt-in checks: `DEVDOCK_SR_DIR=<folder> npx playwright test sr` (what a screen reader is given on
+Opt-in checks: `DEVDOCK_LIVE_AI_FROM=<DevDock data folder> npx playwright test live-ai` (your own
+AI keys against the real APIs, on a copy of the folder; under a cent), `DEVDOCK_OWN_SHELL_DIR=<folder>
+npx playwright test own-shell` (your own shell in DevDock's terminal),
+`DEVDOCK_SR_DIR=<folder> npx playwright test sr` (what a screen reader is given on
 every screen and dialog, and where focus lands), `DEVDOCK_SMOKE_APP=<path>/DevDock.app npx playwright test smoke` (the packaged
 app from a DMG: demo mode, a real shell, the AI preview, quit stops the shell — it uses the app's
 own data folder, so back that up first), `DEVDOCK_AUDIT_DIR=<folder> npx playwright test audit`

@@ -211,7 +211,10 @@ docs-only pushes.
   ✗, git colours, readable in Light / Dark / Slate (screenshots reviewed) — pass. Windows: no PC
   (owner) — untested by hand; CI builds and tests on windows-latest. AI keys: owner enters
   Anthropic + Gemini keys in Settings → AI; then opt-in `live-ai.spec.ts` runs on a copy of the
-  data folder (cheapest models, under 1 US cent).
+  data folder (cheapest models, under 1 US cent). Done 2026-11-01 with the owner's keys: Anthropic
+  HTTP 200, 14 models, all 3 offered listed, Claude Haiku 5.5 answered ($0.00003); Google HTTP 200,
+  60 models, all 3 offered listed, Gemini 3.1 Flash-Lite answered ($0.00005) — the T6 Gemini
+  request shape works against the real API. OpenAI: no key (untested live).
 - [ ] **T18** 🧑 Release `v0.1.0`: tag → release workflow builds a **draft** GitHub release
   (versionless installers: macOS arm64 + x64, Windows Setup + Portable) → owner reviews and
   publishes; patch releases as needed.
@@ -871,3 +874,4 @@ Next step: owner review → merge `p7-providers` into `main`.
 | 2026-11-01 | T12 (automated) | Accessibility-tree review (sr.spec) + fixes: dialog focus, distinct button names, AI answer announcement. lint 0; vitest 961 / 1 skipped; e2e 75 / 8 skipped. Live listening still open for the owner. | owner steps |
 | 2026-11-01 | T8 / T9 | Owner: unsigned for now; update-available notice built (UpdateService, Settings → General switch + Check now + Download, notification type). lint 0; vitest 966 / 1 skipped; e2e 76 / 8 skipped; website 31. | owner: publish v0.1.0, T19, T17 |
 | 2026-11-01 | T17 (part) | Own oh-my-zsh prompt in DevDock's terminal: pass (own-shell.spec, Light/Dark/Slate). Windows untested by hand (no PC). Live AI check ready (live-ai.spec), waiting for the owner's keys in Settings → AI. | live AI |
+| 2026-11-01 | T17 (AI) | Live check with the owner's Anthropic + Gemini keys: both pass, every offered model listed. Found: Playwright passes `--use-mock-keychain`, so a test run can't read the real app's keys — test-only `DEVDOCK_REAL_KEYCHAIN=1` (unpackaged e2e only) removes it for live-ai.spec. | owner: publish v0.1.0, T19 |

@@ -15,11 +15,17 @@ test.skip(!from || !!process.env.CI, 'set DEVDOCK_LIVE_AI_FROM to a DevDock data
 test.setTimeout(180_000)
 
 const CHEAPEST = { anthropic: 'claude-haiku-5-5', google: 'gemini-3.1-flash-lite' } as const
+/** DevDock's models per provider (shared/ai.ts), each checked against the key's list. */
+const OFFERED = {
+  anthropic: ['claude-opus-5-5', 'claude-sonnet-5-5', 'claude-haiku-5-5'],
+  google: ['gemini-4-argon', 'gemini-3.8-flash', 'gemini-3.1-flash-lite'],
+} as const
 
 test('live AI: Test connection and one short request per provider with a saved key', async () => {
   const copy = mkdtempSync(join(tmpdir(), 'devdock-live-'))
   cpSync(from!, copy, { recursive: true })
-  const { app, win } = await launch(copy)
+  // The real Keychain (Playwright passes a mock one), where the saved keys' cipher key lives.
+  const { app, win } = await launch(copy, { DEVDOCK_REAL_KEYCHAIN: '1' })
   try {
     const keys = await win.evaluate(() => window.devdock.secrets.list())
     if (!keys.ok) throw new Error(keys.error.message)
@@ -46,6 +52,12 @@ test('live AI: Test connection and one short request per provider with a saved k
       expect(test, `${provider} Test connection`).toMatchObject({ ok: true })
       if (!test.ok) continue
       const offered = test.data.models.includes(model)
+      // Every model DevDock offers for this provider should be one the key can use.
+      const ours = OFFERED[provider]
+      const missing = ours.filter((m) => !test.data.models.includes(m))
+      results.push(
+        `${provider}: offered models ${missing.length ? `MISSING ${missing.join(', ')}` : 'all listed'}`,
+      )
       const prepared = await win.evaluate(() =>
         window.devdock.ai.prepare({
           feature: 'lesson',
@@ -65,6 +77,8 @@ test('live AI: Test connection and one short request per provider with a saved k
     console.log(`\n${results.join('\n')}\n`)
   } finally {
     await app.close().catch(() => undefined)
-    rmSync(copy, { recursive: true, force: true })
+    // DEVDOCK_LIVE_AI_KEEP=1 keeps the copy (and its log) to look into a failure.
+    if (process.env.DEVDOCK_LIVE_AI_KEEP) console.log(`copy kept: ${copy}`)
+    else rmSync(copy, { recursive: true, force: true })
   }
 })
