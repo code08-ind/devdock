@@ -29,7 +29,8 @@ From a release (or `npm run dist`, which writes them to `release/<version>/`):
 
 Packages are small for an Electron app: every library is bundled into the app (no
 `node_modules`), Electron's own strings are English only, and everything is compressed at the
-highest level — 103.5 MB for the Apple silicon DMG and 106.2 MB for Intel (0.1.0).
+highest level — about 109 MB for the Apple silicon DMG and 112 MB for Intel (measured
+2026-11-01; the terminal adds one small native module).
 
 ## Unsigned app warnings
 
@@ -44,14 +45,15 @@ DevDock isn't code-signed yet, so your system warns you the first time:
 **At work:** company Macs and PCs are often managed so that unsigned apps are blocked outright
 (MDM, Intune, AppLocker). Then the options above aren't offered, and your IT team needs to
 approve DevDock — point them to this repository: the source is here, they can build it themselves
-with `npm run dist`, it needs no admin rights, and it only talks to the Jira, Bitbucket and
-Jenkins addresses you enter.
+with `npm run dist`, it needs no admin rights, and it only talks to the Jira, Bitbucket, Jenkins,
+GitHub and GitLab addresses you enter (and Anthropic, only if you add your own key).
 
 ## First run: demo mode
 
 DevDock starts in demo mode: every screen runs on built-in sample data, with no network calls
-and no credentials: Jira, Bitbucket and Jenkins answer from inside DevDock, so PR actions and
-build triggers change nothing anywhere. Two things are always real, demo or not: **git** acts on
+and no credentials: Jira, Bitbucket, Jenkins, GitHub, GitLab and the AI features answer from
+inside DevDock, so PR actions, build triggers, CI actions and ticket moves change nothing
+anywhere. Two things are always real, demo or not: **git** acts on
 the repos you add (Start work makes a real branch there), and **Utilities → Ports** lists and
 stops real processes on your computer — each asks before it does anything.
 
@@ -171,8 +173,9 @@ check. DevDock asks only for read access unless you turn on an action that write
   personal access token.
 - _Data Center / Server_: a **personal access token** (profile → Personal Access Tokens), sent
   as Bearer. Some sites restrict REST API access; ask your admin if Test connection says so.
-- Permissions: browse the projects you work in. Moving an issue to In Progress on Start work is
-  off by default (Settings → Jira) and needs the transition permission.
+- Permissions: browse the projects you work in. Moving an issue to In Progress on Start work
+  (Settings → Jira) and offering to move it when your PR opens (Settings → Workflow) are off by
+  default and need the transition permission.
 
 **Bitbucket**
 

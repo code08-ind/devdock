@@ -15,7 +15,7 @@ Contract docs: `docs/SPEC.md`, `docs/UI-THEMES.md`, `docs/BUILD-PROMPTS.md` (pha
 | Field        | Value                                                         |
 | ------------ | ------------------------------------------------------------- |
 | Phase        | **Phase 7 — final wrap-up day is 2026-10-31.** Everything planned is merged on `main` (29328bd, pushed): P7-A terminal, P7-B GitHub/GitLab, P7-C-A agent CLIs, P7-C-B AI with your own key (Claude), P7-D website v2, P7-E accessibility (automated part). |
-| Next step    | **T12 🧑 (VoiceOver / NVDA, owner)**, then T13–T15 (screenshots, website, docs). T4, T5, T10, T11 done 2026-11-01. |
+| Next step    | **T16 (full checks + packaged-app smoke on macOS)**; T12 🧑 VoiceOver/NVDA whenever the owner has time. T4, T5, T10, T11, T13–T15 done 2026-11-01. |
 | Blockers     | None                                                          |
 | Last updated | 2026-11-01                                                    |
 
@@ -157,9 +157,16 @@ docs-only pushes.
   copy: Start work now names the agent CLIs (no T6/T7 features yet; signing undecided, so the
   install help stays). Website build ok; Vitest 31/31; Playwright (Chrome, headless) site + axe 20
   passed / 4 skipped (opt-in screenshots); Lighthouse mobile 98/100/100/100, desktop 100/100/100/100.
-- [ ] **T15** Docs final pass: README walk-through against the app top to bottom; CHANGELOG
+- [x] **T15** Docs final pass: README walk-through against the app top to bottom; CHANGELOG
   "Unreleased" → `0.1.0` notes; SPEC / DECISIONS / BUILD-PROMPTS consistent; THIRD_PARTY_NOTICES
   lists every bundled dependency (incl. `@anthropic-ai/sdk`, xterm, node-pty, any T6 SDKs).
+  Done 2026-11-01: README read top to bottom against the app (fixed: services and Anthropic in
+  "At work", demo mode covers GitHub/GitLab/AI, package sizes from T3, Workflow transition
+  permission, terminal close prompt); CHANGELOG — Unreleased folded into one `0.1.0` entry, dated
+  when tagged (T18); SPEC — check command, Settings → Workflow (T5), terminal close prompt (T11);
+  BUILD-PROMPTS — Phase 7 pointer to PROGRESS/DECISIONS; THIRD_PARTY_NOTICES — 75 packages, every
+  license/notice file a package ships (the SDK is Apache-2.0 with LICENSE-MIT for pre-1.0 code;
+  DECISIONS had said MIT, corrected). lint 0; vitest 940 / 1 skipped; build ok.
 
 ### F. Release and go live
 - [ ] **T16** Full checks (all of the commands above) + packaged-app smoke on macOS (open the
@@ -811,3 +818,4 @@ Next step: owner review → merge `p7-providers` into `main`.
 | 2026-11-01 | T11 | Code review (Standards + Spec, parallel) of 2b8cfff...HEAD: T11a cleanups, T11b CI actions in the palette, T11c terminal tab close confirmation (owner chose "ask only if something runs"). lint 0; vitest 940 / 1 skipped; e2e 74 / 5 skipped (full run), then terminal + a11y + agents 12/12 after a React Compiler lint fix. | T12 |
 | 2026-11-01 | T13 | README screenshots refreshed in quiet mode + 3 new (Settings → AI, AI preview, Start work offering an agent); README terminal copy updated for the T11c close prompt. | T14 |
 | 2026-11-01 | T14 | Website images regenerated, agent-CLI line in the Tickets tour; build, Vitest 31, Playwright + axe 20, Lighthouse mobile 98/100/100/100, desktop 100 ×4. | T15 |
+| 2026-11-01 | T15 | Docs final pass: README, CHANGELOG (one 0.1.0 entry), SPEC (T5/T11), BUILD-PROMPTS pointer, notices ship every license file (SDK Apache-2.0 corrected). lint 0; vitest 940 / 1; build ok. | T16 |

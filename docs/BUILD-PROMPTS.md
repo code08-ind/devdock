@@ -315,6 +315,14 @@ items.
 
 ---
 
+## Phase 7 and the wrap-up (T1–T20)
+
+Phase 7 (terminal, GitHub and GitLab, agent CLIs, AI with your own key, the website,
+accessibility) was planned with the owner rather than from a prompt here: its tasks and Done
+criteria are in `docs/PROGRESS.md` (Phase 7 steps P7.01–P7.13, then the "Pending tasks — master
+list" T1–T20), and every decision, with the owner's answers, in `docs/DECISIONS.md` (sections
+"Phase 7" to "T11"). SPEC 6.3a and 6.8–6.10 hold the resulting behaviour.
+
 ## Notes before you start
 - **Credentials and policy.** Creating personal access tokens for Bitbucket, Jenkins or Jira on
   a client system, and running an unsigned app on the office laptop, may need approval. Ask

@@ -289,9 +289,16 @@ Place this file at `docs/SPEC.md` in the new repository. Every build phase refer
   GitHub and GitLab, each with a "Use" switch and Detect). Each has
   "Test connection" (shows the HTTP status, the user it authenticated as, and a hint for common
   failures: 401, 403, proxy, certificate).
-- **Repos:** list, base branch, name templates, protected branch patterns, dev command.
+- **Repos:** list, base branch, name templates, protected branch patterns, dev command, check
+  command (optional, run before Push branch when ticked; T5).
 - **Feature switches:** PR actions (off), CI actions (off; Phase 7), job triggers (off; per-job allow list), Jira
   transition on Start work (off), and brief location.
+- **Workflow** (P6-F, T5; each off by default unless noted): the lessons file, what the Start
+  work message asks of the agent, the agent CLI, open in VS Code after Start work (on), start the
+  dev server after Start work; run the check command before Push branch; watch the branch's
+  Jenkins build after Push branch; start the dev server after a branch switch (only if it isn't
+  running); offer to move the Jira ticket when a PR of mine opens (to a status set here, "In
+  Review" by default; always confirmed, SPEC 7).
 - **Appearance:** theme (5 + System), font size, density.
 - **Terminal** (Phase 7, P7-A): shell (empty = login shell), font size (follows the app by default), cursor style and blink, scrollback, Use DevDock prompt (off).
 - **Accessibility** (Phase 7, P7.13; all off by default): reduce motion (follow the system / always), larger click targets (44 × 44px), underline links, always show the focus ring, read out background events to screen readers.
@@ -311,7 +318,8 @@ Place this file at `docs/SPEC.md` in the new repository. Every build phase refer
 - Optional DevDock prompt (zsh/bash, robbyrussell-style with the git branch); DevDock never
   edits the user's dotfiles.
 - Shells (and what they started) stop when their tab closes, their window closes or reloads, or
-  DevDock quits.
+  DevDock quits. Closing a tab that is running something (a command in the shell's foreground,
+  or an agent CLI) asks first (T11, SPEC 7 "killing a process"); an idle shell closes at once.
 
 ### 6.9 Agent CLIs (Phase 7, P7-C)
 - DevDock finds the coding-agent CLIs the user installed on their shell's PATH: Claude Code

@@ -21,7 +21,8 @@ const BUNDLED = [
   '@xterm/addon-web-links',
   '@xterm/addon-webgl',
   'node-pty',
-  // P7-C-B: the official Anthropic SDK, bundled into the main process (MIT).
+  // P7-C-B: the official Anthropic SDK, bundled into the main process (Apache-2.0; its
+  // LICENSE-MIT covers code from before 1.0, so both files ship).
   '@anthropic-ai/sdk',
 ]
 
@@ -34,11 +35,16 @@ function visit(name) {
   const manifest = join(dir, 'package.json')
   if (!existsSync(manifest)) return
   const pkg = JSON.parse(readFileSync(manifest, 'utf8'))
-  const file = readdirSync(dir).find((f) => /^(licen[cs]e|copying)(\.|$)/i.test(f))
+  // Every license / notice file the package ships (e.g. LICENSE and LICENSE-MIT, or NOTICE).
+  const files = readdirSync(dir)
+    .filter((f) => /^(licen[cs]e|copying|notice)([.-]|$)/i.test(f))
+    .sort()
   seen.set(name, {
     version: pkg.version,
     license: typeof pkg.license === 'string' ? pkg.license : (pkg.license?.type ?? 'see text'),
-    text: file ? readFileSync(join(dir, file), 'utf8').trim() : null,
+    text: files.length
+      ? files.map((f) => readFileSync(join(dir, f), 'utf8').trim()).join('\n\n')
+      : null,
   })
   for (const dep of Object.keys(pkg.dependencies ?? {})) visit(dep)
 }

@@ -5,6 +5,15 @@ versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [0.1.0] — not released yet (the date is set when it is tagged, T18)
+
+The first release: everything in [`docs/SPEC.md`](docs/SPEC.md), plus the owner's additions
+recorded in [`docs/DECISIONS.md`](docs/DECISIONS.md). Phase 7 (terminal, GitHub and GitLab, agent
+CLIs, AI with your own key, accessibility) joined it before the first tag, so it is all listed
+here.
+
 ### Added
 
 - **Terminal** (Phase 7, P7-A): a real terminal in DevDock — your login shell in tabs (zsh, bash,
@@ -43,13 +52,6 @@ versions follow [Semantic Versioning](https://semver.org/).
   switch (in DevDock, a terminal or an editor) when it isn't running; when a PR of yours opens
   for a Jira key, offer (on Today, a notification and the palette) to move the ticket to a status
   you choose, "In Review" by default — always confirmed first.
-
-## [0.1.0] — 2026-10-25
-
-The first release: everything in [`docs/SPEC.md`](docs/SPEC.md), plus the owner's additions
-recorded in [`docs/DECISIONS.md`](docs/DECISIONS.md).
-
-### Added
 
 - **Shell:** menu-bar / tray icon with a status dot (green, red, grey); a **menu-bar panel** on
   click with one-click actions (Today, Repos, Tickets, Tools, search); a **Home** launcher; native
