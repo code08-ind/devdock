@@ -8,6 +8,8 @@ test.afterEach(() => repos?.cleanup())
 test('panel: Today, one-click watch, repo action dialog, Start work, tools; Open DevDock hides it', async ({
   launched,
 }) => {
+  // Eight steps in one window: a busy CI runner took 30.8 s once (2026-11-01).
+  test.setTimeout(60_000)
   const { app, win } = launched
   repos = makeRepos()
   expect((await win.evaluate((p) => window.devdock.repos.add({ path: p }), repos.clone)).ok).toBe(
