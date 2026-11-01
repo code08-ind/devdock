@@ -231,7 +231,11 @@ export const contract = {
   },
   'repos:open': { req: z.object({ id: z.string(), target: z.enum(OPEN_TARGETS) }), res: none },
   'devserver:list': { req: none, res: z.array(DevServerStateSchema) },
-  'devserver:start': { req: ServerRefSchema, res: DevServerStateSchema },
+  'devserver:start': {
+    /** `ifStopped`: one already running is fine (Start work and a branch switch may both ask). */
+    req: ServerRefSchema.extend({ ifStopped: z.boolean().optional() }),
+    res: DevServerStateSchema,
+  },
   'devserver:stop': { req: ServerRefSchema, res: none },
   /** Output so far, for a log panel opened after the server started. */
   'devserver:log': { req: ServerRefSchema, res: z.string() },

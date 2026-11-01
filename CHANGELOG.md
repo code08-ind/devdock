@@ -36,7 +36,8 @@ versions follow [Semantic Versioning](https://semver.org/).
   main window.
 - **Workflow follow-ups** (Settings → Workflow, each off by default): run the repo's check command
   (e.g. `npm test`, set in the repo's settings) before Push branch — nothing is pushed if it
-  fails; watch the branch's Jenkins build after a push.
+  fails; watch the branch's Jenkins build after a push; start the dev server after a branch
+  switch (in DevDock, a terminal or an editor) when it isn't running.
 
 ## [0.1.0] — 2026-10-25
 

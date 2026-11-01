@@ -89,6 +89,10 @@ describe('dev server manager (real processes)', { timeout: 40_000 }, () => {
     const { manager: m, repo } = setup()
     await m.start(repo, 'dev')
     await expect(m.start(repo, 'dev')).rejects.toThrow(/already running/)
+    // ifStopped (Start work and a branch switch may both ask): the running one, no second spawn.
+    const first = current(m, 'dev')
+    expect(await m.start(repo, 'dev', { ifStopped: true })).toEqual(first)
+    expect(m.list().filter((s) => s.kind === 'dev')).toHaveLength(1)
     await expect(
       m.start({ ...repo, id: 'r2', devCommand: 'npm run dev && echo x' }, 'dev'),
     ).rejects.toThrow(/not allowed/)

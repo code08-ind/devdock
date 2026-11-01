@@ -69,3 +69,23 @@ test('quitting DevDock kills running dev server trees', async () => {
   await app.close()
   await expect.poll(() => isListening(port), { timeout: 15_000 }).toBe(false)
 })
+
+test('T5: a branch switch outside DevDock starts the dev server (Settings → Workflow)', async ({
+  launched,
+}) => {
+  const { win } = launched
+  repos = fixtureRepo()
+  await win.evaluate(() =>
+    window.devdock.settings.update({ workflow: { devServerAfterSwitch: true } }),
+  )
+  await win.evaluate((path) => window.devdock.repos.add({ path }), repos.clone)
+  await win.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Repos' }).click()
+  const panel = win.getByRole('region', { name: 'Dev server for clone' })
+  await expect(panel.getByRole('button', { name: 'Start dev server' })).toBeVisible()
+
+  // As if switched in a terminal: the HEAD watcher sees it, the dev server starts.
+  repos.git(repos.clone, 'checkout', '-q', '-b', 'feature/switched')
+  await expect(panel.getByText(/Running on port \d+/)).toBeVisible({ timeout: 20_000 })
+  await panel.getByRole('button', { name: 'Stop' }).click()
+  await expect(panel.getByText('Stopped')).toBeVisible({ timeout: 15_000 })
+})

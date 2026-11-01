@@ -441,8 +441,8 @@ export function createHandlers(deps: HandlerDeps): HandlerMap {
       ),
     'repos:open': ({ id, target }) => withGit(() => deps.openRepo(deps.repos.get(id), target)),
     'devserver:list': () => deps.devServers.list(),
-    'devserver:start': ({ id, kind }) =>
-      withGit(() => deps.devServers.start(deps.repos.get(id), kind)),
+    'devserver:start': ({ id, kind, ifStopped }) =>
+      withGit(() => deps.devServers.start(deps.repos.get(id), kind, { ifStopped })),
     'devserver:stop': ({ id, kind }) =>
       withGit(() => deps.devServers.stop(deps.repos.get(id).id, kind)),
     'devserver:log': ({ id, kind }) => deps.devServers.log(id, kind),

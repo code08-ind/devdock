@@ -102,6 +102,11 @@ export function WorkflowSection({ settings }: { settings: Settings }) {
         "Runs the repo's dev command once the branch exists.",
       )}
       {toggle(
+        'devServerAfterSwitch',
+        'Start the dev server after a branch switch',
+        'When a repo switches branch (in DevDock, your terminal or your editor), DevDock starts its dev server if it isn’t running. A running one is left as it is.',
+      )}
+      {toggle(
         'checkBeforePush',
         'Run the check command before Push branch',
         'Push branch starts with this ticked for repos with a check command (repo settings); it pushes only if the check passes.',

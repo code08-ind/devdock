@@ -113,11 +113,13 @@ export function StartWorkDialog({
       setStage({ kind: 'done', runId: id, result })
       // Settings → Workflow: the branch exists, so the dev server runs on it.
       if (startServer && hasDevCommand) {
-        void unwrap(bridge.devserver.start({ id: repoId, kind: 'dev' })).catch((err: unknown) =>
-          toast(
-            `The branch is ready, but the dev server didn't start (${err instanceof Error ? err.message : 'unknown error'}). Start it from Repos.`,
-            'warning',
-          ),
+        // ifStopped: the branch switch may have started it already (Settings → Workflow).
+        void unwrap(bridge.devserver.start({ id: repoId, kind: 'dev', ifStopped: true })).catch(
+          (err: unknown) =>
+            toast(
+              `The branch is ready, but the dev server didn't start (${err instanceof Error ? err.message : 'unknown error'}). Start it from Repos.`,
+              'warning',
+            ),
         )
       }
       const copied = !result.warnings.some((w) => w.includes('clipboard'))

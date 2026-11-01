@@ -60,6 +60,7 @@ import { gitCommits, standupDraft } from './services/standup'
 import { demoCommits } from './demo/standup'
 import { loginShellPath, mergePath } from './services/process/shell-path'
 import { RepoWatcher } from './services/repo-watcher'
+import { BranchSwitchFollower } from './services/branch-switch'
 import { RepoService } from './services/repos'
 import { registerIpc } from './ipc/registry'
 import { checkExternalUrl, installSecurity, isAppUrl, linkHosts } from './security'
@@ -306,7 +307,11 @@ function start(): void {
     settings: () => store.get(),
     git,
   })
-  const watcher = new RepoWatcher(git, (id) => broadcast('repos:changed', { id }))
+  const watcher = new RepoWatcher(git, (id) => {
+    broadcast('repos:changed', { id })
+    // T5: start the dev server after a branch switch (Settings → Workflow).
+    void branchSwitch.changed(id)
+  })
   // Finder-launched macOS apps don't get the shell PATH (npm, node, code). Dev servers wait for it.
   const envReady =
     process.platform === 'darwin' && app.isPackaged
@@ -323,7 +328,9 @@ function start(): void {
         mainWindow.webContents.send('devserver:output', e)
     },
   })
+  const branchSwitch = new BranchSwitchFollower({ git, settings: () => store.get(), devServers })
   void watcher.sync(store.get().repos)
+  void branchSwitch.sync(store.get().repos)
 
   /** Sends to one window, if it is still there (terminal output goes only to its owner). */
   const sendTo = <E extends EventChannel>(id: number, event: E, payload: EventPayload<E>) => {
@@ -638,6 +645,7 @@ function start(): void {
     })
     lastSignatures = next
     void watcher.sync(s.repos)
+    void branchSwitch.sync(s.repos)
     applyLoginItem(s)
     applyProxy(s)
     // settings:update/import/reset can name a shortcut that is taken or reserved. Keep the

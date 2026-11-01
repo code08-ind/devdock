@@ -133,13 +133,19 @@ export class DevServerManager {
     return existsSync(join(repoPath, BASELINE_SCRIPT))
   }
 
-  async start(repo: RepoConfig, kind: ServerKind): Promise<DevServerState> {
+  /** `ifStopped`: return the running server instead of refusing (several callers may race). */
+  async start(
+    repo: RepoConfig,
+    kind: ServerKind,
+    opts: { ifStopped?: boolean } = {},
+  ): Promise<DevServerState> {
     // Wait first: from the check below to servers.set() there's no await, so two concurrent
     // starts can't both spawn.
     await this.opts.envReady
     const key = this.key(repo.id, kind)
     const existing = this.servers.get(key)
     if (existing && isActive(existing.state.status)) {
+      if (opts.ifStopped) return existing.state
       throw new DevServerError(
         `The ${kind === 'dev' ? 'dev server' : 'baseline server'} is already running.`,
       )
